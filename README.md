@@ -1,5 +1,7 @@
 jupyter-cadquery
-===============================
+================
+
+WORK IN PROGRESS
 
 An extension to render cadquery objects in JupyterLab via pythreejs
 
