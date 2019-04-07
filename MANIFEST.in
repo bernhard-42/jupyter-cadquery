@@ -1,0 +1,2 @@
+recursive-include jupyter_cadquery/static *.*
+include jupyter_cadquery.json
