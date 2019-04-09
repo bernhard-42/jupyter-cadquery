@@ -7,6 +7,7 @@ from subprocess import check_call
 import os
 import sys
 import platform
+from glob import glob
 
 here = os.path.dirname(os.path.abspath(__file__))
 node_root = os.path.join(here, 'js')
@@ -135,7 +136,7 @@ setup_args = {
             'jupyter_cadquery/static/extension.js',
             'jupyter_cadquery/static/index.js',
             'jupyter_cadquery/static/index.js.map',
-        ],),
+        ] + glob('jupyter_cadquery/icons/*.png'),),
         ('etc/jupyter/nbconfig/notebook.d' ,['jupyter_cadquery.json'])
     ],
     'install_requires': [

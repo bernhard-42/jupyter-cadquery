@@ -27,7 +27,8 @@ class CadqueryDisplay(object):
         self.cq_view = None
         self.assembly = None
 
-        self.image_path = join(dirname(dirname(__file__)), "icons")
+        self.image_path = join(dirname(__file__), "icons")
+
         self.image_paths = [
             {UNSELECTED: "%s/no_shape.png"  % self.image_path, 
              SELECTED:   "%s/shape.png"     % self.image_path, 
@@ -92,7 +93,6 @@ class CadqueryDisplay(object):
             tree_view.add_class("mac-scrollbar")
         
         mapping = assembly.obj_mapping()
-        print(mapping)
         tree_view.observe(self.cq_view.changeVisibility(mapping), "state")
 
         # Set initial state
