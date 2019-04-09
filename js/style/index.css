@@ -28,6 +28,10 @@
     overflow-y: visible;
 }
 
+.view_button {
+    padding: 0px;
+}
+
 .node_entry {
     white-space: nowrap;
     padding-top: 4px;

@@ -4,13 +4,6 @@ from ipywidgets.widgets import register, Button
 from ipywidgets.widgets.trait_types import bytes_serialization
 
 
-def _load_image(image_path):
-    if image_path == "":
-        return b""
-    else:
-        return open(image_path, 'rb').read()
-
-
 @register
 class ImageButton(Button):
     """An example widget."""
@@ -28,4 +21,10 @@ class ImageButton(Button):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.value = _load_image(self.image_path)
+        self.value = self._load_image(self.image_path)
+
+    def _load_image(self, image_path):
+        if image_path == "":
+            return b""
+        else:
+            return open(image_path, 'rb').read()
