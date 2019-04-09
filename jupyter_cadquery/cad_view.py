@@ -169,7 +169,6 @@ class CadqueryView(object):
 
     def changeView(self, typ, directions):
         def refit(b):
-            self._debug("refit")
             self.camera.zoom = 1.0
             self._update()
             
