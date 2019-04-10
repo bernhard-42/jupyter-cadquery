@@ -9,12 +9,16 @@ import uuid
 
 import numpy as np
 
-from pythreejs import BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, CombinedCamera,\
-                      AxesHelper, GridHelper, PointLight, AmbientLight, Scene, OrbitControls, Renderer,\
-                      Mesh, MeshLambertMaterial, LineSegmentsGeometry, LineMaterial, LineSegments2
-from cadquery import Compound, Vector
 from IPython.display import display
 
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from pythreejs import BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, CombinedCamera,\
+                          AxesHelper, GridHelper, PointLight, AmbientLight, Scene, OrbitControls, Renderer,\
+                          Mesh, MeshLambertMaterial, LineSegmentsGeometry, LineMaterial, LineSegments2
+
+from cadquery import Compound, Vector
 from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Core.Visualization import Tesselator
@@ -182,8 +186,12 @@ class CadqueryView(object):
             return change
 
     def toggleAxis(self, change):
-        # self.axes.visible = change["new"]
         self.axes.toggleAxes(change["new"])
+
+    def toggleAxisCenter(self, change):
+        center = (0, 0, 0) if change["new"] else self.bb.center.toTuple()
+        for i in range(3):
+            self.scene.children[i].position = center
 
     def toggleGrid(self, change):
         self.grid.visible = change["new"]

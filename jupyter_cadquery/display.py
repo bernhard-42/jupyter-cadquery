@@ -30,13 +30,13 @@ class CadqueryDisplay(object):
         self.image_path = join(dirname(__file__), "icons")
 
         self.image_paths = [
-            {UNSELECTED: "%s/no_shape.png"  % self.image_path, 
-             SELECTED:   "%s/shape.png"     % self.image_path, 
-             MIXED:      "%s/mix_shape.png" % self.image_path, 
+            {UNSELECTED: "%s/no_shape.png"  % self.image_path,
+             SELECTED:   "%s/shape.png"     % self.image_path,
+             MIXED:      "%s/mix_shape.png" % self.image_path,
              EMPTY:      "%s/empty.png"     % self.image_path},
-            {UNSELECTED: "%s/no_mesh.png"   % self.image_path, 
-             SELECTED:   "%s/mesh.png"      % self.image_path, 
-             MIXED:      "%s/mix_mesh.png"  % self.image_path, 
+            {UNSELECTED: "%s/no_mesh.png"   % self.image_path,
+             SELECTED:   "%s/mesh.png"      % self.image_path,
+             MIXED:      "%s/mix_mesh.png"  % self.image_path,
              EMPTY:      "%s/empty.png"     % self.image_path}
         ]
 
@@ -50,9 +50,15 @@ class CadqueryDisplay(object):
         button.on_click(handler)
         button.add_class("view_button")
         return button
-        
-    def create_checkbox(self, kind, handler):
-        checkbox = Checkbox(value=True, description=kind, indent=False, layout=Layout(width="65px"))
+
+    def create_checkbox(self, ind, description, handler):
+        if ind in (0, 3):
+            width = "75px"
+        elif ind == 1:
+            width = "45px"
+        else:
+            width = "70px"
+        checkbox = Checkbox(value=True, description=description, indent=False, layout=Layout(width=width))
         checkbox.observe(handler, "value")
         return checkbox
 
@@ -80,18 +86,18 @@ class CadqueryDisplay(object):
         renderer = self.cq_view.render()
 
         # Output widget
-        self.output = Output(layout=Layout(height="%dpx"%height, width="%dpx"%out_width, 
+        self.output = Output(layout=Layout(height="%dpx"%height, width="%dpx"%out_width,
                               overflow_y="scroll", overflow_x="scroll"))
         if mac_scrollbar:
             self.output.add_class("mac-scrollbar")
 
         # Tree widget to change visibility
-        tree_view = TreeView(image_paths=self.image_paths, tree=tree, state=states, 
+        tree_view = TreeView(image_paths=self.image_paths, tree=tree, state=states,
                              layout=Layout(height="%dpx"%height, width="%dpx"%tree_width,
                              overflow_y="scroll", overflow_x="scroll"))
         if mac_scrollbar:
             tree_view.add_class("mac-scrollbar")
-        
+
         mapping = assembly.obj_mapping()
         tree_view.observe(self.cq_view.changeVisibility(mapping), "state")
 
@@ -102,9 +108,10 @@ class CadqueryDisplay(object):
 
         # Check controls to swith orto, grid and axis
         check_controls = [
-            self.create_checkbox("Axis", self.cq_view.toggleAxis),
-            self.create_checkbox("Grid", self.cq_view.toggleGrid),
-            self.create_checkbox("Ortho", self.cq_view.toggleOrtho)
+            self.create_checkbox(0, "Axis ( 0", self.cq_view.toggleAxis),
+            self.create_checkbox(1, ")", self.cq_view.toggleAxisCenter),
+            self.create_checkbox(2, "Grid", self.cq_view.toggleGrid),
+            self.create_checkbox(3, "Ortho", self.cq_view.toggleOrtho)
         ]
 
         # Buttons to switch camera position
@@ -113,5 +120,5 @@ class CadqueryDisplay(object):
             button = self.create_button(typ, self.cq_view.changeView(typ, CadqueryDisplay.directions))
             view_controls.append(button)
 
-        return HBox([VBox([HBox(check_controls), tree_view]), 
+        return HBox([VBox([HBox(check_controls), tree_view]),
                      VBox([HBox(view_controls), renderer]), self.output])
