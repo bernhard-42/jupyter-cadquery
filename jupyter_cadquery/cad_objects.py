@@ -154,7 +154,7 @@ class Assembly(CADObject):
         for obj in self.objects:
             result.update(obj.to_state())
         return result
-    
+
     def obj_mapping(self):
         return  {v:k for k,v in enumerate(self.to_state().keys())}
 
