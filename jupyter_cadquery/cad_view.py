@@ -11,7 +11,7 @@ import numpy as np
 
 from pythreejs import BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, CombinedCamera,\
                       AxesHelper, GridHelper, PointLight, AmbientLight, Scene, OrbitControls, Renderer,\
-                      Mesh, MeshLambertMaterial
+                      Mesh, MeshLambertMaterial, LineSegmentsGeometry, LineMaterial, LineSegments2
 from cadquery import Compound, Vector
 from IPython.display import display
 
@@ -54,7 +54,7 @@ class CadqueryView(object):
         self.scene = None
         self.controller = None
         self.renderer = None
-        
+
     def _format_color(self, r, g, b):
         return '#%02x%02x%02x' % (r, g, b)
 
@@ -156,11 +156,11 @@ class CadqueryView(object):
         return Compound.makeCompound(compounds).BoundingBox()
 
     def _scale(self, vec):
-        r = self.bb.DiagonalLength * 1.2
-        n = np.linalg.norm(vec) 
+        r = self.bb.DiagonalLength * 1.4
+        n = np.linalg.norm(vec)
         new_vec = (vec / n * r).tolist()
         return Vector(new_vec).add(self.bb.center).toTuple()
-        
+
     def _update(self):
         self.controller.exec_three_obj_method('update')
         pass
@@ -171,18 +171,19 @@ class CadqueryView(object):
         def refit(b):
             self.camera.zoom = 1.0
             self._update()
-            
+
         def change(b):
             self.camera.position = self._scale(directions[typ])
             self._update()
-            
+
         if typ == "fit":
             return refit
         else:
             return change
 
     def toggleAxis(self, change):
-        self.axes.visible = change["new"]
+        # self.axes.visible = change["new"]
+        self.axes.toggleAxes(change["new"])
 
     def toggleGrid(self, change):
         self.grid.visible = change["new"]
@@ -201,9 +202,9 @@ class CadqueryView(object):
                 obj, val = _decomp(diff)
                 self.setVisibility(mapping[obj], val["icon"], val["new"])
         return f
-        
+
     # public methods to add shapes and render the view
-    
+
     def addShape(self, shape, color="#ff0000"):
         self.shapes.append({"shape": shape, "color": color})
 
@@ -212,30 +213,34 @@ class CadqueryView(object):
             self._renderShape(shape["shape"].toOCC(), render_edges=True, shape_color=shape["color"])
 
         self.bb = self._bbox([shape["shape"] for shape in self.shapes])
-        bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax), 
-                      abs(self.bb.ymin), abs(self.bb.ymax), 
+        bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
+                      abs(self.bb.ymin), abs(self.bb.ymax),
                       abs(self.bb.zmin), abs(self.bb.zmax)))
         camera_target = self.bb.center.toTuple()
         camera_position = self._scale([1, 1, 1])
 
-        self.camera = CombinedCamera(position=camera_position, 
+        self.camera = CombinedCamera(position=camera_position,
                                      width=self.width, height=self.height)
         self.camera.up = (0.0, 0.0, 1.0)
         self.camera.lookAt(camera_target)
         self.camera.mode = 'orthographic'
-        
-        self.axes = AxesHelper(bb_max * 1.1)
-        self.axes.position = camera_target
-        
+
+        # self.axes = AxesHelper(bb_max * 1.1)
+        # self.axes.position = camera_target
+
+        # self.axes = Axes(origin=camera_target, length=bb_max)
+        self.axes = Axes(length=bb_max)
+        self.axes.toggleAxes(True)
+
         grid_size = math.ceil(self.bb.DiagonalLength * 0.8)
-        self.grid = GridHelper(grid_size, grid_size*2)
+        self.grid = GridHelper(grid_size, grid_size*2, colorCenterLine='#aaa', colorGrid = '#ddd')
         self.grid.rotation = (math.pi / 2.0, 0, 0, "XYZ")
         self.grid.position = camera_target
 
         key_light = PointLight(position=[-100, 100, 100])
         ambient_light = AmbientLight(intensity=0.4)
 
-        children = [self.axes, self.grid, key_light, ambient_light, self.camera]
+        children = self.axes.axes + [self.grid, key_light, ambient_light, self.camera]
         for rendered_shape in self.rendered_shapes:
             children = children + [rendered_shape[self.features[0]], rendered_shape[self.features[1]]]
 
@@ -245,7 +250,28 @@ class CadqueryView(object):
 
         self.renderer = Renderer(scene=self.scene, camera=self.camera, controls=[self.controller],
                                  width=self.width, height=self.height)
-        
+
         self.camera.position = self._scale(self.camera.position)
 
         return self.renderer
+
+class Axes(object):
+    def __init__(self, origin=None, length=1, width=3):
+        if origin is None:
+            origin = (0,0,0)
+        x = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [length, 0, 0])]])
+        y = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [0, length, 0])]])
+        z = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [0, 0, length])]])
+
+        mx = LineMaterial(linewidth=width, color='red')
+        my = LineMaterial(linewidth=width, color='green')
+        mz = LineMaterial(linewidth=width, color='blue')
+
+        self.axes = [LineSegments2(x, mx), LineSegments2(y, my), LineSegments2(z, mz)]
+
+    def _shift(self, v, offset):
+        return [x+o for x, o in zip(v, offset)]
+
+    def toggleAxes(self, change):
+        for i in range(3):
+            self.axes[i].visible = change
