@@ -43,8 +43,8 @@ class CADObject(object):
     def web_color(self):
         return "rgba(%d, %d, %d, 0.6)" % tuple([c * 255 for c in self.color])
 
-    def _repr_html_(self):
-        display(self)
+    # def _repr_html_(self):
+    #     display(self)
 
 
 class Part(CADObject):
@@ -83,7 +83,7 @@ class Part(CADObject):
 class Faces(Part):
 
     def __init__(self, shape, name="faces", color=None, show_faces=True, show_edges=True):
-        super().__init__(shape, name, color, show_faces, show_edges)
+        super().__init__(shape.combine(), name, color, show_faces, show_edges)
 
 
 class Edges(CADObject):
