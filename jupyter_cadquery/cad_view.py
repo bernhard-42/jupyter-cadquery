@@ -34,6 +34,12 @@ def _decomp(a):
     [item] = a.items()
     return item
 
+def explode(edge_list):
+    return [[edge_list[i], edge_list[i + 1]] for i in range(len(edge_list) - 1)]
+
+def flatten(nested_list):
+    return [y for x in nested_list for y in x]
+
 class CadqueryView(object):
 
     def __init__(self, width=600, height=400, render_edges=True, debug=None):
@@ -66,94 +72,101 @@ class CadqueryView(object):
         return MeshLambertMaterial(color=color, transparent=transparent, opacity=opacity)
 
     def _renderShape(self,
-        shp,  # the TopoDS_Shape to be displayed
+        shape=None,  # the TopoDS_Shape to be displayed
+        edges=None,  # or the edges to be displayed 
         shape_color=None,
         render_edges=False,
         edge_color=None,
+        edge_width=1,
+        deflection=0.05,
         compute_uv_coords=False,
         quality=1.0,
         transparent=True,
         opacity=0.6):
 
-        if shape_color is None:
-            shape_color = self.default_shape_color
-        if edge_color is None:
-            edge_color = self.default_edge_color
-
-        # first, compute the tesselation
-        tess = Tesselator(shp)
-        tess.Compute(uv_coords=compute_uv_coords, compute_edges=render_edges, mesh_quality=quality, parallel=True)
-
-        # get vertices and normals
-        vertices_position = tess.GetVerticesPositionAsTuple()
-
-        number_of_triangles = tess.ObjGetTriangleCount()
-        number_of_vertices = len(vertices_position)
-
-        # number of vertices should be a multiple of 3
-        if number_of_vertices % 3 != 0:
-            raise AssertionError("Wrong number of vertices")
-        if number_of_triangles * 9 != number_of_vertices:
-            raise AssertionError("Wrong number of triangles")
-
-        # then we build the vertex and faces collections as numpy ndarrays
-        np_vertices = np.array(vertices_position, dtype='float32').reshape(int(number_of_vertices / 3), 3)
-        # Note: np_faces is just [0, 1, 2, 3, 4, 5, ...], thus arange is used
-        np_faces = np.arange(np_vertices.shape[0], dtype='uint32')
-
-        # set geometry properties
-        buffer_geometry_properties = {'position': BufferAttribute(np_vertices), 'index': BufferAttribute(np_faces)}
-        if self._compute_normals_mode == SERVER_SIDE:
-            # get the normal list, converts to a numpy ndarray. This should not raise
-            # any issue, since normals have been computed by the server, and are available
-            # as a list of floats
-            np_normals = np.array(tess.GetNormalsAsTuple(), dtype='float32').reshape(-1, 3)
-            # quick check
-            if np_normals.shape != np_vertices.shape:
-                raise AssertionError("Wrong number of normals/shapes")
-            buffer_geometry_properties['normal'] = BufferAttribute(np_normals)
-
-        # build a BufferGeometry instance
-        shape_geometry = BufferGeometry(attributes=buffer_geometry_properties)
-
-        # if the client has to render normals, add the related js instructions
-        if self._compute_normals_mode == CLIENT_SIDE:
-            shape_geometry.exec_three_obj_method('computeVertexNormals')
-
-        # then a default material
-        shp_material = self._material(shape_color, transparent, opacity)
-
-        # create a mesh unique id
-        mesh_id = uuid.uuid4().hex
-
-        # finally create the mash
-        shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name=mesh_id)
-
-        # edge rendering, if set to True
-        def explode(edge_list):
-            return [[edge_list[i], edge_list[i + 1]] for i in range(len(edge_list) - 1)]
-
-        def flatten(nested_list):
-            return [y for x in nested_list for y in x]
-
+        edge_list = None
         edge_lines = None
-        if render_edges:
-            edges = list(
-                map(
-                    lambda i_edge:
-                    [tess.GetEdgeVertex(i_edge, i_vert) for i_vert in range(tess.ObjEdgeGetVertexCount(i_edge))],
-                    range(tess.ObjGetEdgeCount())))
-            edges = flatten(list(map(explode, edges)))
-            np_edge_vertices = np.array(edges, dtype=np.float32).reshape(-1, 3)
-            np_edge_indices = np.arange(np_edge_vertices.shape[0], dtype=np.uint32)
-            edge_geometry = BufferGeometry(attributes={
-                'position': BufferAttribute(np_edge_vertices),
-                'index': BufferAttribute(np_edge_indices)
-            })
-            edge_material = LineBasicMaterial(color=edge_color, linewidth=1)
-            edge_lines = LineSegments(geometry=edge_geometry, material=edge_material)
 
-        self.rendered_shapes.append({"mesh": shape_mesh, "edges": edge_lines})
+        if shape is not None:
+            if shape_color is None:
+                shape_color = self.default_shape_color
+            if edge_color is None:
+                edge_color = self.default_edge_color
+
+            # first, compute the tesselation
+            tess = Tesselator(shape)
+            tess.Compute(uv_coords=compute_uv_coords, compute_edges=render_edges, 
+                         mesh_quality=quality, parallel=True)
+
+            # get vertices and normals
+            vertices_position = tess.GetVerticesPositionAsTuple()
+
+            number_of_triangles = tess.ObjGetTriangleCount()
+            number_of_vertices = len(vertices_position)
+
+            # number of vertices should be a multiple of 3
+            if number_of_vertices % 3 != 0:
+                raise AssertionError("Wrong number of vertices")
+            if number_of_triangles * 9 != number_of_vertices:
+                raise AssertionError("Wrong number of triangles")
+
+            # then we build the vertex and faces collections as numpy ndarrays
+            np_vertices = np.array(vertices_position, dtype='float32')\
+                            .reshape(int(number_of_vertices / 3), 3)
+            # Note: np_faces is just [0, 1, 2, 3, 4, 5, ...], thus arange is used
+            np_faces = np.arange(np_vertices.shape[0], dtype='uint32')
+
+            # set geometry properties
+            buffer_geometry_properties = {
+                'position': BufferAttribute(np_vertices), 
+                'index': BufferAttribute(np_faces)
+            }
+            if self._compute_normals_mode == SERVER_SIDE:
+                # get the normal list, converts to a numpy ndarray. This should not raise
+                # any issue, since normals have been computed by the server, and are available
+                # as a list of floats
+                np_normals = np.array(tess.GetNormalsAsTuple(), dtype='float32').reshape(-1, 3)
+                # quick check
+                if np_normals.shape != np_vertices.shape:
+                    raise AssertionError("Wrong number of normals/shapes")
+                buffer_geometry_properties['normal'] = BufferAttribute(np_normals)
+
+            # build a BufferGeometry instance
+            shape_geometry = BufferGeometry(attributes=buffer_geometry_properties)
+
+            # if the client has to render normals, add the related js instructions
+            if self._compute_normals_mode == CLIENT_SIDE:
+                shape_geometry.exec_three_obj_method('computeVertexNormals')
+
+            # then a default material
+            shp_material = self._material(shape_color, transparent, opacity)
+
+            # create a mesh unique id
+            mesh_id = uuid.uuid4().hex
+
+            # finally create the mash
+            shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name=mesh_id)
+
+            # edge rendering, if set to True
+
+            if render_edges:
+                edge_list = list(
+                    map(lambda i_edge: [tess.GetEdgeVertex(i_edge, i_vert) 
+                                        for i_vert in range(tess.ObjEdgeGetVertexCount(i_edge))],
+                        range(tess.ObjGetEdgeCount())))
+
+        if edges is not None:
+            shape_mesh = None
+            edge_list = [discretize_edge(edge, deflection) for edge in edges]
+
+        if edge_list is not None:
+            edge_list = flatten(list(map(explode, edge_list)))
+            lines = LineSegmentsGeometry(positions=edge_list)
+            mat = LineMaterial(linewidth=edge_width, color=edge_color)
+            edge_lines = LineSegments2(lines, mat)
+
+        if shape_mesh is not None or edge_lines is not None:
+            self.rendered_shapes.append({"mesh": shape_mesh, "edges": edge_lines})
 
     def _bbox(self, shapes):
         compounds = [Compound.makeCompound(shape.objects) for shape in shapes]
@@ -201,7 +214,8 @@ class CadqueryView(object):
 
     def setVisibility(self, ind, i, state):
         feature = self.features[i]
-        self.rendered_shapes[ind][feature].visible = (state == 1)
+        if self.rendered_shapes[ind][feature] is not None:
+            self.rendered_shapes[ind][feature].visible = (state == 1)
 
     def changeVisibility(self, mapping):
         def f(states):
@@ -218,7 +232,11 @@ class CadqueryView(object):
 
     def render(self):
         for shape in self.shapes:
-            self._renderShape(shape["shape"].toOCC(), render_edges=True, shape_color=shape["color"])
+            if is_edge(shape["shape"].toOCC()):
+                edges = [edge.wrapped for edge in shape["shape"].objects]
+                self._renderShape(edges=edges, render_edges=True, edge_color=shape["color"], edge_width=3)
+            else:
+                self._renderShape(shape=shape["shape"].toOCC(), render_edges=True, shape_color=shape["color"])
 
         self.bb = self._bbox([shape["shape"] for shape in self.shapes])
         bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
@@ -233,10 +251,6 @@ class CadqueryView(object):
         self.camera.lookAt(camera_target)
         self.camera.mode = 'orthographic'
 
-        # self.axes = AxesHelper(bb_max * 1.1)
-        # self.axes.position = camera_target
-
-        # self.axes = Axes(origin=camera_target, length=bb_max)
         self.axes = Axes(length=bb_max)
         self.axes.toggleAxes(True)
 

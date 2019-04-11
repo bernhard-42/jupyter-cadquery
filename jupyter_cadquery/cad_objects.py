@@ -22,23 +22,11 @@ class CADObject(object):
         part_id += 1
         return part_id
 
-    def parts(self):
-        raise NotImplementedError("not implemented yet")
-
-    def compound(self):
-        raise NotImplementedError("not implemented yet")
-
-    def compounds(self):
-        raise NotImplementedError("not implemented yet")
-
     def to_nav_dict(self):
         raise NotImplementedError("not implemented yet")
 
     def to_state(self):
         raise NotImplementedError("not implemented yet")
-
-    def to_nav_json(self):
-        return json.dumps([self.to_nav_dict()], indent=2)
 
     def web_color(self):
         return "rgba(%d, %d, %d, 0.6)" % tuple([c * 255 for c in self.color])
@@ -56,18 +44,8 @@ class Part(CADObject):
         if color is not None:
             self.color = color
         self.shape = shape
-        self._compound = Compound.makeCompound(shape.objects)
         self.state_faces = SELECTED if show_faces else UNSELECTED
         self.state_edges = SELECTED if show_edges else UNSELECTED
-
-    def parts(self):
-        return [self]
-
-    def compound(self):
-        return self._compound
-
-    def compounds(self):
-        return [self._compound]
 
     def to_nav_dict(self):
         return {
@@ -80,6 +58,7 @@ class Part(CADObject):
     def to_state(self):
         return {str(self.id): [self.state_faces, self.state_edges]}
 
+
 class Faces(Part):
 
     def __init__(self, shape, name="faces", color=None, show_faces=True, show_edges=True):
@@ -90,9 +69,8 @@ class Edges(CADObject):
 
     def __init__(self, edges, name="edges", color=None):
         super().__init__()
-        self.edges = edges
+        self.shape = edges
         self.name = name
-        self._compound = Compound.makeCompound(edges.objects)
         self.id = self.next_id()
         if color is not None:
             self.color = color
@@ -106,16 +84,8 @@ class Edges(CADObject):
         }
 
     def to_state(self):
-        return {str(self.id): [EMPTY, self.state_edges]}
+        return {str(self.id): [EMPTY, 1]}
 
-    def compound(self):
-        return self._compound
-
-    def compounds(self):
-        return [self._compound]
-
-    def parts(self):
-        return [self]
 
 
 class Assembly(CADObject):
@@ -125,21 +95,6 @@ class Assembly(CADObject):
         self.name = name
         self.id = self.next_id()
         self.objects = objects
-
-    def parts(self):
-        result = []
-        for obj in self.objects:
-            result += obj.parts()
-        return result
-
-    def compounds(self):
-        result = []
-        for obj in self.objects:
-            result += obj.compounds()
-        return result
-
-    def compound(self):
-        return Compound.makeCompound(self.compounds())
 
     def to_nav_dict(self):
         return {
