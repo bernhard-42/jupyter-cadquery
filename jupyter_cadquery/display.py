@@ -52,10 +52,12 @@ class CadqueryDisplay(object):
         return button
 
     def create_checkbox(self, ind, description, handler):
-        if ind in (0, 3):
-            width = "75px"
+        if ind == 0:
+            width = "65px"
         elif ind == 1:
-            width = "45px"
+            width = "50px"
+        elif ind == 3:
+            width = "75px"
         else:
             width = "70px"
         checkbox = Checkbox(value=True, description=description, indent=False, layout=Layout(width=width))
@@ -108,8 +110,8 @@ class CadqueryDisplay(object):
 
         # Check controls to swith orto, grid and axis
         check_controls = [
-            self.create_checkbox(0, "Axis ( 0", self.cq_view.toggleAxis),
-            self.create_checkbox(1, ")", self.cq_view.toggleAxisCenter),
+            self.create_checkbox(0, "Axis (", self.cq_view.toggleAxis),
+            self.create_checkbox(1, "0)", self.cq_view.toggleAxisCenter),
             self.create_checkbox(2, "Grid", self.cq_view.toggleGrid),
             self.create_checkbox(3, "Ortho", self.cq_view.toggleOrtho)
         ]
