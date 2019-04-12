@@ -95,7 +95,7 @@ class CadqueryView(object):
 
             # first, compute the tesselation
             tess = Tesselator(shape)
-            tess.Compute(uv_coords=compute_uv_coords, compute_edges=render_edges, 
+            tess.Compute(uv_coords=compute_uv_coords, compute_edges=render_edges,
                          mesh_quality=quality, parallel=True)
 
             # get vertices and normals
@@ -118,7 +118,7 @@ class CadqueryView(object):
 
             # set geometry properties
             buffer_geometry_properties = {
-                'position': BufferAttribute(np_vertices), 
+                'position': BufferAttribute(np_vertices),
                 'index': BufferAttribute(np_faces)
             }
             if self._compute_normals_mode == SERVER_SIDE:
@@ -151,7 +151,7 @@ class CadqueryView(object):
 
             if render_edges:
                 edge_list = list(
-                    map(lambda i_edge: [tess.GetEdgeVertex(i_edge, i_vert) 
+                    map(lambda i_edge: [tess.GetEdgeVertex(i_edge, i_vert)
                                         for i_vert in range(tess.ObjEdgeGetVertexCount(i_edge))],
                         range(tess.ObjGetEdgeCount())))
 
@@ -198,19 +198,31 @@ class CadqueryView(object):
         else:
             return change
 
-    def toggleAxis(self, change):
-        self.axes.toggleAxes(change["new"])
+    def setAxes(self, change):
+        self.axes.toggleAxes(change)
 
-    def toggleAxisCenter(self, change):
-        center = (0, 0, 0) if change["new"] else self.bb.center.toTuple()
+    def toggleAxes(self, change):
+        self.setAxes(change["new"])
+
+    def setAxesCenter(self, change):
+        center = (0, 0, 0) if change else self.bb.center.toTuple()
         for i in range(3):
             self.scene.children[i].position = center
 
+    def toggleAxesCenter(self, change):
+        self.setAxesCenter(change["new"])
+
+    def setGrid(self, change):
+        self.grid.visible = change
+
     def toggleGrid(self, change):
-        self.grid.visible = change["new"]
+        self.setGrid(change["new"])
+
+    def setOrtho(self, change):
+        self.camera.mode = 'orthographic' if change else 'perspective'
 
     def toggleOrtho(self, change):
-        self.camera.mode = 'orthographic' if change["new"] else 'perspective'
+        self.setOrtho(change["new"])
 
     def setVisibility(self, ind, i, state):
         feature = self.features[i]
@@ -253,9 +265,8 @@ class CadqueryView(object):
 
         self.axes = Axes(length=bb_max)
         self.axes.toggleAxes(True)
-
         grid_size = math.ceil(self.bb.DiagonalLength * 0.8)
-        self.grid = GridHelper(grid_size, grid_size*2, colorCenterLine='#aaa', colorGrid = '#ddd')
+        self.grid = GridHelper(grid_size, 10, colorCenterLine='#aaa', colorGrid = '#ddd')
         self.grid.rotation = (math.pi / 2.0, 0, 0, "XYZ")
         self.grid.position = camera_target
 

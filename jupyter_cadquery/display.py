@@ -51,7 +51,7 @@ class CadqueryDisplay(object):
         button.add_class("view_button")
         return button
 
-    def create_checkbox(self, ind, description, handler):
+    def create_checkbox(self, ind, description, value, handler):
         if ind == 0:
             width = "65px"
         elif ind == 1:
@@ -60,7 +60,7 @@ class CadqueryDisplay(object):
             width = "75px"
         else:
             width = "70px"
-        checkbox = Checkbox(value=True, description=description, indent=False, layout=Layout(width=width))
+        checkbox = Checkbox(value=value, description=description, indent=False, layout=Layout(width=width))
         checkbox.observe(handler, "value")
         return checkbox
 
@@ -78,7 +78,8 @@ class CadqueryDisplay(object):
             result.update(cad_obj.to_state())
         return result
 
-    def display(self, assembly, height=600, tree_width=250, out_width=600, cad_width=600, mac_scrollbar=True):
+    def display(self, assembly, height=600, tree_width=250, out_width=600, cad_width=600,
+                axes=True, axes0=True, grid=True, ortho=True, mac_scrollbar=True):
         self.assembly = assembly
 
         ## Threejs rendering of Cadquery objects
@@ -110,12 +111,23 @@ class CadqueryDisplay(object):
 
         # Check controls to swith orto, grid and axis
         check_controls = [
-            self.create_checkbox(0, "Axis (", self.cq_view.toggleAxis),
-            self.create_checkbox(1, "0)", self.cq_view.toggleAxisCenter),
-            self.create_checkbox(2, "Grid", self.cq_view.toggleGrid),
-            self.create_checkbox(3, "Ortho", self.cq_view.toggleOrtho)
+            self.create_checkbox(0, "Axes (", axes, self.cq_view.toggleAxes),
+            self.create_checkbox(1, "0)", axes0, self.cq_view.toggleAxesCenter),
+            self.create_checkbox(2, "Grid", grid, self.cq_view.toggleGrid),
+            self.create_checkbox(3, "Ortho", ortho, self.cq_view.toggleOrtho)
         ]
+        if not ortho:
+            self.cq_view.setOrtho(ortho)
 
+        if not axes:
+            self.cq_view.setAxes(axes)
+
+        if not axes0:
+            self.cq_view.setAxesCenter(axes0)
+
+        if not grid:
+            self.cq_view.setGrid(grid)
+        self.x = check_controls
         # Buttons to switch camera position
         view_controls = []
         for typ in CadqueryDisplay.types:
@@ -124,3 +136,18 @@ class CadqueryDisplay(object):
 
         return HBox([VBox([HBox(check_controls), tree_view]),
                      VBox([HBox(view_controls), renderer]), self.output])
+
+def display(assembly, height=600, tree_width=250, out_width=600, cad_width=600,
+            axes=True, axes0=True, grid=True, ortho=True, mac_scrollbar=True):
+    d = CadqueryDisplay()
+    return d.display(
+        assembly=assembly,
+        height=height,
+        tree_width=tree_width,
+        out_width=out_width,
+        cad_width=cad_width,
+        axes=axes,
+        axes0=axes0,
+        grid=grid,
+        ortho=ortho,
+        mac_scrollbar=mac_scrollbar)
