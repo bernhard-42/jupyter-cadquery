@@ -1,11 +1,12 @@
 from ._version import version_info, __version__
 
-from .cad_objects import Assembly, Part, Edges, Faces, convert
+from .cad_objects import Assembly, Part, Edges, Faces
 
 from .image_button import ImageButton
 from .tree_view import TreeView, UNSELECTED, SELECTED, MIXED, EMPTY, state_diff
 from .cad_view import CadqueryView
-from .display import display
+from .display import display, convert
+
 
 def _jupyter_nbextension_paths():
     return [{

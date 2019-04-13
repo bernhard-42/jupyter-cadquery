@@ -6,7 +6,7 @@ from ipywidgets import ToggleButton, Button, Checkbox, Layout, HBox, VBox, Outpu
 from .image_button import ImageButton
 from .tree_view import TreeView, state_diff, UNSELECTED, SELECTED, MIXED, EMPTY
 from .cad_view import CadqueryView
-from .cad_objects import Assembly, Part
+from .cad_objects import Assembly, Part, Edges, Faces, is_edges, is_faces
 
 
 class CadqueryDisplay(object):
@@ -137,17 +137,41 @@ class CadqueryDisplay(object):
         return HBox([VBox([HBox(check_controls), tree_view]),
                      VBox([HBox(view_controls), renderer]), self.output])
 
-def display(assembly, height=600, tree_width=250, out_width=600, cad_width=600,
+
+def convert(cadObj):
+    if isinstance(cadObj, (Assembly, Part, Faces, Edges)):
+        return cadObj
+    elif is_edges(cadObj):
+        return Edges(cadObj, "edges", color=(1, 0, 1))
+    elif is_faces(cadObj):
+        return Faces(cadObj, "faces", color=(1, 0, 1))
+    else:
+        return Part(cadObj, "part", color=(0.1, 0.1, 0.1), show_edges=False)
+
+
+def display(cad_obj, height=600, tree_width=250, out_width=600, cad_width=600,
             axes=True, axes0=True, grid=True, ortho=True, mac_scrollbar=True):
-    d = CadqueryDisplay()
-    return d.display(
-        assembly=assembly,
-        height=height,
-        tree_width=tree_width,
-        out_width=out_width,
-        cad_width=cad_width,
-        axes=axes,
-        axes0=axes0,
-        grid=grid,
-        ortho=ortho,
-        mac_scrollbar=mac_scrollbar)
+
+    assembly = None
+    if isinstance(cad_obj, Assembly):
+        assembly = cad_obj
+    elif isinstance(cad_obj, Part):
+        assembly = Assembly([convert(cad_obj)])
+    elif is_edges(cad_obj):
+        assembly = Assembly([convert(cad_obj.parent), convert(cad_obj)])
+    elif is_faces(cad_obj):
+        assembly = Assembly([convert(cad_obj.parent), convert(cad_obj)])
+
+    if assembly is not None:
+        d = CadqueryDisplay()
+        return d.display(
+            assembly=assembly,
+            height=height,
+            tree_width=tree_width,
+            out_width=out_width,
+            cad_width=cad_width,
+            axes=axes,
+            axes0=axes0,
+            grid=grid,
+            ortho=ortho,
+            mac_scrollbar=mac_scrollbar)

@@ -64,6 +64,9 @@ class Faces(Part):
     def __init__(self, shape, name="faces", color=None, show_faces=True, show_edges=True):
         super().__init__(shape.combine(), name, color, show_faces, show_edges)
 
+    def to_state(self):
+        return {str(self.id): [SELECTED, EMPTY]}
+
 
 class Edges(CADObject):
 
@@ -84,7 +87,7 @@ class Edges(CADObject):
         }
 
     def to_state(self):
-        return {str(self.id): [EMPTY, 1]}
+        return {str(self.id): [EMPTY, SELECTED]}
 
 
 
@@ -125,17 +128,6 @@ def is_edges(cadObj):
 
 def is_faces(cadObj):
     return all([isinstance(obj, cq.occ_impl.shapes.Face) for obj in cadObj.objects])
-
-
-def convert(cadObj):
-    if isinstance(cadObj, (Assembly, Part, Faces, Edges)):
-        return cadObj
-    elif is_edges(cadObj):
-        return Edges(cadObj, color=(1, 0, 0))
-    elif is_faces(cadObj):
-        return Faces(cadObj, color=(0, 1, 0))
-    else:
-        return Part(cadObj, color=(0.9, 0.9, 0.9), show_edges=False)
 
 
 # def repr_html(obj):

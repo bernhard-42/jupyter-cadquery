@@ -245,7 +245,13 @@ class CadqueryView(object):
     def render(self):
         for shape in self.shapes:
             if is_edge(shape["shape"].toOCC()):
-                edges = [edge.wrapped for edge in shape["shape"].objects]
+                # TODO Check it is safe to omit these edges
+                # The edges with on1 vertex are CurveOnSurface
+                # curve_adaptator = BRepAdaptor_Curve(edge)
+                # curve_adaptator.IsCurveOnSurface() == True
+                edges = [edge.wrapped
+                         for edge in shape["shape"].objects
+                         if TopologyExplorer(edge.wrapped).number_of_vertices() >= 2 ]
                 self._renderShape(edges=edges, render_edges=True, edge_color=shape["color"], edge_width=3)
             else:
                 self._renderShape(shape=shape["shape"].toOCC(), render_edges=True, shape_color=shape["color"])
