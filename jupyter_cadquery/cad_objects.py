@@ -67,9 +67,6 @@ class Faces(Part):
     def __init__(self, shape, name="faces", color=None, show_faces=True, show_edges=True):
         super().__init__(shape.combine(), name, color, show_faces, show_edges)
 
-    def to_state(self):
-        return {str(self.id): [SELECTED, SELECTED]}
-
     def _ipython_display_(self):
         idisplay(display(self, grid=False, axes=False))
 
