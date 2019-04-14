@@ -263,7 +263,10 @@ class CadqueryView(object):
                 self._renderShape(shape=shape["shape"].toOCC(),
                                   render_edges=True, shape_color=shape["color"])
 
-        self.bb = self._bbox([shape["shape"] for shape in self.shapes])
+        self.bb = self._bbox([shape["shape"] 
+                              for shape in self.shapes
+                              if not is_edge(shape["shape"].toOCC())
+                              ])
         bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
                       abs(self.bb.ymin), abs(self.bb.ymax),
                       abs(self.bb.zmin), abs(self.bb.zmax)))
