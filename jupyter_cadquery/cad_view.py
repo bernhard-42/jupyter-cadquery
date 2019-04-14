@@ -20,6 +20,8 @@ with warnings.catch_warnings():
 
 from OCC.Core.Visualization import Tesselator
 from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
+from OCC.Core.Bnd import Bnd_Box
+from OCC.Core.BRepBndLib import brepbndlib_Add
 
 from cadquery import Compound, Vector
 
@@ -38,6 +40,46 @@ def explode(edge_list):
 
 def flatten(nested_list):
     return [y for x in nested_list for y in x]
+
+
+from functools import reduce
+
+class BndBox(object):
+    def __init__(self, shapes):
+        _bbox = reduce(self._opt, [self.bbox(shape) for shape in shapes])
+        self.xmin = _bbox[0]
+        self.xmax = _bbox[1]
+        self.ymin = _bbox[2]
+        self.ymax = _bbox[3]
+        self.zmin = _bbox[4]
+        self.zmax = _bbox[5]
+        self.xsize = self.xmax - self.xmin
+        self.ysize = self.ymax - self.ymin
+        self.zsize = self.zmax - self.zmin
+        self.center = (self.xmin + self.xsize / 2.0,
+                       self.ymin + self.ysize / 2.0,
+                       self.zmin + self.zsize / 2.0)
+        self.max = reduce(lambda a,b: max(abs(a), abs(b)), _bbox)
+
+    def _opt(self, b1, b2):
+        return (min(b1[0], b2[0]), max(b1[1], b2[1]),
+                min(b1[2], b2[2]), max(b1[3], b2[3]),
+                min(b1[4], b2[4]), max(b1[5], b2[5]))
+
+    def _bounding_box(self, obj, tol=1e-5):
+        bbox = Bnd_Box()
+        bbox.SetGap(tol)
+        brepbndlib_Add(obj, bbox, True)
+        values = bbox.Get()
+        return (values[0], values[3], values[1], values[4], values[2], values[5])
+
+    def bbox(self, shape):
+        bb = reduce(self._opt, [self._bounding_box(obj.wrapped) for obj in shape.objects])
+        return bb
+
+    def __repr__(self):
+        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)
+
 
 class CadqueryView(object):
 
@@ -167,15 +209,22 @@ class CadqueryView(object):
         if shape_mesh is not None or edge_lines is not None:
             self.rendered_shapes.append({"mesh": shape_mesh, "edges": edge_lines})
 
-    def _bbox(self, shapes):
-        compounds = [Compound.makeCompound(shape.objects) for shape in shapes]
-        return Compound.makeCompound(compounds).BoundingBox()
+    # def _bbox(self, shapes):
+    #     compounds = [Compound.makeCompound(shape.objects) for shape in shapes]
+    #     return Compound.makeCompound(compounds).BoundingBox()
 
     def _scale(self, vec):
-        r = self.bb.DiagonalLength * 1.4
+        r = self.bb.max * 2.5
         n = np.linalg.norm(vec)
-        new_vec = (vec / n * r).tolist()
-        return Vector(new_vec).add(self.bb.center).toTuple()
+        new_vec = (vec / n * r) + self.bb.center
+        return new_vec.tolist()
+
+    def _step(self, m):
+        e = round(m+0.5) / 10
+        if e > 1:
+            e = int(e)
+        print(e, (e * 11))
+        return (e, (e * 11))
 
     def _update(self):
         self.controller.exec_three_obj_method('update')
@@ -209,7 +258,7 @@ class CadqueryView(object):
         self.setAxes(change["new"])
 
     def setCenter(self, change):
-        center = (0, 0, 0) if change else self.bb.center.toTuple()
+        center = (0, 0, 0) if change else self.bb.center
         self.grid.position = center
         for i in range(3):
             self.scene.children[i].position = center
@@ -263,14 +312,11 @@ class CadqueryView(object):
                 self._renderShape(shape=shape["shape"].toOCC(),
                                   render_edges=True, shape_color=shape["color"])
 
-        self.bb = self._bbox([shape["shape"] 
-                              for shape in self.shapes
-                              if not is_edge(shape["shape"].toOCC())
-                              ])
+        self.bb = BndBox([shape["shape"] for shape in self.shapes])
         bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
                       abs(self.bb.ymin), abs(self.bb.ymax),
                       abs(self.bb.zmin), abs(self.bb.zmax)))
-        camera_target = self.bb.center.toTuple()
+        camera_target = self.bb.center
         camera_position = self._scale([1, 1, 1])
 
         self.camera = CombinedCamera(position=camera_position,
@@ -281,8 +327,8 @@ class CadqueryView(object):
 
         self.axes = Axes(length=bb_max)
         self.axes.toggleAxes(True)
-        grid_size = math.ceil(self.bb.DiagonalLength)
-        self.grid = GridHelper(grid_size, 10, colorCenterLine='#aaa', colorGrid = '#ddd')
+        self.grid_step, self.grid_size = self._step(self.bb.max)
+        self.grid = GridHelper(2*self.grid_size, 22, colorCenterLine='#aaa', colorGrid = '#ddd')
         self.grid.position = camera_target
 
         key_light = PointLight(position=[-100, 100, 100])
@@ -304,6 +350,8 @@ class CadqueryView(object):
         # needs to be done after setup of camera
         self.grid.rotation = (math.pi / 2.0, 0, 0, "XYZ")
         self.grid.position = (0, 0, 0)
+
+        self.controller.reset()
 
         return self.renderer
 

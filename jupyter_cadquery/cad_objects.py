@@ -5,6 +5,7 @@ from IPython.display import display as idisplay
 
 import cadquery as cq
 from cadquery import Shape, Compound, Workplane
+from OCC.Display.WebGl.jupyter_renderer import bounding_box
 
 from .tree_view import UNSELECTED, SELECTED, EMPTY
 from .cad_display import CadqueryDisplay
@@ -180,4 +181,5 @@ def display(cad_obj,
             ortho=ortho,
             mac_scrollbar=mac_scrollbar)
         d._debug("Rendering done")
+        d._debug("Grid: %5.1f" % d.cq_view.grid_step)
         return v
