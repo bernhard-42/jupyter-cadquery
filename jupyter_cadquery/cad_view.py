@@ -16,7 +16,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import BufferAttribute, BufferGeometry, CombinedCamera, GridHelper, PointLight,\
                           AmbientLight, Scene, OrbitControls, Renderer, Mesh, MeshLambertMaterial,\
-                          LineSegmentsGeometry, LineMaterial, LineSegments2
+                          LineSegmentsGeometry, LineMaterial, LineSegments2, MeshStandardMaterial
 
 from OCC.Core.Visualization import Tesselator
 from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
@@ -68,7 +68,7 @@ class CadqueryView(object):
         return '#%02x%02x%02x' % (r, g, b)
 
     def _material(self, color, transparent=False, opacity=1.0):
-        return MeshLambertMaterial(color=color, transparent=transparent, opacity=opacity)
+        return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity)
 
     def _renderShape(self,
         shape=None,  # the TopoDS_Shape to be displayed
