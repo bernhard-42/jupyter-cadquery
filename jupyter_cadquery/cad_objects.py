@@ -1,10 +1,13 @@
 import os
 import json
 
+from IPython.display import display as idisplay
+
 import cadquery as cq
-from cadquery import Shape, Compound, CQ
+from cadquery import Shape, Compound, Workplane
 
 from .tree_view import UNSELECTED, SELECTED, EMPTY
+from .cad_display import CadqueryDisplay
 
 part_id = 0
 
@@ -31,8 +34,8 @@ class CADObject(object):
     def web_color(self):
         return "rgba(%d, %d, %d, 0.6)" % tuple([c * 255 for c in self.color])
 
-    # def _repr_html_(self):
-    #     display(self)
+    def _ipython_display_(self):
+        idisplay(display(self))
 
 
 class Part(CADObject):
@@ -65,7 +68,10 @@ class Faces(Part):
         super().__init__(shape.combine(), name, color, show_faces, show_edges)
 
     def to_state(self):
-        return {str(self.id): [SELECTED, EMPTY]}
+        return {str(self.id): [SELECTED, SELECTED]}
+
+    def _ipython_display_(self):
+        idisplay(display(self, grid=False, axes=False))
 
 
 class Edges(CADObject):
@@ -89,6 +95,8 @@ class Edges(CADObject):
     def to_state(self):
         return {str(self.id): [EMPTY, SELECTED]}
 
+    def _ipython_display_(self):
+        idisplay(display(self, grid=False, axes=False))
 
 
 class Assembly(CADObject):
@@ -125,20 +133,54 @@ class Assembly(CADObject):
 def is_edges(cadObj):
     return all([isinstance(obj, cq.occ_impl.shapes.Edge) for obj in cadObj.objects])
 
-
 def is_faces(cadObj):
     return all([isinstance(obj, cq.occ_impl.shapes.Face) for obj in cadObj.objects])
 
+def convert(cadObj, show_edges=True, show_faces=True):
+    if isinstance(cadObj, (Assembly, Part, Faces, Edges)):
+        return cadObj
+    elif is_edges(cadObj):
+        return Edges(cadObj, "edges", color=(1, 0, 1))
+    elif is_faces(cadObj):
+        return Faces(cadObj, "faces", color=(1, 0, 1),
+                     show_edges=show_edges, show_faces=show_faces)
+    else:
+        return Part(cadObj, "part", color=(0.1, 0.1, 0.1),
+                    show_edges=show_edges, show_faces=show_faces)
 
-# def repr_html(obj):
-#     """
-#     Jupyter 3D representation support
-#     """
-#     if is_edges(obj):
-#         cadObj = Edges(obj, name="edges", color=(1, 0, 0))
-#     elif is_faces(obj):
-#         cadObj = Faces(obj, name="faces", color=(0, 1, 0))
-#     else:
-#         cadObj = obj
+def display(cad_obj,
+            height=600,
+            tree_width=250,
+            cad_width=800,
+            axes=False,
+            axes0=True,
+            grid=False,
+            ortho=True,
+            mac_scrollbar=True):
 
-#     return display(cadObj)
+    assembly = None
+    if isinstance(cad_obj, Assembly):
+        assembly = cad_obj
+    elif isinstance(cad_obj, Part):
+        assembly = Assembly([convert(cad_obj)])
+    elif is_edges(cad_obj):
+        assembly = Assembly([convert(cad_obj.parent, False, False), convert(cad_obj)])
+    elif is_faces(cad_obj):
+        assembly = Assembly([convert(cad_obj.parent, False, False), convert(cad_obj)])
+    elif isinstance(cad_obj, Workplane):
+        assembly = Assembly([convert(cad_obj)])
+
+    if assembly is not None:
+        d = CadqueryDisplay()
+        v = d.display(
+            assembly=assembly,
+            height=height,
+            tree_width=tree_width,
+            cad_width=cad_width,
+            axes=axes,
+            axes0=axes0,
+            grid=grid,
+            ortho=ortho,
+            mac_scrollbar=mac_scrollbar)
+        d._debug("Rendering done")
+        return v

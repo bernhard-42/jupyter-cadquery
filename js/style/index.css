@@ -28,8 +28,39 @@
     overflow-y: visible;
 }
 
+.view_renderer {
+    border: 1px solid #ddd;
+}
+
+.view_output {
+    border: 1px solid #ddd;
+    margin: 2px 2px 1px 1px;
+}
+
+.view_tree {
+    border: 1px solid #ddd;
+    margin: 1px 2px 1px 1px;
+}
+
+.view_axes {
+    width: 60px !important;
+}
+
+.view_zero {
+    width: 55px !important;
+}
+
+.view_grid {
+    width: 56px !important;
+}
+
+.view_ortho {
+    width: 64px !important;
+}
+
+
 .view_button {
-    padding: 0px;
+    padding: 0px !important;
 }
 
 .node_entry {

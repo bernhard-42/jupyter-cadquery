@@ -14,15 +14,14 @@ from IPython.display import display
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from pythreejs import BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, CombinedCamera,\
-                          AxesHelper, GridHelper, PointLight, AmbientLight, Scene, OrbitControls, Renderer,\
-                          Mesh, MeshLambertMaterial, LineSegmentsGeometry, LineMaterial, LineSegments2
+    from pythreejs import BufferAttribute, BufferGeometry, CombinedCamera, GridHelper, PointLight,\
+                          AmbientLight, Scene, OrbitControls, Renderer, Mesh, MeshLambertMaterial,\
+                          LineSegmentsGeometry, LineMaterial, LineSegments2
+
+from OCC.Core.Visualization import Tesselator
+from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
 
 from cadquery import Compound, Vector
-from OCC.Core.Bnd import Bnd_Box
-from OCC.Core.BRepBndLib import brepbndlib_Add
-from OCC.Core.Visualization import Tesselator
-from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, is_wire, discretize_edge, discretize_wire
 
 from .tree_view import state_diff
 
@@ -185,6 +184,9 @@ class CadqueryView(object):
     # UI Handler
 
     def changeView(self, typ, directions):
+        def reset(b):
+            self.controller.reset()
+
         def refit(b):
             self.camera.zoom = 1.0
             self._update()
@@ -195,6 +197,8 @@ class CadqueryView(object):
 
         if typ == "fit":
             return refit
+        elif typ == "reset":
+            return reset
         else:
             return change
 
@@ -204,13 +208,14 @@ class CadqueryView(object):
     def toggleAxes(self, change):
         self.setAxes(change["new"])
 
-    def setAxesCenter(self, change):
+    def setCenter(self, change):
         center = (0, 0, 0) if change else self.bb.center.toTuple()
+        self.grid.position = center
         for i in range(3):
             self.scene.children[i].position = center
 
-    def toggleAxesCenter(self, change):
-        self.setAxesCenter(change["new"])
+    def toggleCenter(self, change):
+        self.setCenter(change["new"])
 
     def setGrid(self, change):
         self.grid.visible = change
@@ -252,9 +257,11 @@ class CadqueryView(object):
                 edges = [edge.wrapped
                          for edge in shape["shape"].objects
                          if TopologyExplorer(edge.wrapped).number_of_vertices() >= 2 ]
-                self._renderShape(edges=edges, render_edges=True, edge_color=shape["color"], edge_width=3)
+                self._renderShape(edges=edges,
+                                  render_edges=True, edge_color=shape["color"], edge_width=3)
             else:
-                self._renderShape(shape=shape["shape"].toOCC(), render_edges=True, shape_color=shape["color"])
+                self._renderShape(shape=shape["shape"].toOCC(),
+                                  render_edges=True, shape_color=shape["color"])
 
         self.bb = self._bbox([shape["shape"] for shape in self.shapes])
         bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
@@ -271,9 +278,8 @@ class CadqueryView(object):
 
         self.axes = Axes(length=bb_max)
         self.axes.toggleAxes(True)
-        grid_size = math.ceil(self.bb.DiagonalLength * 0.8)
+        grid_size = math.ceil(self.bb.DiagonalLength)
         self.grid = GridHelper(grid_size, 10, colorCenterLine='#aaa', colorGrid = '#ddd')
-        self.grid.rotation = (math.pi / 2.0, 0, 0, "XYZ")
         self.grid.position = camera_target
 
         key_light = PointLight(position=[-100, 100, 100])
@@ -292,7 +298,12 @@ class CadqueryView(object):
 
         self.camera.position = self._scale(self.camera.position)
 
+        # needs to be done after setup of camera
+        self.grid.rotation = (math.pi / 2.0, 0, 0, "XYZ")
+        self.grid.position = (0, 0, 0)
+
         return self.renderer
+
 
 class Axes(object):
     def __init__(self, origin=None, length=1, width=3):

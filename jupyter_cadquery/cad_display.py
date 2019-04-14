@@ -1,17 +1,19 @@
 import numpy as np
 from os.path import join, dirname
 
-from ipywidgets import ToggleButton, Button, Checkbox, Layout, HBox, VBox, Output
+from ipywidgets import ToggleButton, Button, Checkbox, Layout, HBox, VBox, Output, Box
+
+from cadquery import Workplane
 
 from .image_button import ImageButton
 from .tree_view import TreeView, state_diff, UNSELECTED, SELECTED, MIXED, EMPTY
 from .cad_view import CadqueryView
-from .cad_objects import Assembly, Part, Edges, Faces, is_edges, is_faces
+import jupyter_cadquery as jcq # break import circle
 
 
 class CadqueryDisplay(object):
 
-    types = ["fit", "isometric", "right", "front", "left", "rear", "top", "bottom"]
+    types = ["reset", "fit", "isometric", "right", "front", "left", "rear", "top", "bottom"]
     directions = {
         "left":      ( 1,  0,  0),
         "right":     (-1,  0,  0),
@@ -23,6 +25,7 @@ class CadqueryDisplay(object):
     }
 
     def __init__(self):
+        super().__init__()
         self.output = None
         self.cq_view = None
         self.assembly = None
@@ -51,17 +54,10 @@ class CadqueryDisplay(object):
         button.add_class("view_button")
         return button
 
-    def create_checkbox(self, ind, description, value, handler):
-        if ind == 0:
-            width = "65px"
-        elif ind == 1:
-            width = "50px"
-        elif ind == 3:
-            width = "75px"
-        else:
-            width = "70px"
-        checkbox = Checkbox(value=value, description=description, indent=False, layout=Layout(width=width))
+    def create_checkbox(self, kind, description, value, handler):
+        checkbox = Checkbox(value=value, description=description, indent=False)
         checkbox.observe(handler, "value")
+        checkbox.add_class("view_%s" % kind)
         return checkbox
 
     def _debug(self, *msg):
@@ -70,7 +66,7 @@ class CadqueryDisplay(object):
 
     def addAssembly(self, cad_obj):
         result = {}
-        if isinstance(cad_obj, Assembly):
+        if isinstance(cad_obj, jcq.Assembly):
             for obj in cad_obj.objects:
                 result.update(self.addAssembly(obj))
         else:
@@ -78,7 +74,7 @@ class CadqueryDisplay(object):
             result.update(cad_obj.to_state())
         return result
 
-    def display(self, assembly, height=600, tree_width=250, out_width=600, cad_width=600,
+    def display(self, assembly, height=600, tree_width=250, cad_width=800,
                 axes=True, axes0=True, grid=True, ortho=True, mac_scrollbar=True):
         self.assembly = assembly
 
@@ -87,17 +83,22 @@ class CadqueryDisplay(object):
         tree = assembly.to_nav_dict()
         states = self.addAssembly(assembly)
         renderer = self.cq_view.render()
+        renderer.add_class("view_renderer")
 
         # Output widget
-        self.output = Output(layout=Layout(height="%dpx"%height, width="%dpx"%out_width,
+        self.output = Output(layout=Layout(height="%dpx" % (height*0.4), width="%dpx" % tree_width,
                               overflow_y="scroll", overflow_x="scroll"))
+        self.output.add_class("view_output")
+
         if mac_scrollbar:
             self.output.add_class("mac-scrollbar")
 
         # Tree widget to change visibility
         tree_view = TreeView(image_paths=self.image_paths, tree=tree, state=states,
-                             layout=Layout(height="%dpx"%height, width="%dpx"%tree_width,
+                             layout=Layout(height="%dpx" % (height*0.6), width="%dpx" % tree_width,
                              overflow_y="scroll", overflow_x="scroll"))
+        tree_view.add_class("view_tree")
+
         if mac_scrollbar:
             tree_view.add_class("mac-scrollbar")
 
@@ -111,10 +112,10 @@ class CadqueryDisplay(object):
 
         # Check controls to swith orto, grid and axis
         check_controls = [
-            self.create_checkbox(0, "Axes (", axes, self.cq_view.toggleAxes),
-            self.create_checkbox(1, "0)", axes0, self.cq_view.toggleAxesCenter),
-            self.create_checkbox(2, "Grid", grid, self.cq_view.toggleGrid),
-            self.create_checkbox(3, "Ortho", ortho, self.cq_view.toggleOrtho)
+            self.create_checkbox("axes",  "Axes",   axes,  self.cq_view.toggleAxes),
+            self.create_checkbox("grid",  "Grid",   grid,  self.cq_view.toggleGrid),
+            self.create_checkbox("zero",  "@ 0",    axes0, self.cq_view.toggleCenter),
+            self.create_checkbox("ortho", "Ortho",  ortho, self.cq_view.toggleOrtho)
         ]
         if not ortho:
             self.cq_view.setOrtho(ortho)
@@ -123,55 +124,19 @@ class CadqueryDisplay(object):
             self.cq_view.setAxes(axes)
 
         if not axes0:
-            self.cq_view.setAxesCenter(axes0)
+            self.cq_view.setCenter(axes0)
 
         if not grid:
             self.cq_view.setGrid(grid)
-        self.x = check_controls
+
         # Buttons to switch camera position
         view_controls = []
         for typ in CadqueryDisplay.types:
             button = self.create_button(typ, self.cq_view.changeView(typ, CadqueryDisplay.directions))
             view_controls.append(button)
 
-        return HBox([VBox([HBox(check_controls), tree_view]),
-                     VBox([HBox(view_controls), renderer]), self.output])
+        return HBox([VBox([HBox(check_controls),
+                        tree_view,
+                        self.output]),
+                 VBox([HBox(view_controls), renderer])])
 
-
-def convert(cadObj):
-    if isinstance(cadObj, (Assembly, Part, Faces, Edges)):
-        return cadObj
-    elif is_edges(cadObj):
-        return Edges(cadObj, "edges", color=(1, 0, 1))
-    elif is_faces(cadObj):
-        return Faces(cadObj, "faces", color=(1, 0, 1))
-    else:
-        return Part(cadObj, "part", color=(0.1, 0.1, 0.1), show_edges=False)
-
-
-def display(cad_obj, height=600, tree_width=250, out_width=600, cad_width=600,
-            axes=True, axes0=True, grid=True, ortho=True, mac_scrollbar=True):
-
-    assembly = None
-    if isinstance(cad_obj, Assembly):
-        assembly = cad_obj
-    elif isinstance(cad_obj, Part):
-        assembly = Assembly([convert(cad_obj)])
-    elif is_edges(cad_obj):
-        assembly = Assembly([convert(cad_obj.parent), convert(cad_obj)])
-    elif is_faces(cad_obj):
-        assembly = Assembly([convert(cad_obj.parent), convert(cad_obj)])
-
-    if assembly is not None:
-        d = CadqueryDisplay()
-        return d.display(
-            assembly=assembly,
-            height=height,
-            tree_width=tree_width,
-            out_width=out_width,
-            cad_width=cad_width,
-            axes=axes,
-            axes0=axes0,
-            grid=grid,
-            ortho=ortho,
-            mac_scrollbar=mac_scrollbar)
