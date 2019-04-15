@@ -61,8 +61,11 @@ class CadqueryDisplay(object):
         return checkbox
 
     def _debug(self, *msg):
-        with self.output:
-            print(*msg)
+        try:
+            with self.output:
+                print(*msg)
+        except:
+            print(msg)
 
     def addAssembly(self, cad_obj):
         result = {}

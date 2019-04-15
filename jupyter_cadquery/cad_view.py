@@ -43,6 +43,54 @@ def flatten(nested_list):
 
 
 from functools import reduce
+import math
+
+
+# https://stackoverflow.com/questions/4947682/intelligently-calculating-chart-tick-positions
+
+def nice_number(value, round_=False):
+    '''nice_number(value, round_=False) -> float'''
+    exponent = math.floor(math.log(value, 10))
+    fraction = value / 10**exponent
+
+    if round_:
+        if fraction < 1.5:
+            nice_fraction = 1.
+        elif fraction < 3.:
+            nice_fraction = 2.
+        elif fraction < 7.:
+            nice_fraction = 5.
+        else:
+            niceFraction = 10.
+    else:
+        if fraction <= 1:
+            nice_fraction = 1.
+        elif fraction <= 2:
+            nice_fraction = 2.
+        elif fraction <= 5:
+            nice_fraction = 5.
+        else:
+            nice_fraction = 10.
+
+    return nice_fraction * 10**exponent
+
+def nice_bounds(axis_start, axis_end, num_ticks=10):
+    '''
+    nice_bounds(axis_start, axis_end, num_ticks=10) -> tuple
+    @return: tuple as (nice_axis_start, nice_axis_end, nice_tick_width)
+    '''
+    axis_width = axis_end - axis_start
+    if axis_width == 0:
+        nice_tick = 0
+    else:
+        nice_range = nice_number(axis_width)
+        nice_tick = nice_number(nice_range / (num_ticks - 1), round_=True)
+        axis_start = math.floor(axis_start / nice_tick) * nice_tick
+        axis_end = math.ceil(axis_end / nice_tick) * nice_tick
+
+    return axis_start, axis_end, nice_tick
+
+
 
 class BndBox(object):
     def __init__(self, shapes):
@@ -78,7 +126,9 @@ class BndBox(object):
         return bb
 
     def __repr__(self):
-        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)
+        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % (self.xmin, self.xmax,
+                                                            self.ymin, self.ymax,
+                                                            self.zmin, self.zmax)
 
 
 class CadqueryView(object):
@@ -105,6 +155,8 @@ class CadqueryView(object):
         self.scene = None
         self.controller = None
         self.renderer = None
+
+        self.savestate = None
 
     def _format_color(self, r, g, b):
         return '#%02x%02x%02x' % (r, g, b)
@@ -209,32 +261,27 @@ class CadqueryView(object):
         if shape_mesh is not None or edge_lines is not None:
             self.rendered_shapes.append({"mesh": shape_mesh, "edges": edge_lines})
 
-    # def _bbox(self, shapes):
-    #     compounds = [Compound.makeCompound(shape.objects) for shape in shapes]
-    #     return Compound.makeCompound(compounds).BoundingBox()
-
     def _scale(self, vec):
         r = self.bb.max * 2.5
         n = np.linalg.norm(vec)
         new_vec = (vec / n * r) + self.bb.center
         return new_vec.tolist()
 
-    def _step(self, m):
-        e = round(m+0.5) / 10
-        if e > 1:
-            e = int(e)
-        print(e, (e * 11))
-        return (e, (e * 11))
-
     def _update(self):
         self.controller.exec_three_obj_method('update')
         pass
+
+    def _reset(self):
+        self.camera.rotation, self.controller.target = self.savestate
+        self.camera.position = self._scale((1,1,1))
+        self.camera.zoom = 1.0
+        self._update()
 
     # UI Handler
 
     def changeView(self, typ, directions):
         def reset(b):
-            self.controller.reset()
+            self._reset()
 
         def refit(b):
             self.camera.zoom = 1.0
@@ -327,8 +374,12 @@ class CadqueryView(object):
 
         self.axes = Axes(length=bb_max)
         self.axes.toggleAxes(True)
-        self.grid_step, self.grid_size = self._step(self.bb.max)
-        self.grid = GridHelper(2*self.grid_size, 22, colorCenterLine='#aaa', colorGrid = '#ddd')
+
+        axis_start, axis_end, nice_tick = nice_bounds(-self.bb.max, self.bb.max, 20)
+        self.grid_step = nice_tick
+        self.grid_size = axis_end - axis_start
+        self.grid = GridHelper(self.grid_size, int(self.grid_size/self.grid_step),
+                               colorCenterLine='#aaa', colorGrid='#ddd')
         self.grid.position = camera_target
 
         key_light = PointLight(position=[-100, 100, 100])
@@ -351,7 +402,13 @@ class CadqueryView(object):
         self.grid.rotation = (math.pi / 2.0, 0, 0, "XYZ")
         self.grid.position = (0, 0, 0)
 
-        self.controller.reset()
+        self.savestate = (self.camera.rotation, self.controller.target)
+
+        # Workaround: Zoom forth and back to update frame. Sometimes necessary :( 
+        self.camera.zoom = 1.01
+        self._update()
+        self.camera.zoom = 1.0
+        self._update()
 
         return self.renderer
 
