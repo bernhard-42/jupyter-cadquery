@@ -61,7 +61,7 @@ def nice_number(value, round_=False):
         elif fraction < 7.:
             nice_fraction = 5.
         else:
-            niceFraction = 10.
+            nice_fraction = 10.
     else:
         if fraction <= 1:
             nice_fraction = 1.
