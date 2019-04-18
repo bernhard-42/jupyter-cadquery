@@ -14,9 +14,6 @@ from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
 from .tree_view import state_diff
 from .cad_helpers import Grid, Axes, BoundingBox
 
-SERVER_SIDE = 1
-CLIENT_SIDE = 2
-
 
 def _decomp(a):
     [item] = a.items()
@@ -39,7 +36,6 @@ class CadqueryView(object):
         self.render_edges = render_edges
         self._debug = debug
 
-        self._compute_normals_mode = SERVER_SIDE
         self.features = ["mesh", "edges"]
 
         self.default_mesh_color = self._format_color(166, 166, 166)
@@ -67,20 +63,9 @@ class CadqueryView(object):
     def _material(self, color, transparent=False, opacity=1.0):
         return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity)
 
-    def _render_shape(
-            self,
-            shape_index,  # index in self.shapes
-            shape=None,  # the TopoDS_Shape to be displayed
-            edges=None,  # or the edges to be displayed 
-            mesh_color=None,
-            render_edges=False,
-            edge_color=None,
-            edge_width=1,
-            deflection=0.05,
-            compute_uv_coords=False,
-            quality=1.0,
-            transparent=True,
-            opacity=0.6):
+    def _render_shape(self, shape_index, shape=None, edges=None,
+                      mesh_color=None, edge_color=None, render_edges=False,
+                      edge_width=1, deflection=0.05, quality=1.0, transparent=True, opacity=0.8):
 
         edge_list = None
         edge_lines = None
@@ -93,7 +78,7 @@ class CadqueryView(object):
 
             # first, compute the tesselation
             tess = Tesselator(shape)
-            tess.Compute(uv_coords=compute_uv_coords, compute_edges=render_edges, mesh_quality=quality, parallel=True)
+            tess.Compute(uv_coords=False, compute_edges=render_edges, mesh_quality=quality, parallel=True)
 
             # get vertices and normals
             vertices_position = tess.GetVerticesPositionAsTuple()
@@ -113,32 +98,22 @@ class CadqueryView(object):
             # Note: np_faces is just [0, 1, 2, 3, 4, 5, ...], thus arange is used
             np_faces = np.arange(np_vertices.shape[0], dtype='uint32')
 
-            # set geometry properties
-            buffer_geometry_properties = {'position': BufferAttribute(np_vertices), 'index': BufferAttribute(np_faces)}
-            if self._compute_normals_mode == SERVER_SIDE:
-                # get the normal list, converts to a numpy ndarray. This should not raise
-                # any issue, since normals have been computed by the server, and are available
-                # as a list of floats
-                np_normals = np.array(tess.GetNormalsAsTuple(), dtype='float32').reshape(-1, 3)
-                # quick check
-                if np_normals.shape != np_vertices.shape:
-                    raise AssertionError("Wrong number of normals/shapes")
-                buffer_geometry_properties['normal'] = BufferAttribute(np_normals)
+            # compute normals
+            np_normals = np.array(tess.GetNormalsAsTuple(), dtype='float32').reshape(-1, 3)
+            if np_normals.shape != np_vertices.shape:
+                raise AssertionError("Wrong number of normals/shapes")
 
             # build a BufferGeometry instance
-            shape_geometry = BufferGeometry(attributes=buffer_geometry_properties)
+            shape_geometry = BufferGeometry(
+                attributes={
+                    'position': BufferAttribute(np_vertices),
+                    'index': BufferAttribute(np_faces),
+                    'normal': BufferAttribute(np_normals)
+                })
 
-            # if the client has to render normals, add the related js instructions
-            if self._compute_normals_mode == CLIENT_SIDE:
-                shape_geometry.exec_three_obj_method('computeVertexNormals')
-
-            # then a default material
             shp_material = self._material(mesh_color, transparent, opacity)
 
-            # finally create the mash
             shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name="mesh_%d" % shape_index)
-
-            # edge rendering, if set to True
 
             if render_edges:
                 edge_list = list(
@@ -287,7 +262,7 @@ class CadqueryView(object):
         bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
                       abs(self.bb.ymin), abs(self.bb.ymax),
                       abs(self.bb.zmin), abs(self.bb.zmax)))
-        
+
         # Set up camera
         camera_target = self.bb.center
         camera_position = self._scale([1, 1, 1])
