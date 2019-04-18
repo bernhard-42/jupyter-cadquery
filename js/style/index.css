@@ -119,3 +119,8 @@
     padding-left: 2px;
     font-size: 14px;
 }
+
+.scroll_down {
+    display: flex;
+    flex-direction: column-reverse;
+}

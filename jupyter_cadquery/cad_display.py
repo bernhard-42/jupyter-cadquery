@@ -62,18 +62,18 @@ class CadqueryDisplay(object):
 
     def _debug(self, *msg):
         try:
-            with self.output:
-                print(*msg)
+            self.output.append_stdout("".join([str(m) for m in msg]))
+            self.output.append_stdout("\n")
         except:
             print(msg)
 
-    def addAssembly(self, cad_obj):
+    def add_assembly(self, cad_obj):
         result = {}
         if isinstance(cad_obj, jcq.Assembly):
             for obj in cad_obj.objects:
-                result.update(self.addAssembly(obj))
+                result.update(self.add_assembly(obj))
         else:
-            self.cq_view.addShape(cad_obj.shape, cad_obj.web_color())
+            self.cq_view.add_shape(cad_obj.name, cad_obj.shape, cad_obj.web_color())
             result.update(cad_obj.to_state())
         return result
 
@@ -84,7 +84,7 @@ class CadqueryDisplay(object):
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(width=cad_width, height=height, debug=self._debug)
         tree = assembly.to_nav_dict()
-        states = self.addAssembly(assembly)
+        states = self.add_assembly(assembly)
         renderer = self.cq_view.render()
         renderer.add_class("view_renderer")
 
@@ -92,7 +92,8 @@ class CadqueryDisplay(object):
         self.output = Output(layout=Layout(height="%dpx" % (height*0.4), width="%dpx" % tree_width,
                               overflow_y="scroll", overflow_x="scroll"))
         self.output.add_class("view_output")
-
+        self.output.add_class("scroll_down")
+        
         if mac_scrollbar:
             self.output.add_class("mac-scrollbar")
 
@@ -106,40 +107,39 @@ class CadqueryDisplay(object):
             tree_view.add_class("mac-scrollbar")
 
         mapping = assembly.obj_mapping()
-        tree_view.observe(self.cq_view.changeVisibility(mapping), "state")
+        tree_view.observe(self.cq_view.change_visibility(mapping), "state")
 
         # Set initial state
         for obj, vals in states.items():
             for i, val in enumerate(vals):
-                self.cq_view.setVisibility(mapping[obj], i, val)
+                self.cq_view.set_visibility(mapping[obj], i, val)
 
         # Check controls to swith orto, grid and axis
         check_controls = [
-            self.create_checkbox("axes",  "Axes",   axes,  self.cq_view.toggleAxes),
-            self.create_checkbox("grid",  "Grid",   grid,  self.cq_view.toggleGrid),
-            self.create_checkbox("zero",  "@ 0",    axes0, self.cq_view.toggleCenter),
-            self.create_checkbox("ortho", "Ortho",  ortho, self.cq_view.toggleOrtho)
+            self.create_checkbox("axes",  "Axes",   axes,  self.cq_view.toggle_axes),
+            self.create_checkbox("grid",  "Grid",   grid,  self.cq_view.toggle_grid),
+            self.create_checkbox("zero",  "@ 0",    axes0, self.cq_view.toggle_center),
+            self.create_checkbox("ortho", "Ortho",  ortho, self.cq_view.toggle_ortho)
         ]
         if not ortho:
-            self.cq_view.setOrtho(ortho)
+            self.cq_view.set_ortho(ortho)
 
         if not axes:
-            self.cq_view.setAxes(axes)
+            self.cq_view.set_axes(axes)
 
         if not axes0:
-            self.cq_view.setCenter(axes0)
+            self.cq_view.set_center(axes0)
 
         if not grid:
-            self.cq_view.setGrid(grid)
+            self.cq_view.set_grid(grid)
 
         # Buttons to switch camera position
         view_controls = []
         for typ in CadqueryDisplay.types:
-            button = self.create_button(typ, self.cq_view.changeView(typ, CadqueryDisplay.directions))
+            button = self.create_button(typ, self.cq_view.change_view(typ, CadqueryDisplay.directions))
             view_controls.append(button)
 
         return HBox([VBox([HBox(check_controls),
                         tree_view,
                         self.output]),
                  VBox([HBox(view_controls), renderer])])
-

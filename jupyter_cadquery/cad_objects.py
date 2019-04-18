@@ -181,5 +181,5 @@ def display(cad_obj,
             ortho=ortho,
             mac_scrollbar=mac_scrollbar)
         d._debug("Rendering done")
-        d._debug("Grid: %5.1f" % d.cq_view.grid_step)
+        d._debug("Grid: %5.1f" % d.cq_view.grid.step)
         return v

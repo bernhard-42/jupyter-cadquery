@@ -6,6 +6,7 @@ import math
 import operator
 import sys
 import uuid
+import time
 
 import numpy as np
 
@@ -16,7 +17,8 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import BufferAttribute, BufferGeometry, CombinedCamera, GridHelper, PointLight,\
                           AmbientLight, Scene, OrbitControls, Renderer, Mesh, MeshLambertMaterial,\
-                          LineSegmentsGeometry, LineMaterial, LineSegments2, MeshStandardMaterial
+                          LineSegmentsGeometry, LineMaterial, LineSegments2, MeshStandardMaterial,\
+                          Picker, Group
 
 from OCC.Core.Visualization import Tesselator
 from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
@@ -46,54 +48,82 @@ from functools import reduce
 import math
 
 
-# https://stackoverflow.com/questions/4947682/intelligently-calculating-chart-tick-positions
+class Grid(object):
 
-def nice_number(value, round_=False):
-    '''nice_number(value, round_=False) -> float'''
-    exponent = math.floor(math.log(value, 10))
-    fraction = value / 10**exponent
+    def __init__(self, maximum, ticks=10, colorCenterLine='#aaa', colorGrid='#ddd'):
+        axis_start, axis_end, nice_tick = self.nice_bounds(-maximum, maximum, 2*ticks)
+        self.step = nice_tick
+        self.size = axis_end - axis_start
+        self.grid = GridHelper(self.size, int(self.size/self.step),
+                               colorCenterLine=colorCenterLine, colorGrid=colorGrid)
 
-    if round_:
-        if fraction < 1.5:
-            nice_fraction = 1.
-        elif fraction < 3.:
-            nice_fraction = 2.
-        elif fraction < 7.:
-            nice_fraction = 5.
+    def set_position(self, position):
+        self.grid.position = position
+
+    def  set_rotation(self, rotation):
+        self.grid.rotation = rotation
+
+    def set_visiblility(self, change):
+        self.grid.visible = change
+
+    # https://stackoverflow.com/questions/4947682/intelligently-calculating-chart-tick-positions
+    def _nice_number(self, value, round_=False):
+        exponent = math.floor(math.log(value, 10))
+        fraction = value / 10**exponent
+
+        if round_:
+            if fraction < 1.5:  nice_fraction = 1.
+            elif fraction < 3.: nice_fraction = 2.
+            elif fraction < 7.: nice_fraction = 5.
+            else:               nice_fraction = 10.
         else:
-            nice_fraction = 10.
-    else:
-        if fraction <= 1:
-            nice_fraction = 1.
-        elif fraction <= 2:
-            nice_fraction = 2.
-        elif fraction <= 5:
-            nice_fraction = 5.
+            if fraction <= 1:   nice_fraction = 1.
+            elif fraction <= 2: nice_fraction = 2.
+            elif fraction <= 5: nice_fraction = 5.
+            else:               nice_fraction = 10.
+
+        return nice_fraction * 10**exponent
+
+    def nice_bounds(self, axis_start, axis_end, num_ticks=10):
+        axis_width = axis_end - axis_start
+        if axis_width == 0:
+            nice_tick = 0
         else:
-            nice_fraction = 10.
+            nice_range = self._nice_number(axis_width)
+            nice_tick = self._nice_number(nice_range / (num_ticks - 1), round_=True)
+            axis_start = math.floor(axis_start / nice_tick) * nice_tick
+            axis_end = math.ceil(axis_end / nice_tick) * nice_tick
 
-    return nice_fraction * 10**exponent
+        return axis_start, axis_end, nice_tick
 
-def nice_bounds(axis_start, axis_end, num_ticks=10):
-    '''
-    nice_bounds(axis_start, axis_end, num_ticks=10) -> tuple
-    @return: tuple as (nice_axis_start, nice_axis_end, nice_tick_width)
-    '''
-    axis_width = axis_end - axis_start
-    if axis_width == 0:
-        nice_tick = 0
-    else:
-        nice_range = nice_number(axis_width)
-        nice_tick = nice_number(nice_range / (num_ticks - 1), round_=True)
-        axis_start = math.floor(axis_start / nice_tick) * nice_tick
-        axis_end = math.ceil(axis_end / nice_tick) * nice_tick
 
-    return axis_start, axis_end, nice_tick
+class Axes(object):
 
+    def __init__(self, origin=None, length=1, width=3):
+        if origin is None:
+            origin = (0, 0, 0)
+        x = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [length, 0, 0])]])
+        y = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [0, length, 0])]])
+        z = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [0, 0, length])]])
+
+        mx = LineMaterial(linewidth=width, color='red')
+        my = LineMaterial(linewidth=width, color='green')
+        mz = LineMaterial(linewidth=width, color='blue')
+
+        self.axes = [LineSegments2(x, mx), LineSegments2(y, my), LineSegments2(z, mz)]
+
+    def _shift(self, v, offset):
+        return [x + o for x, o in zip(v, offset)]
+
+    def toggleAxes(self, change):
+        for i in range(3):
+            self.axes[i].visible = change
 
 
 class BndBox(object):
-    def __init__(self, shapes):
+
+    def __init__(self, shapes, tol=1e-5):
+        self.tol = tol
         _bbox = reduce(self._opt, [self.bbox(shape) for shape in shapes])
         self.xmin = _bbox[0]
         self.xmax = _bbox[1]
@@ -116,7 +146,7 @@ class BndBox(object):
 
     def _bounding_box(self, obj, tol=1e-5):
         bbox = Bnd_Box()
-        bbox.SetGap(tol)
+        bbox.SetGap(self.tol)
         brepbndlib_Add(obj, bbox, True)
         values = bbox.Get()
         return (values[0], values[3], values[1], values[4], values[2], values[5])
@@ -134,20 +164,25 @@ class BndBox(object):
 class CadqueryView(object):
 
     def __init__(self, width=600, height=400, render_edges=True, debug=None):
-        self._compute_normals_mode = SERVER_SIDE
-        self.features = ["mesh", "edges"]
-        self.default_shape_color = self._format_color(166, 166, 166)
-        self.default_mesh_color = 'white'
-        self.default_edge_color = self._format_color(0, 0, 0)
-        self.default_selection_material = self._material('orange')
-        self._debug = debug
-
         self.width = width
         self.height = height
         self.render_edges = render_edges
+        self._debug = debug
+
+        self._compute_normals_mode = SERVER_SIDE
+        self.features = ["mesh", "edges"]
+
+        self.default_shape_color = self._format_color(166, 166, 166)
+        self.pick_color = self._format_color(232, 176, 36)
+        self.default_mesh_color = 'white'
+        self.default_edge_color = self._format_color(0, 0, 0)
+        self.default_selection_material = self._material('orange')
 
         self.shapes = []
-        self.rendered_shapes = []
+        self.pickable_objects = Group()
+        self.pick_last_mesh = None
+        self.pick_last_mesh_color = None
+        self.mash_edges_mapping = []
 
         self.camera = None
         self.axes = None
@@ -164,7 +199,8 @@ class CadqueryView(object):
     def _material(self, color, transparent=False, opacity=1.0):
         return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity)
 
-    def _renderShape(self,
+    def _render_shape(self,
+        shape_index, # index in self.shapes
         shape=None,  # the TopoDS_Shape to be displayed
         edges=None,  # or the edges to be displayed 
         shape_color=None,
@@ -234,11 +270,8 @@ class CadqueryView(object):
             # then a default material
             shp_material = self._material(shape_color, transparent, opacity)
 
-            # create a mesh unique id
-            mesh_id = uuid.uuid4().hex
-
             # finally create the mash
-            shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name=mesh_id)
+            shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name="mesh_%d" % shape_index)
 
             # edge rendering, if set to True
 
@@ -256,10 +289,19 @@ class CadqueryView(object):
             edge_list = flatten(list(map(explode, edge_list)))
             lines = LineSegmentsGeometry(positions=edge_list)
             mat = LineMaterial(linewidth=edge_width, color=edge_color)
-            edge_lines = LineSegments2(lines, mat)
+            edge_lines = LineSegments2(lines, mat, name="edges_%d" % shape_index)
 
         if shape_mesh is not None or edge_lines is not None:
-            self.rendered_shapes.append({"mesh": shape_mesh, "edges": edge_lines})
+            index_mapping = {"mesh": None, "edges": None, "shape": shape_index}
+            if shape_mesh is not None:
+                ind = len(self.pickable_objects.children)
+                self.pickable_objects.add(shape_mesh)
+                index_mapping["mesh"] = ind
+            if edge_lines is not None:
+                ind = len(self.pickable_objects.children)
+                self.pickable_objects.add(edge_lines)
+                index_mapping["edges"] = ind
+            self.mash_edges_mapping.append(index_mapping)
 
     def _scale(self, vec):
         r = self.bb.max * 2.5
@@ -279,7 +321,7 @@ class CadqueryView(object):
 
     # UI Handler
 
-    def changeView(self, typ, directions):
+    def change_view(self, typ, directions):
         def reset(b):
             self._reset()
 
@@ -298,53 +340,74 @@ class CadqueryView(object):
         else:
             return change
 
-    def setAxes(self, change):
+    def set_axes(self, change):
         self.axes.toggleAxes(change)
 
-    def toggleAxes(self, change):
-        self.setAxes(change["new"])
+    def toggle_axes(self, change):
+        self.set_axes(change["new"])
 
-    def setCenter(self, change):
+    def set_center(self, change):
         center = (0, 0, 0) if change else self.bb.center
-        self.grid.position = center
+        self.grid.set_position(center)
         for i in range(3):
             self.scene.children[i].position = center
 
-    def toggleCenter(self, change):
-        self.setCenter(change["new"])
+    def toggle_center(self, change):
+        self.set_center(change["new"])
 
-    def setGrid(self, change):
-        self.grid.visible = change
+    def set_grid(self, change):
+        self.grid.set_visiblility(change)
 
-    def toggleGrid(self, change):
-        self.setGrid(change["new"])
+    def toggle_grid(self, change):
+        self.set_grid(change["new"])
 
-    def setOrtho(self, change):
+    def set_ortho(self, change):
         self.camera.mode = 'orthographic' if change else 'perspective'
 
-    def toggleOrtho(self, change):
-        self.setOrtho(change["new"])
+    def toggle_ortho(self, change):
+        self.set_ortho(change["new"])
 
-    def setVisibility(self, ind, i, state):
+    def set_visibility(self, ind, i, state):
         feature = self.features[i]
-        if self.rendered_shapes[ind][feature] is not None:
-            self.rendered_shapes[ind][feature].visible = (state == 1)
+        group_index = self.mash_edges_mapping[ind][feature]
+        if  group_index is not None:
+            self.pickable_objects.children[group_index].visible = (state == 1)
 
-    def changeVisibility(self, mapping):
+    def change_visibility(self, mapping):
         def f(states):
             diffs = state_diff(states.get("old"), states.get("new"))
             for diff in diffs:
                 obj, val = _decomp(diff)
-                self.setVisibility(mapping[obj], val["icon"], val["new"])
+                self.set_visibility(mapping[obj], val["icon"], val["new"])
         return f
+
+    def pick(self, value):
+        if self.pick_last_mesh != value.owner.object:
+            # Reset
+            if value.owner.object is None or self.pick_last_mesh is not None:
+                self.pick_last_mesh.material.color = self.pick_last_mesh_color
+                self.pick_last_mesh = None
+                self.pick_last_mesh_color = None
+            # Change mesh
+            if isinstance(value.owner.object, Mesh):
+                _, ind = value.owner.object.name.split("_")
+                shape = self.shapes[int(ind)]
+                bbox = BndBox([shape["shape"]])
+                self._debug("\n%s:" % shape["name"])
+                self._debug(" x~[%5.2f,%5.2f] ~ %5.2f" % (bbox.xmin, bbox.xmax, bbox.xsize))
+                self._debug(" y~[%5.2f,%5.2f] ~ %5.2f" % (bbox.ymin, bbox.ymax, bbox.ysize))
+                self._debug(" z~[%5.2f,%5.2f] ~ %5.2f" % (bbox.zmin, bbox.zmax, bbox.zsize))
+                self.pick_last_mesh = value.owner.object
+                self.pick_last_mesh_color = self.pick_last_mesh.material.color
+                self.pick_last_mesh.material.color = self.pick_color
 
     # public methods to add shapes and render the view
 
-    def addShape(self, shape, color="#ff0000"):
-        self.shapes.append({"shape": shape, "color": color})
+    def add_shape(self, name, shape, color="#ff0000"):
+        self.shapes.append({"name": name, "shape": shape, "color": color})
 
     def render(self):
-        for shape in self.shapes:
+        for i, shape in enumerate(self.shapes):
             if is_edge(shape["shape"].toOCC()):
                 # TODO Check it is safe to omit these edges
                 # The edges with on1 vertex are CurveOnSurface
@@ -353,11 +416,11 @@ class CadqueryView(object):
                 edges = [edge.wrapped
                          for edge in shape["shape"].objects
                          if TopologyExplorer(edge.wrapped).number_of_vertices() >= 2 ]
-                self._renderShape(edges=edges,
-                                  render_edges=True, edge_color=shape["color"], edge_width=3)
+                self._render_shape(i, edges=edges,
+                                   render_edges=True, edge_color=shape["color"], edge_width=3)
             else:
-                self._renderShape(shape=shape["shape"].toOCC(),
-                                  render_edges=True, shape_color=shape["color"])
+                self._render_shape(i, shape=shape["shape"].toOCC(),
+                                   render_edges=True, shape_color=shape["color"])
 
         self.bb = BndBox([shape["shape"] for shape in self.shapes])
         bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
@@ -375,61 +438,37 @@ class CadqueryView(object):
         self.axes = Axes(length=bb_max)
         self.axes.toggleAxes(True)
 
-        axis_start, axis_end, nice_tick = nice_bounds(-self.bb.max, self.bb.max, 20)
-        self.grid_step = nice_tick
-        self.grid_size = axis_end - axis_start
-        self.grid = GridHelper(self.grid_size, int(self.grid_size/self.grid_step),
-                               colorCenterLine='#aaa', colorGrid='#ddd')
-        self.grid.position = camera_target
+        self.grid = Grid(bb_max, colorCenterLine='#aaa', colorGrid='#ddd')
+        self.grid.set_position(camera_target)
 
         key_light = PointLight(position=[-100, 100, 100])
         ambient_light = AmbientLight(intensity=0.4)
 
-        children = self.axes.axes + [self.grid, key_light, ambient_light, self.camera]
-        for rendered_shape in self.rendered_shapes:
-            children = children + [rendered_shape[self.features[0]], rendered_shape[self.features[1]]]
+        non_pickable_objects = self.axes.axes + [self.grid.grid, key_light, ambient_light, self.camera]
 
-        self.scene = Scene(children=children)
+        self.scene = Scene(children=non_pickable_objects + [self.pickable_objects])
 
         self.controller = OrbitControls(controlling=self.camera, target=camera_target)
 
-        self.renderer = Renderer(scene=self.scene, camera=self.camera, controls=[self.controller],
+        self.picker = Picker(controlling=self.pickable_objects, event='mouseup')
+        self.picker.observe(self.pick)
+
+        self.renderer = Renderer(scene=self.scene, camera=self.camera,
+                                 controls=[self.controller, self.picker],
                                  width=self.width, height=self.height)
 
         self.camera.position = self._scale(self.camera.position)
 
         # needs to be done after setup of camera
-        self.grid.rotation = (math.pi / 2.0, 0, 0, "XYZ")
-        self.grid.position = (0, 0, 0)
+        self.grid.set_rotation((math.pi / 2.0, 0, 0, "XYZ"))
+        self.grid.set_position((0, 0, 0))
 
         self.savestate = (self.camera.rotation, self.controller.target)
 
-        # Workaround: Zoom forth and back to update frame. Sometimes necessary :( 
+        # Workaround: Zoom forth and back to update frame. Sometimes necessary :(
         self.camera.zoom = 1.01
         self._update()
         self.camera.zoom = 1.0
         self._update()
 
         return self.renderer
-
-
-class Axes(object):
-    def __init__(self, origin=None, length=1, width=3):
-        if origin is None:
-            origin = (0,0,0)
-        x = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [length, 0, 0])]])
-        y = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [0, length, 0])]])
-        z = LineSegmentsGeometry(positions=[[origin, self._shift(origin, [0, 0, length])]])
-
-        mx = LineMaterial(linewidth=width, color='red')
-        my = LineMaterial(linewidth=width, color='green')
-        mz = LineMaterial(linewidth=width, color='blue')
-
-        self.axes = [LineSegments2(x, mx), LineSegments2(y, my), LineSegments2(z, mz)]
-
-    def _shift(self, v, offset):
-        return [x+o for x, o in zip(v, offset)]
-
-    def toggleAxes(self, change):
-        for i in range(3):
-            self.axes[i].visible = change
