@@ -93,7 +93,7 @@ class CadqueryDisplay(object):
                               overflow_y="scroll", overflow_x="scroll"))
         self.output.add_class("view_output")
         self.output.add_class("scroll_down")
-        
+
         if mac_scrollbar:
             self.output.add_class("mac-scrollbar")
 
@@ -119,19 +119,12 @@ class CadqueryDisplay(object):
             self.create_checkbox("axes",  "Axes",   axes,  self.cq_view.toggle_axes),
             self.create_checkbox("grid",  "Grid",   grid,  self.cq_view.toggle_grid),
             self.create_checkbox("zero",  "@ 0",    axes0, self.cq_view.toggle_center),
-            self.create_checkbox("ortho", "Ortho",  ortho, self.cq_view.toggle_ortho)
+            self.create_checkbox("ortho", "Ortho",  ortho, self.cq_view.toggle_ortho) 
         ]
-        if not ortho:
-            self.cq_view.set_ortho(ortho)
-
-        if not axes:
-            self.cq_view.set_axes(axes)
-
-        if not axes0:
-            self.cq_view.set_center(axes0)
-
-        if not grid:
-            self.cq_view.set_grid(grid)
+        if not ortho: self.cq_view.toggle_ortho(False)
+        if not axes:  self.cq_view.toggle_axes(False)
+        if not axes0: self.cq_view.toggle_center(False)
+        if not grid:  self.cq_view.toggle_grid(False)
 
         # Buttons to switch camera position
         view_controls = []
@@ -139,7 +132,5 @@ class CadqueryDisplay(object):
             button = self.create_button(typ, self.cq_view.change_view(typ, CadqueryDisplay.directions))
             view_controls.append(button)
 
-        return HBox([VBox([HBox(check_controls),
-                        tree_view,
-                        self.output]),
-                 VBox([HBox(view_controls), renderer])])
+        return HBox([ VBox([ HBox(check_controls), tree_view,self.output ]),
+                      VBox([ HBox(view_controls), renderer ]) ])
