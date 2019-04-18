@@ -178,7 +178,13 @@ var TreeView = DescriptionView.extend({
       for (var i in model.children) {
         states.push(this.updateNodes(model.children[i], icon_id));
       }
-      state = states.filter(e => e != 3).reduce((s1, s2) => (s1 == s2) ? s1 : States.mixed);
+      var filtered_states = states.filter(e => e != 3)
+      if (filtered_states.length == 0) {
+        state = 0;
+      } else {
+        state = filtered_states.reduce((s1, s2) => (s1 == s2) ? s1 : States.mixed, 
+                                       filtered_states[0]);
+      }
       model.states[icon_id] = state;
       this.setIcon(model.imgs[icon_id], icon_id, state);
     } else {
