@@ -16,6 +16,7 @@ part_id = 0
 # Create simple Part and Assembly classes
 #
 
+
 class CADObject(object):
 
     def __init__(self):
@@ -33,7 +34,7 @@ class CADObject(object):
         raise NotImplementedError("not implemented yet")
 
     def web_color(self):
-        return "rgba(%d, %d, %d, 0.6)" % tuple([c * 255 for c in self.color])
+        return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
 
     def _ipython_display_(self):
         idisplay(display(self))
@@ -52,12 +53,7 @@ class Part(CADObject):
         self.state_edges = SELECTED if show_edges else UNSELECTED
 
     def to_nav_dict(self):
-        return {
-            "type": "leaf",
-            "name": self.name,
-            "id": self.id,
-            "color": self.web_color()
-        }
+        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
 
     def to_state(self):
         return {str(self.id): [self.state_faces, self.state_edges]}
@@ -83,12 +79,7 @@ class Edges(CADObject):
         self.color = (1, 0, 1) if color is None else color
 
     def to_nav_dict(self):
-        return {
-            "type": "leaf",
-            "name": self.name,
-            "id": self.id,
-            "color": self.web_color()
-        }
+        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
 
     def to_state(self):
         return {str(self.id): [EMPTY, SELECTED]}
@@ -120,7 +111,7 @@ class Assembly(CADObject):
         return result
 
     def obj_mapping(self):
-        return  {v:k for k,v in enumerate(self.to_state().keys())}
+        return {v: k for k, v in enumerate(self.to_state().keys())}
 
     @classmethod
     def reset_id(cls):
@@ -131,8 +122,10 @@ class Assembly(CADObject):
 def is_edges(cadObj):
     return all([isinstance(obj, cq.occ_impl.shapes.Edge) for obj in cadObj.objects])
 
+
 def is_faces(cadObj):
     return all([isinstance(obj, cq.occ_impl.shapes.Face) for obj in cadObj.objects])
+
 
 def convert(cadObj, show_edges=True, show_faces=True):
     if isinstance(cadObj, (Assembly, Part, Faces, Edges)):
@@ -140,11 +133,10 @@ def convert(cadObj, show_edges=True, show_faces=True):
     elif is_edges(cadObj):
         return Edges(cadObj, "edges", color=(1, 0, 1))
     elif is_faces(cadObj):
-        return Faces(cadObj, "faces", color=(1, 0, 1),
-                     show_edges=show_edges, show_faces=show_faces)
+        return Faces(cadObj, "faces", color=(1, 0, 1), show_edges=show_edges, show_faces=show_faces)
     else:
-        return Part(cadObj, "part", color=(0.1, 0.1, 0.1),
-                    show_edges=show_edges, show_faces=show_faces)
+        return Part(cadObj, "part", color=(0.1, 0.1, 0.1), show_edges=show_edges, show_faces=show_faces)
+
 
 def display(cad_obj,
             height=600,
@@ -154,6 +146,7 @@ def display(cad_obj,
             axes0=True,
             grid=False,
             ortho=True,
+            transparent=False,
             mac_scrollbar=True):
 
     assembly = None
@@ -179,6 +172,7 @@ def display(cad_obj,
             axes0=axes0,
             grid=grid,
             ortho=ortho,
+            transparent=transparent,
             mac_scrollbar=mac_scrollbar)
         d._debug("Rendering done")
         d._debug("Grid: %5.1f mm" % d.cq_view.grid.step)

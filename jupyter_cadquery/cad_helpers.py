@@ -11,6 +11,7 @@ from OCC.Core.BRepBndLib import brepbndlib_Add
 
 
 class Helpers(object):
+
     def __init__(self, bb_center):
         self.bb_center = bb_center
         self.center = (0, 0, 0)
@@ -46,15 +47,23 @@ class Grid(Helpers):
         fraction = value / 10**exponent
 
         if round_:
-            if fraction < 1.5:  nice_fraction = 1.
-            elif fraction < 3.: nice_fraction = 2.
-            elif fraction < 7.: nice_fraction = 5.
-            else:               nice_fraction = 10.
+            if fraction < 1.5:
+                nice_fraction = 1.
+            elif fraction < 3.:
+                nice_fraction = 2.
+            elif fraction < 7.:
+                nice_fraction = 5.
+            else:
+                nice_fraction = 10.
         else:
-            if fraction <= 1:   nice_fraction = 1.
-            elif fraction <= 2: nice_fraction = 2.
-            elif fraction <= 5: nice_fraction = 5.
-            else:               nice_fraction = 10.
+            if fraction <= 1:
+                nice_fraction = 1.
+            elif fraction <= 2:
+                nice_fraction = 2.
+            elif fraction <= 5:
+                nice_fraction = 5.
+            else:
+                nice_fraction = 10.
 
         return nice_fraction * 10**exponent
 
@@ -86,11 +95,11 @@ class Axes(Helpers):
         super().__init__(bb_center)
 
         self.axes = []
-        for vector, color in zip(([length, 0, 0], [0, length, 0], [0, 0, length]),
-                                 ('red',          'green',        'blue')):
-            self.axes.append(LineSegments2(
-                LineSegmentsGeometry(positions=[[self.center, self._shift(self.center, vector)]]),
-                LineMaterial(linewidth=width, color=color)))
+        for vector, color in zip(([length, 0, 0], [0, length, 0], [0, 0, length]), ('red', 'green', 'blue')):
+            self.axes.append(
+                LineSegments2(
+                    LineSegmentsGeometry(positions=[[self.center, self._shift(self.center, vector)]]),
+                    LineMaterial(linewidth=width, color=color)))
 
     def _shift(self, v, offset):
         return [x + o for x, o in zip(v, offset)]

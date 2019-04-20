@@ -4,6 +4,7 @@ import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import CombinedCamera, BufferAttribute, BufferGeometry, MeshStandardMaterial, \
+                          MeshPhongMaterial, MeshBasicMaterial, Plane, \
                           Mesh, LineSegmentsGeometry,  LineMaterial,  LineSegments2, \
                           PointLight, AmbientLight, Scene, OrbitControls, Renderer, Picker, Group
 import numpy as np
@@ -28,9 +29,30 @@ def _flatten(nested_list):
     return [y for x in nested_list for y in x]
 
 
+class SectionHelper(Mesh):
+
+    def __init__(self, object, hexOrMaterial):
+        if isinstance(hexOrMaterial, MeshBasicMaterial):
+            material = hexOrMaterial
+        else:
+            color = hexOrMaterial
+            material = MeshBasicMaterial(color=color, side="BackSide")
+
+        super().__init__(object.geometry, material)
+
+        self.matrix = object.matrixWorld
+        self.matrixAutoUpdate = False
+
+
 class CadqueryView(object):
 
-    def __init__(self, width=600, height=400, render_edges=True, debug=None):
+    def __init__(self,
+                 width=600,
+                 height=400,
+                 render_edges=True,
+                 default_mesh_color=None,
+                 default_edge_color=None,
+                 debug=None):
         self.width = width
         self.height = height
         self.render_edges = render_edges
@@ -38,12 +60,15 @@ class CadqueryView(object):
 
         self.features = ["mesh", "edges"]
 
-        self.default_mesh_color = self._format_color(166, 166, 166)
-        self.default_edge_color = self._format_color(0, 0, 0)
+        self.bb = None
+
+        self.default_mesh_color = default_mesh_color or self._format_color(166, 166, 166)
+        self.default_edge_color = default_edge_color or self._format_color(128, 128, 128)
         self.pick_color = self._format_color(232, 176, 36)
 
         self.shapes = []
         self.pickable_objects = Group()
+        self.non_pickable_objects = []
         self.pick_last_mesh = None
         self.pick_last_mesh_color = None
         self.mash_edges_mapping = []
@@ -61,11 +86,20 @@ class CadqueryView(object):
         return '#%02x%02x%02x' % (r, g, b)
 
     def _material(self, color, transparent=False, opacity=1.0):
-        return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity)
+        return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity, side='FrontSide')
 
-    def _render_shape(self, shape_index, shape=None, edges=None,
-                      mesh_color=None, edge_color=None, render_edges=False,
-                      edge_width=1, deflection=0.05, quality=1.0, transparent=True, opacity=0.8):
+    def _render_shape(self,
+                      shape_index,
+                      shape=None,
+                      edges=None,
+                      mesh_color=None,
+                      edge_color=None,
+                      render_edges=False,
+                      edge_width=1,
+                      deflection=0.05,
+                      quality=1.0,
+                      transparent=False,
+                      opacity=0.8):
 
         edge_list = None
         edge_lines = None
@@ -111,9 +145,10 @@ class CadqueryView(object):
                     'normal': BufferAttribute(np_normals)
                 })
 
-            shp_material = self._material(mesh_color, transparent, opacity)
+            shp_material = self._material(mesh_color, transparent=True, opacity=opacity)
 
             shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name="mesh_%d" % shape_index)
+            section_helper = SectionHelper(shape_mesh, hexOrMaterial=mesh_color)
 
             if render_edges:
                 edge_list = list(
@@ -137,6 +172,7 @@ class CadqueryView(object):
             if shape_mesh is not None:
                 ind = len(self.pickable_objects.children)
                 self.pickable_objects.add(shape_mesh)
+                self.non_pickable_objects.append(section_helper)
                 index_mapping["mesh"] = ind
             if edge_lines is not None:
                 ind = len(self.pickable_objects.children)
@@ -198,11 +234,22 @@ class CadqueryView(object):
     def toggle_ortho(self, change):
         self.camera.mode = 'orthographic' if self.bool_or_new(change) else 'perspective'
 
+    def toggle_transparent(self, change):
+        value = self.bool_or_new(change)
+        for i in range(0, len(self.pickable_objects.children), 2):
+            self.pickable_objects.children[i].material.transparent = value
+
+        for i in range(len(self.non_pickable_objects)):
+            self.non_pickable_objects[i].visible = not value and self.pickable_objects.children[2 * i].visible
+
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
         group_index = self.mash_edges_mapping[ind][feature]
         if group_index is not None:
             self.pickable_objects.children[group_index].visible = (state == 1)
+            if feature == "mesh":
+                self.non_pickable_objects[ind].visible = \
+                    not self.pickable_objects.children[group_index].material.transparent and (state == 1)
 
     def change_visibility(self, mapping):
 
@@ -235,6 +282,13 @@ class CadqueryView(object):
                 self.pick_last_mesh_color = self.pick_last_mesh.material.color
                 self.pick_last_mesh.material.color = self.pick_color
 
+    def clip(self, index):
+
+        def f(change):
+            self.renderer.clippingPlanes[index].constant = change["new"]
+
+        return f
+
     # public methods to add shapes and render the view
 
     def add_shape(self, name, shape, color="#ff0000"):
@@ -259,9 +313,8 @@ class CadqueryView(object):
 
         # Get the overall bounding box
         self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
-        bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax),
-                      abs(self.bb.ymin), abs(self.bb.ymax),
-                      abs(self.bb.zmin), abs(self.bb.zmax)))
+        bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax), abs(self.bb.zmin),
+                      abs(self.bb.zmax)))
 
         # Set up camera
         camera_target = self.bb.center
@@ -275,20 +328,20 @@ class CadqueryView(object):
 
         # Set up lights
         key_light = PointLight(position=[-100, 100, 100])
-        ambient_light = AmbientLight(intensity=0.4)
+        ambient_light = AmbientLight(intensity=1.0)
 
         # Set up Helpers
         self.axes = Axes(bb_center=self.bb.center, length=bb_max)
         self.grid = Grid(bb_center=self.bb.center, maximum=bb_max, colorCenterLine='#aaa', colorGrid='#ddd')
 
         # Set up scene
-        non_pickable_objects = self.axes.axes + [self.grid.grid, key_light, ambient_light, self.camera]
-        self.scene = Scene(children=non_pickable_objects + [self.pickable_objects])
+        environment = self.axes.axes + [self.grid.grid, key_light, ambient_light, self.camera]
+        self.scene = Scene(children=environment + self.non_pickable_objects + [self.pickable_objects])
 
         # Set up Controllers
         self.controller = OrbitControls(controlling=self.camera, target=camera_target)
 
-        self.picker = Picker(controlling=self.pickable_objects, event='mouseup')
+        self.picker = Picker(controlling=self.pickable_objects, event='dblclick')
         self.picker.observe(self.pick)
 
         # Create Renderer instance
@@ -298,6 +351,13 @@ class CadqueryView(object):
             controls=[self.controller, self.picker],
             width=self.width,
             height=self.height)
+
+        self.renderer.localClippingEnabled = True
+        self.renderer.clippingPlanes = [
+            Plane((1, 0, 0), self.grid.size / 2),
+            Plane((0, 1, 0), self.grid.size / 2),
+            Plane((0, 0, 1), self.grid.size / 2)
+        ]
 
         # self.camera.position = self._scale(self.camera.position)
 
