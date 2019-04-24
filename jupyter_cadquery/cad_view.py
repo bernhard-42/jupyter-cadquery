@@ -4,9 +4,9 @@ import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import CombinedCamera, BufferAttribute, BufferGeometry, MeshStandardMaterial, \
-                          MeshPhongMaterial, MeshBasicMaterial, Plane, \
+                          MeshPhongMaterial, MeshBasicMaterial, Plane, ShaderMaterial, ShaderLib, \
                           Mesh, LineSegmentsGeometry,  LineMaterial,  LineSegments2, \
-                          PointLight, AmbientLight, Scene, OrbitControls, Renderer, Picker, Group
+                          PointLight, AmbientLight, Scene, OrbitControls, Renderer, Picker, Group, DirectionalLight
 import numpy as np
 
 from OCC.Core.Visualization import Tesselator
@@ -29,19 +29,56 @@ def _flatten(nested_list):
     return [y for x in nested_list for y in x]
 
 
-class SectionHelper(Mesh):
+class CustomMaterial(ShaderMaterial):
 
-    def __init__(self, object, hexOrMaterial):
-        if isinstance(hexOrMaterial, MeshBasicMaterial):
-            material = hexOrMaterial
+    def __init__(self, typ):
+        self.types = {'diffuse': 'c', 'uvTransform': 'm3', 'normalScale': 'v2', 'fogColor': 'c', 'emissive': 'c'}
+
+        shader = ShaderLib[typ]
+
+        fragmentShader = """
+        uniform float alpha;
+        """
+        frag_from = "gl_FragColor = vec4( outgoingLight, diffuseColor.a );"
+        frag_to = """
+            if ( gl_FrontFacing ) {
+                gl_FragColor = vec4( outgoingLight, alpha * diffuseColor.a );
+            } else {
+                gl_FragColor = diffuseColor;
+            }"""
+        fragmentShader += shader["fragmentShader"].replace(frag_from, frag_to)
+
+        vertexShader = shader["vertexShader"]
+        uniforms = shader["uniforms"]
+        uniforms["alpha"] = dict(value=0.7)
+
+        super().__init__(uniforms=uniforms, vertexShader=vertexShader, fragmentShader=fragmentShader)
+        self.lights = True
+
+    @property
+    def color(self):
+        return self.uniforms["diffuse"]["value"]
+
+    @color.setter
+    def color(self, value):
+        self.update("diffuse", value)
+
+    @property
+    def alpha(self):
+        return self.uniforms["alpha"]["value"]
+
+    @alpha.setter
+    def alpha(self, value):
+        self.update("alpha", value)
+
+    def update(self, key, value):
+        uniforms = dict(**self.uniforms)
+        if self.types.get(key) is None:
+            uniforms[key] = {'value': value}
         else:
-            color = hexOrMaterial
-            material = MeshBasicMaterial(color=color, side="BackSide")
-
-        super().__init__(object.geometry, material)
-
-        self.matrix = object.matrixWorld
-        self.matrixAutoUpdate = False
+            uniforms[key] = {'type': self.types.get(key), 'value': value}
+        self.uniforms = uniforms
+        self.needsUpdate = True
 
 
 class CadqueryView(object):
@@ -68,7 +105,6 @@ class CadqueryView(object):
 
         self.shapes = []
         self.pickable_objects = Group()
-        self.non_pickable_objects = []
         self.pick_last_mesh = None
         self.pick_last_mesh_color = None
         self.mash_edges_mapping = []
@@ -86,7 +122,21 @@ class CadqueryView(object):
         return '#%02x%02x%02x' % (r, g, b)
 
     def _material(self, color, transparent=False, opacity=1.0):
-        return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity, side='FrontSide')
+        material = CustomMaterial("standard")
+        material.color = color
+        material.clipping = True
+        material.side = "DoubleSide"
+        material.alpha = 0.7
+        material.polygonOffset = False
+        material.polygonOffsetFactor = 1
+        material.polygonOffsetUnits = 1
+        material.transparent=transparent
+        material.opacity = opacity
+        material.update("metalness", 0.3)
+        material.update("roughness", 0.8)
+        return material
+        # return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity, side='FrontSide',
+        #     polygonOffset = True, polygonOffsetFactor = 1, polygonOffsetUnits = 1)
 
     def _render_shape(self,
                       shape_index,
@@ -99,7 +149,7 @@ class CadqueryView(object):
                       deflection=0.05,
                       quality=1.0,
                       transparent=False,
-                      opacity=0.8):
+                      opacity=1.0):
 
         edge_list = None
         edge_lines = None
@@ -148,7 +198,6 @@ class CadqueryView(object):
             shp_material = self._material(mesh_color, transparent=True, opacity=opacity)
 
             shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name="mesh_%d" % shape_index)
-            section_helper = SectionHelper(shape_mesh, hexOrMaterial=mesh_color)
 
             if render_edges:
                 edge_list = list(
@@ -172,7 +221,6 @@ class CadqueryView(object):
             if shape_mesh is not None:
                 ind = len(self.pickable_objects.children)
                 self.pickable_objects.add(shape_mesh)
-                self.non_pickable_objects.append(section_helper)
                 index_mapping["mesh"] = ind
             if edge_lines is not None:
                 ind = len(self.pickable_objects.children)
@@ -239,17 +287,19 @@ class CadqueryView(object):
         for i in range(0, len(self.pickable_objects.children), 2):
             self.pickable_objects.children[i].material.transparent = value
 
-        for i in range(len(self.non_pickable_objects)):
-            self.non_pickable_objects[i].visible = not value and self.pickable_objects.children[2 * i].visible
+    def toggle_black_edges(self, change):
+        value = self.bool_or_new(change)
+        for i in range(1, len(self.pickable_objects.children), 2):
+            if value:
+                self.pickable_objects.children[i].material.color = "#000"
+            else:
+                self.pickable_objects.children[i].material.color = self.default_edge_color
 
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
         group_index = self.mash_edges_mapping[ind][feature]
         if group_index is not None:
             self.pickable_objects.children[group_index].visible = (state == 1)
-            if feature == "mesh":
-                self.non_pickable_objects[ind].visible = \
-                    not self.pickable_objects.children[group_index].material.transparent and (state == 1)
 
     def change_visibility(self, mapping):
 
@@ -320,14 +370,27 @@ class CadqueryView(object):
         camera_target = self.bb.center
         camera_position = self._scale([1, 1, 1])
 
-        self.camera = CombinedCamera(position=camera_position, width=self.width, height=self.height)
+        self.camera = CombinedCamera(
+            position=camera_position, width=self.width, height=self.height, far=10 * bb_max, orthoFar=10 * bb_max)
         self.camera.up = (0.0, 0.0, 1.0)
         self.camera.lookAt(camera_target)
         self.camera.mode = 'orthographic'
         self.camera.position = camera_position
 
         # Set up lights
-        key_light = PointLight(position=[-100, 100, 100])
+        # key_light = PointLight(position=[-100, 100, 100])
+        key_lights = [
+            DirectionalLight(color='white', position=position, intensity=0.12) for position in [
+                (bb_max, bb_max, bb_max),
+                (-bb_max, bb_max, bb_max),
+                (bb_max, -bb_max, bb_max),
+                (bb_max, bb_max, -bb_max),
+                (-bb_max, -bb_max, bb_max),
+                (-bb_max, bb_max, -bb_max),
+                (bb_max, -bb_max, -bb_max),
+                (-bb_max, -bb_max, bb_max),
+            ]
+        ]
         ambient_light = AmbientLight(intensity=1.0)
 
         # Set up Helpers
@@ -335,8 +398,8 @@ class CadqueryView(object):
         self.grid = Grid(bb_center=self.bb.center, maximum=bb_max, colorCenterLine='#aaa', colorGrid='#ddd')
 
         # Set up scene
-        environment = self.axes.axes + [self.grid.grid, key_light, ambient_light, self.camera]
-        self.scene = Scene(children=environment + self.non_pickable_objects + [self.pickable_objects])
+        environment = self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
+        self.scene = Scene(children=environment + [self.pickable_objects])
 
         # Set up Controllers
         self.controller = OrbitControls(controlling=self.camera, target=camera_target)
@@ -349,6 +412,7 @@ class CadqueryView(object):
             scene=self.scene,
             camera=self.camera,
             controls=[self.controller, self.picker],
+            antialias=True,
             width=self.width,
             height=self.height)
 
@@ -358,8 +422,6 @@ class CadqueryView(object):
             Plane((0, 1, 0), self.grid.size / 2),
             Plane((0, 0, 1), self.grid.size / 2)
         ]
-
-        # self.camera.position = self._scale(self.camera.position)
 
         # needs to be done after setup of camera
         self.grid.set_rotation((math.pi / 2.0, 0, 0, "XYZ"))

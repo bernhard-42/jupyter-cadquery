@@ -59,6 +59,13 @@
     width: 64px !important;
 }
 
+.view_transparent {
+  width: 125px !important;
+}
+
+.view_black_edges {
+  width: 105px !important;
+}
 
 .view_button {
     padding: 0px !important;

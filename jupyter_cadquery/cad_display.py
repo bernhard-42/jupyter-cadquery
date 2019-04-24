@@ -202,9 +202,10 @@ class CadqueryDisplay(object):
             self.create_checkbox("zero", "@ 0", axes0, self.cq_view.toggle_center),
             self.create_checkbox("ortho", "Ortho", ortho, self.cq_view.toggle_ortho),
             self.create_checkbox("transparent", "Transparency", transparent, self.cq_view.toggle_transparent),
+            self.create_checkbox("black_edges", "Black Edges", False, self.cq_view.toggle_black_edges),
         ]
-        check_controls[-1].add_class("indent")
-        
+        check_controls[-2].add_class("indent")
+
         # Set initial state
         self.cq_view.toggle_ortho(ortho)
         self.cq_view.toggle_axes(axes)
@@ -229,6 +230,6 @@ class CadqueryDisplay(object):
             view_controls.append(button)
 
         return HBox([
-            VBox([HBox(check_controls[:-1]), tree_clipping, self.output]),
-            VBox([HBox(view_controls + check_controls[-1:]), renderer])
+            VBox([HBox(check_controls[:-2]), tree_clipping, self.output]),
+            VBox([HBox(view_controls + check_controls[-2:]), renderer])
         ])

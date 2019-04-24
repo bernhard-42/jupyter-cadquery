@@ -34,7 +34,11 @@ class CADObject(object):
         raise NotImplementedError("not implemented yet")
 
     def web_color(self):
-        return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
+        if isinstance(self.color, str):
+            if self.color[0] == "#":
+                return self.color
+        else:
+            return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
 
     def _ipython_display_(self):
         idisplay(display(self))
@@ -135,7 +139,7 @@ def convert(cadObj, show_edges=True, show_faces=True):
     elif is_faces(cadObj):
         return Faces(cadObj, "faces", color=(1, 0, 1), show_edges=show_edges, show_faces=show_faces)
     else:
-        return Part(cadObj, "part", color=(0.1, 0.1, 0.1), show_edges=show_edges, show_faces=show_faces)
+        return Part(cadObj, "part", color=(0.3, 0.3, 0.3), show_edges=show_edges, show_faces=show_faces)
 
 
 def display(cad_obj,
