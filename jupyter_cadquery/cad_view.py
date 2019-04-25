@@ -234,6 +234,23 @@ class CadqueryView(object):
         new_vec = (vec / n * r) + self.bb.center
         return new_vec.tolist()
 
+    def _sub(self, vec1, vec2):
+        return list(v1-v2 for v1,v2 in zip(vec1, vec2))
+
+    def _norm(self, vec):
+        n = np.linalg.norm(vec)
+        return [v/n for v in vec]
+    
+    def _minus(self, vec):
+        return [-v for v in vec]
+
+    def direction(self):
+        return self._norm(self._sub(self.camera.position, self.bb.center))
+
+    def set_plane(self, i):
+        plane = self.renderer.clippingPlanes[i]
+        plane.normal = self._minus(self.direction())
+
     def _update(self):
         self.controller.exec_three_obj_method('update')
         pass

@@ -19,11 +19,16 @@ class Clipping(object):
         self.out = out
         self.sliders = []
         self.normals = []
+        self.labels = []
 
     def handler(self, b):
-        self.out.append_stdout(str(b.type) + "\n")
+        i = int(b.type)
+        self.cq_view.set_plane(i)
+        self.labels[i].value = "N=(%5.2f, %5.2f, %5.2f)" % tuple(self.cq_view.direction())
 
     def slider(self, value, min, max, step, description):
+        label = Label(description)
+        self.labels.append(label)
         ind = len(self.normals)
         button = ImageButton(
             width=36,
@@ -49,7 +54,7 @@ class Clipping(object):
             layout=Layout(width="230px"))
 
         slider.observe(self.cq_view.clip(ind), "value")
-        return [HBox([button, Label(description)]), slider]
+        return [HBox([button, label]), slider]
 
     def add_slider(self, value, v_min, v_max, step, normal):
         self.sliders += self.slider(value, v_min, v_max, step, "N=(%5.2f, %5.2f, %5.2f)" % normal)
