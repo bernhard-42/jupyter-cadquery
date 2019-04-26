@@ -1,5 +1,4 @@
-jupyter-cadquery
-================
+# jupyter-cadquery
 
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
@@ -8,9 +7,9 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 **Note:** The extension relies on *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery 1* or *CadQuery 2*.
 
-# Overview
+## Overview
 
-## Key features:
+### Key features:
 
 - Works in Jupyter Notebooks and Jupyter Lab
 - Switch between Orthographic and Perspective view
@@ -21,7 +20,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 - Toggle visibilty of shapes and edges
 - Clipping with max 3 clipping planes (of free orientation)
 
-## Samples
+### Samples
 
 ```python
 import cadquery as cq
@@ -71,7 +70,7 @@ display(a1, axes=True, grid=True, ortho=True, axes0=True)
 
     ![clipping](screenshots/s_5_clipping.png)
 
-## Visual debugging
+### Visual debugging
 
 - By showing faces [without](screenshots/6_faces.png) or [with](screenshots/7_faces_and_part.png) their shape `box1.faces("not(|Z or |X or |Y)")`
 
@@ -83,7 +82,7 @@ display(a1, axes=True, grid=True, ortho=True, axes0=True)
     ![edges](screenshots/s_8_edges.png)
     ![edges_and_part](screenshots/s_9_edges_and_part.png)
 
-# Usage
+## Usage
 
 Own classes for assemblies
 
@@ -110,7 +109,7 @@ Own classes for assemblies
     - *name*: Assembly name in the view
     - *objects*: all parts and assemblies included in the assembly as a list
 
-# Installation
+## Installation
 
 Install one of the latest versions of *CadQuery 2* for OCC, e.g.:
     
@@ -134,6 +133,11 @@ For jupyter
 
     tbd.
 
-# Known issues
+## Credits
+
+- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in `cad_view._render_shape` are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py` 
+- Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
+
+## Known issues
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
