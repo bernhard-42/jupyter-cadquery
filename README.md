@@ -111,11 +111,14 @@ Own classes for assemblies
 
 ## Installation
 
-Install one of the latest versions of *CadQuery 2* for OCC, e.g.:
+Install Jupyter, ipywidets and pythreejs:
     
-    $ conda create -n pycq2 python=3.6 numpy
+    $ conda create -n pycq2 python=3.6 numpy jupyter jupyterlab ipywidgets
     $ conda activate pycq2
+    $ jupyter labextension install @jupyter-widgets/jupyterlab-manager
     $ pip install pythreejs
+
+Install one of the latest versions of *CadQuery 2* for OCC, e.g.:
     $ conda install -c cadquery pythonocc-core=0.18.2
     $ pip install git+https://github.com/CadQuery/cadquery@adam-urbanczyk-geom-lut-edge-face-fix
 
