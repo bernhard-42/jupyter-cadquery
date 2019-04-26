@@ -135,7 +135,7 @@ For jupyter
 
 ## Credits
 
-- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in `cad_view._render_shape` are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py` 
+- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py#L177) are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py` 
 - Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
 ## Known issues
