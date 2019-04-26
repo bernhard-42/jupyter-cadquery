@@ -47,34 +47,34 @@ a1 = Assembly(
 display(a1, axes=True, grid=True, ortho=True, axes0=True)
 ```
 
-- Orthographic view
+- [Orthographic view](screenshots/1_ortho.png)
 
     ![ortho](screenshots/s_1_ortho.png)
 
-- Perspective view
+- [Perspective view](screenshots/2_perspective.png)
 
     ![perspective](screenshots/s_2_perspective.png)
 
-- Hiding edges and shapes
+- [Hiding edges and shapes](screenshots/3_ortho_with_hidden_features.png)
 
     ![ortho_with_hidden_features](screenshots/s_3_ortho_with_hidden_features.png)
 
-- Transparency
+- [Transparency](screenshots/4_transparency.png)
 
     ![transparency](screenshots/s_4_transparency.png)
 
-- Clipping with up to 3 clipping planes
+- [Clipping with up to 3 clipping planes](screenshots/5_clipping.png)
 
     ![clipping](screenshots/s_5_clipping.png)
 
 Visual debugging
 
--  by showing faces without or with their shape `box1.faces("not(|Z or |X or |Y)")`
+-  by showing faces [without](screenshots/6_faces.png) or [with](screenshots/7_faces_and_part.png) their shape `box1.faces("not(|Z or |X or |Y)")`
 
     ![faces](screenshots/s_6_faces.png)
     ![faces_and_part](screenshots/s_7_faces_and_part.png)
 
-- by showing edges without or with their shape `box1.edges("not(|X or |Y or |Z)")`
+- by showing edges [without](screenshots/8_edges.png) or [with](screenshots/9_edges_and_part.png) their shape `box1.edges("not(|X or |Y or |Z)")`
 
     ![edges](screenshots/s_8_edges.png)
     ![edges_and_part](screenshots/s_9_edges_and_part.png)
