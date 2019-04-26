@@ -52,16 +52,20 @@ display(a1, axes=True, grid=True, ortho=True, axes0=True)
     ![ortho](screenshots/s_1_ortho.png)
 
 - Perspective view
+
     ![perspective](screenshots/s_2_perspective.png)
 
 - Hiding edges and shapes
+
     ![ortho_with_hidden_features](screenshots/s_3_ortho_with_hidden_features.png)
 
 - Transparency
+
     ![transparency](screenshots/s_4_transparency.png)
 
 - Clipping with up to 3 clipping planes
-    ![clipping](screenshots/5_clipping.png)
+
+    ![clipping](screenshots/s_5_clipping.png)
 
 Visual debugging
 
