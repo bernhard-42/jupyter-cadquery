@@ -3,6 +3,9 @@ jupyter-cadquery
 
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
+![intro](screenshots/0_intro.png)
+
+
 **Note:** The extension relies on *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery 1* or *CadQuery 2*.
 
 # Overview
