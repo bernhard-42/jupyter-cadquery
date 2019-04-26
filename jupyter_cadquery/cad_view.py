@@ -3,10 +3,10 @@ import math
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from pythreejs import CombinedCamera, BufferAttribute, BufferGeometry, MeshStandardMaterial, \
-                          MeshPhongMaterial, MeshBasicMaterial, Plane, ShaderMaterial, ShaderLib, \
+    from pythreejs import CombinedCamera, BufferAttribute, BufferGeometry, \
+                          Plane, ShaderMaterial, ShaderLib, \
                           Mesh, LineSegmentsGeometry,  LineMaterial,  LineSegments2, \
-                          PointLight, AmbientLight, Scene, OrbitControls, Renderer, Picker, Group, DirectionalLight
+                          AmbientLight, Scene, OrbitControls, Renderer, Picker, Group, DirectionalLight
 import numpy as np
 
 from OCC.Core.Visualization import Tesselator
@@ -395,7 +395,6 @@ class CadqueryView(object):
         self.camera.position = camera_position
 
         # Set up lights
-        # key_light = PointLight(position=[-100, 100, 100])
         key_lights = [
             DirectionalLight(color='white', position=position, intensity=0.12) for position in [
                 (bb_max, bb_max, bb_max),
