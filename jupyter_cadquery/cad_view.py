@@ -174,6 +174,10 @@ class CadqueryView(object):
             if edge_color is None:
                 edge_color = self.default_edge_color
 
+# BEGIN copy 
+# The next lines are copied with light modifications from
+# https://github.com/tpaviot/pythonocc-core/blob/master/src/Display/WebGl/jupyter_renderer.py
+
             # first, compute the tesselation
             tess = Tesselator(shape)
             tess.Compute(uv_coords=False, compute_edges=render_edges, mesh_quality=quality, parallel=True)
@@ -219,6 +223,8 @@ class CadqueryView(object):
                         lambda i_edge:
                         [tess.GetEdgeVertex(i_edge, i_vert) for i_vert in range(tess.ObjEdgeGetVertexCount(i_edge))],
                         range(tess.ObjGetEdgeCount())))
+
+# END copy
 
         if edges is not None:
             shape_mesh = None
