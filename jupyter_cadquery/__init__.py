@@ -33,9 +33,3 @@ except:
 
 Workplane._ipython_display_ = _cadquery_display_
 Shape._ipython_display_ = _cadquery_display_
-
-
-print("Patching cadquery shape types")
-
-import cadquery.occ_impl.shapes
-cadquery.occ_impl.shapes.geom_LUT_EDGE_FACE[7] = "OTHER"
