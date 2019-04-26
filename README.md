@@ -113,9 +113,12 @@ Own classes for assemblies
 # Installation
 
 Install one of the latest versions of *CadQuery 2* for OCC, e.g.:
-
-    $ pip install git+https://github.com/CadQuery/ \   
-      cadquery@adam-urbanczyk-geom-lut-edge-face-fix
+    
+    $ conda create -n pycq2 python=3.6 numpy
+    $ conda activate pycq2
+    $ pip install pythreejs
+    $ conda install -c cadquery pythonocc-core=0.18.2
+    $ pip install git+https://github.com/CadQuery/cadquery@adam-urbanczyk-geom-lut-edge-face-fix
 
 Installation of jupyter-cadquery 
 
