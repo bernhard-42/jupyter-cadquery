@@ -67,14 +67,14 @@ display(a1, axes=True, grid=True, ortho=True, axes0=True)
 
     ![clipping](screenshots/s_5_clipping.png)
 
-Visual debugging
+## Visual debugging
 
--  by showing faces [without](screenshots/6_faces.png) or [with](screenshots/7_faces_and_part.png) their shape `box1.faces("not(|Z or |X or |Y)")`
+- By showing faces [without](screenshots/6_faces.png) or [with](screenshots/7_faces_and_part.png) their shape `box1.faces("not(|Z or |X or |Y)")`
 
     ![faces](screenshots/s_6_faces.png)
     ![faces_and_part](screenshots/s_7_faces_and_part.png)
 
-- by showing edges [without](screenshots/8_edges.png) or [with](screenshots/9_edges_and_part.png) their shape `box1.edges("not(|X or |Y or |Z)")`
+- By showing edges [without](screenshots/8_edges.png) or [with](screenshots/9_edges_and_part.png) their shape `box1.edges("not(|X or |Y or |Z)")`
 
     ![edges](screenshots/s_8_edges.png)
     ![edges_and_part](screenshots/s_9_edges_and_part.png)
