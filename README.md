@@ -111,30 +111,31 @@ Own classes for assemblies
 
 ## Installation
 
-Install Jupyter, ipywidets and pythreejs:
+- Install Jupyter, ipywidets and pythreejs:
     
-    $ conda create -n pycq2 python=3.6 numpy jupyter jupyterlab ipywidgets
-    $ conda activate pycq2
-    $ jupyter labextension install @jupyter-widgets/jupyterlab-manager
-    $ pip install pythreejs
+        $ conda create -n pycq2 python=3.6 numpy jupyter jupyterlab ipywidgets
+        $ conda activate pycq2
+        $ jupyter labextension install @jupyter-widgets/jupyterlab-manager
+        $ pip install pythreejs
 
-Install one of the latest versions of *CadQuery 2* for OCC, e.g.:
-    $ conda install -c cadquery pythonocc-core=0.18.2
-    $ pip install git+https://github.com/CadQuery/cadquery@adam-urbanczyk-geom-lut-edge-face-fix
+- Install one of the latest versions of *CadQuery 2* for OCC, e.g.:
 
-Installation of jupyter-cadquery 
+        $ conda install -c cadquery pythonocc-core=0.18.2
+        $ pip install git+https://github.com/CadQuery/cadquery@adam-urbanczyk-geom-lut-edge-face-fix
 
-    $ git clone https://github.com/bernhard-42/jupyter-cadquery.git
-    $ cd jupyter-cadquery
-    $ pip install .
+- Install jupyter-cadquery 
 
-For jupyter lab (requires npm)
+        $ git clone https://github.com/bernhard-42/jupyter-cadquery.git
+        $ cd jupyter-cadquery
+        $ pip install .
+
+    - For jupyter lab (requires npm)
     
-    $ jupyter-labextension install js
+            $ jupyter-labextension install js
 
-For jupyter
+    - For jupyter
 
-    tbd.
+            tbd.
 
 ## Credits
 
