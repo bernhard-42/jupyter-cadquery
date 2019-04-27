@@ -12,6 +12,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 ### Key features:
 
 - Works in Jupyter Notebooks and Jupyter Lab
+- Support for *CadQuery* and *PythonOCC* shapes
 - Switch between Orthographic and Perspective view
 - Auto display of *CadQuery* shapes 
 - Double click on shapes shows bounding box info in output widget
@@ -22,10 +23,11 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 ### Samples
 
+#### CadQuery
+
 ```python
 import cadquery as cq
-from jupyter_cadquery import Assembly, Part, Edges, Faces
-from jupyter_cadquery import display
+from jupyter_cadquery.cadquery import Assembly, Part, Edges, Faces, show
 
 b = cq.Workplane('XY')
 box1 = b.box(10, 20, 30).edges(">X or <X").chamfer(2)
@@ -47,7 +49,7 @@ a1 = Assembly(
     "example 1"
 )
 
-display(a1, axes=True, grid=True, ortho=True, axes0=True)
+show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ```
 
 - [Orthographic view](screenshots/1_ortho.png)
@@ -70,7 +72,33 @@ display(a1, axes=True, grid=True, ortho=True, axes0=True)
 
     ![clipping](screenshots/s_5_clipping.png)
 
-### Visual debugging
+#### PythonOCC
+
+See [core_classic_occ_bottle.py](https://github.com/tpaviot/pythonocc-demos/blob/master/examples/core_classic_occ_bottle.py), however omit lines in the `main`part 
+
+```python
+from jupyter_cadquery.occ import Part, Assembly, show
+
+# ...
+
+# Build the resulting compound
+bottle = TopoDS_Compound()
+aBuilder = BRep_Builder()
+aBuilder.MakeCompound(bottle)
+aBuilder.Add(bottle, myBody.Shape())
+aBuilder.Add(bottle, myThreading)
+print("bottle finished")
+
+# No main lines
+
+Part(bottle, color="#abdda4")
+```
+
+[Classic OCC bottle](screenshots/occ_bottle.png)
+![Classic OCC bottle](screenshots/s_occ_bottle.png)
+
+
+### Visual debugging in *CadQuery
 
 - By showing faces [without](screenshots/6_faces.png) or [with](screenshots/7_faces_and_part.png) their shape `box1.faces("not(|Z or |X or |Y)")`
 
