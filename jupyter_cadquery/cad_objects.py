@@ -1,40 +1,38 @@
+#
 # Copyright 2019 Bernhard Walter
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #    http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 import os
 import json
 
-from IPython.display import display as idisplay
+from IPython.display import display
 
-import cadquery as cq
-from cadquery import Shape, Compound, Workplane
-from OCC.Display.WebGl.jupyter_renderer import bounding_box
-
-from .tree_view import UNSELECTED, SELECTED, EMPTY
-from .cad_display import CadqueryDisplay
+from jupyter_cadquery.cad_display import CadqueryDisplay
+from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
 
 part_id = 0
 
 #
-# Create simple Part and Assembly classes
+# Simple Part and Assembly classes
 #
 
 
-class CADObject(object):
+class _CADObject(object):
 
     def __init__(self):
-        self.color = (0.1, 0.1, 0.1)
+        self.color = (0.3, 0.3, 0.3)
 
     def next_id(self):
         global part_id
@@ -47,6 +45,12 @@ class CADObject(object):
     def to_state(self):
         raise NotImplementedError("not implemented yet")
 
+    def to_assembly(self):
+        raise NotImplementedError("not implemented yet")
+
+    def show(self, grid=False, axes=False):
+        raise NotImplementedError("not implemented yet")
+
     def web_color(self):
         if isinstance(self.color, str):
             if self.color[0] == "#":
@@ -55,10 +59,10 @@ class CADObject(object):
             return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
 
     def _ipython_display_(self):
-        idisplay(display(self))
+        display(self.show())
 
 
-class Part(CADObject):
+class _Part(_CADObject):
 
     def __init__(self, shape, name="part", color=None, show_faces=True, show_edges=True):
         super().__init__()
@@ -67,6 +71,9 @@ class Part(CADObject):
         if color is not None:
             self.color = color
         self.shape = shape
+        self.set_states(show_faces, show_edges)
+
+    def set_states(self, show_faces, show_edges):
         self.state_faces = SELECTED if show_faces else UNSELECTED
         self.state_edges = SELECTED if show_edges else UNSELECTED
 
@@ -77,17 +84,17 @@ class Part(CADObject):
         return {str(self.id): [self.state_faces, self.state_edges]}
 
 
-class Faces(Part):
+class _Faces(_Part):
 
-    def __init__(self, shape, name="faces", color=None, show_faces=True, show_edges=True):
-        super().__init__(shape.combine(), name, color, show_faces, show_edges)
+    def __init__(self, faces, name="faces", color=None, show_faces=True, show_edges=True):
+        super().__init__(faces, name, color, show_faces, show_edges)
         self.color = (1, 0, 1) if color is None else color
 
     def _ipython_display_(self):
-        idisplay(display(self, grid=False, axes=False))
+        display(self.show(grid=False, axes=False))
 
 
-class Edges(CADObject):
+class _Edges(_CADObject):
 
     def __init__(self, edges, name="edges", color=None):
         super().__init__()
@@ -103,10 +110,10 @@ class Edges(CADObject):
         return {str(self.id): [EMPTY, SELECTED]}
 
     def _ipython_display_(self):
-        idisplay(display(self, grid=False, axes=False))
+        display(self.show(grid=False, axes=False))
 
 
-class Assembly(CADObject):
+class _Assembly(_CADObject):
 
     def __init__(self, objects, name="assembly"):
         super().__init__()
@@ -137,61 +144,54 @@ class Assembly(CADObject):
         part_id = 0
 
 
-def is_edges(cadObj):
-    return all([isinstance(obj, cq.occ_impl.shapes.Edge) for obj in cadObj.objects])
-
-
-def is_faces(cadObj):
-    return all([isinstance(obj, cq.occ_impl.shapes.Face) for obj in cadObj.objects])
-
-
-def convert(cadObj, show_edges=True, show_faces=True):
-    if isinstance(cadObj, (Assembly, Part, Faces, Edges)):
-        return cadObj
-    elif is_edges(cadObj):
-        return Edges(cadObj, "edges", color=(1, 0, 1))
-    elif is_faces(cadObj):
-        return Faces(cadObj, "faces", color=(1, 0, 1), show_edges=show_edges, show_faces=show_faces)
+def _collect_states(cad_obj):
+    result = {}
+    if isinstance(cad_obj, _Assembly):
+        for obj in cad_obj.objects:
+            result.update(_collect_states(obj))
     else:
-        return Part(cadObj, "part", color=(0.3, 0.3, 0.3), show_edges=show_edges, show_faces=show_faces)
+        result.update(cad_obj.to_state())
+    return result
 
 
-def display(cad_obj,
-            height=600,
-            tree_width=250,
-            cad_width=800,
-            axes=False,
-            axes0=True,
-            grid=False,
-            ortho=True,
-            transparent=False,
-            mac_scrollbar=True):
+def _collect_shapes(cad_obj):
+    result = []
+    if isinstance(cad_obj, _Assembly):
+        for obj in cad_obj.objects:
+            result += _collect_shapes(obj)
+    else:
+        result.append({"name": cad_obj.name, "shape": cad_obj.shape, "color": cad_obj.web_color()})
+    return result
 
-    assembly = None
-    if isinstance(cad_obj, Assembly):
-        assembly = cad_obj
-    elif isinstance(cad_obj, Part):
-        assembly = Assembly([convert(cad_obj)])
-    elif is_edges(cad_obj):
-        assembly = Assembly([convert(cad_obj.parent, False, False), convert(cad_obj)])
-    elif is_faces(cad_obj):
-        assembly = Assembly([convert(cad_obj.parent, False, False), convert(cad_obj)])
-    elif isinstance(cad_obj, Workplane):
-        assembly = Assembly([convert(cad_obj)])
 
-    if assembly is not None:
-        d = CadqueryDisplay()
-        v = d.display(
-            assembly=assembly,
-            height=height,
-            tree_width=tree_width,
-            cad_width=cad_width,
-            axes=axes,
-            axes0=axes0,
-            grid=grid,
-            ortho=ortho,
-            transparent=transparent,
-            mac_scrollbar=mac_scrollbar)
-        d._debug("Rendering done")
-        d._debug("Grid: %5.1f mm" % d.cq_view.grid.step)
-        return v
+def _show(assembly,
+          height=600,
+          tree_width=250,
+          cad_width=800,
+          quality=0.5,
+          axes=False,
+          axes0=True,
+          grid=False,
+          ortho=True,
+          transparent=False,
+          mac_scrollbar=True):
+
+    d = CadqueryDisplay()
+    v = d.display(
+        states=_collect_states(assembly),
+        shapes=_collect_shapes(assembly),
+        mapping=assembly.obj_mapping(),
+        tree=assembly.to_nav_dict(),
+        height=height,
+        tree_width=tree_width,
+        cad_width=cad_width,
+        quality=quality,
+        axes=axes,
+        axes0=axes0,
+        grid=grid,
+        ortho=ortho,
+        transparent=transparent,
+        mac_scrollbar=mac_scrollbar)
+    d._debug("Rendering done")
+    d._debug("Grid: %5.1f mm" % d.cq_view.grid.step)
+    return v

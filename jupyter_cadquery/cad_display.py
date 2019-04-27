@@ -1,28 +1,26 @@
+#
 # Copyright 2019 Bernhard Walter
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #    http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 import numpy as np
 from os.path import join, dirname
 
 from ipywidgets import ToggleButton, Label, Checkbox, Layout, HBox, VBox, Output, Box, FloatSlider, Tab
 
-from cadquery import Workplane
-
-from .image_button import ImageButton
-from .tree_view import TreeView, state_diff, UNSELECTED, SELECTED, MIXED, EMPTY
+from .widgets import ImageButton, TreeView, state_diff, UNSELECTED, SELECTED, MIXED, EMPTY
 from .cad_view import CadqueryView
-import jupyter_cadquery as jcq  # break import circle
 
 
 class Clipping(object):
@@ -140,38 +138,33 @@ class CadqueryDisplay(object):
         except:
             print(msg)
 
-    def add_assembly(self, cad_obj):
-        result = {}
-        if isinstance(cad_obj, jcq.Assembly):
-            for obj in cad_obj.objects:
-                result.update(self.add_assembly(obj))
-        else:
-            self.cq_view.add_shape(cad_obj.name, cad_obj.shape, cad_obj.web_color())
-            result.update(cad_obj.to_state())
-        return result
-
     def display(self,
-                assembly,
+                states,
+                shapes,
+                mapping,
+                tree,
                 height=600,
                 tree_width=250,
                 cad_width=800,
+                quality=0.5,
                 axes=True,
                 axes0=True,
                 grid=True,
                 ortho=True,
                 transparent=False,
                 mac_scrollbar=True):
-        self.assembly = assembly
 
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(
             width=cad_width,
             height=height,
+            quality=quality,
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             debug=self._debug)
-        tree = assembly.to_nav_dict()
-        states = self.add_assembly(assembly)
+
+        for shape in shapes:
+            self.cq_view.add_shape(shape["name"], shape["shape"], shape["color"])
         renderer = self.cq_view.render()
         renderer.add_class("view_renderer")
 
@@ -205,7 +198,6 @@ class CadqueryDisplay(object):
         if mac_scrollbar:
             tree_view.add_class("mac-scrollbar")
 
-        mapping = assembly.obj_mapping()
         tree_view.observe(self.cq_view.change_visibility(mapping), "state")
 
         tab_contents = ['Tree', 'Clipping']

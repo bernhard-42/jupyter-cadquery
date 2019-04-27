@@ -1,33 +1,40 @@
+#
 # Copyright 2019 Bernhard Walter
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #    http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 import math
+import itertools
+from functools import reduce
 
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from pythreejs import CombinedCamera, BufferAttribute, BufferGeometry, \
-                          Plane, ShaderMaterial, ShaderLib, \
-                          Mesh, LineSegmentsGeometry,  LineMaterial,  LineSegments2, \
-                          AmbientLight, Scene, OrbitControls, Renderer, Picker, Group, DirectionalLight
+    from pythreejs import (CombinedCamera, BufferAttribute, BufferGeometry, Plane, Mesh, LineSegmentsGeometry,
+                           LineMaterial, LineSegments2, AmbientLight, DirectionalLight, Scene, OrbitControls, Renderer,
+                           Picker, Group)
+
 import numpy as np
 
 from OCC.Core.Visualization import Tesselator
 from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
+from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid
+from OCC.Core.Bnd import Bnd_Box
+from OCC.Core.BRepBndLib import brepbndlib_Add
 
-from .tree_view import state_diff
-from .cad_helpers import Grid, Axes, BoundingBox
+from .widgets import state_diff
+from .cad_helpers import Grid, Axes, CustomMaterial
 
 
 def _decomp(a):
@@ -43,56 +50,44 @@ def _flatten(nested_list):
     return [y for x in nested_list for y in x]
 
 
-class CustomMaterial(ShaderMaterial):
+def distance(v1, v2):
+    return np.linalg.norm([x - y for x, y in zip(v1, v2)])
 
-    def __init__(self, typ):
-        self.types = {'diffuse': 'c', 'uvTransform': 'm3', 'normalScale': 'v2', 'fogColor': 'c', 'emissive': 'c'}
 
-        shader = ShaderLib[typ]
+class BoundingBox(object):
 
-        fragmentShader = """
-        uniform float alpha;
-        """
-        frag_from = "gl_FragColor = vec4( outgoingLight, diffuseColor.a );"
-        frag_to = """
-            if ( gl_FrontFacing ) {
-                gl_FragColor = vec4( outgoingLight, alpha * diffuseColor.a );
-            } else {
-                gl_FragColor = diffuseColor;
-            }"""
-        fragmentShader += shader["fragmentShader"].replace(frag_from, frag_to)
+    def __init__(self, objects, tol=1e-5):
+        self.tol = tol
+        bbox = reduce(self._opt, [self.bbox(obj) for obj in objects])
+        self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
+        self.xsize = self.xmax - self.xmin
+        self.ysize = self.ymax - self.ymin
+        self.zsize = self.zmax - self.zmin
+        self.center = (self.xmin + self.xsize / 2.0, self.ymin + self.ysize / 2.0, self.zmin + self.zsize / 2.0)
+        self.max = reduce(lambda a, b: max(abs(a), abs(b)), bbox)
+        self.diagonal = max([
+            distance(self.center, v)
+            for v in itertools.product((self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax))
+        ])
 
-        vertexShader = shader["vertexShader"]
-        uniforms = shader["uniforms"]
-        uniforms["alpha"] = dict(value=0.7)
+    def _opt(self, b1, b2):
+        return (min(b1[0], b2[0]), max(b1[1], b2[1]), min(b1[2], b2[2]), max(b1[3], b2[3]), min(b1[4], b2[4]),
+                max(b1[5], b2[5]))
 
-        super().__init__(uniforms=uniforms, vertexShader=vertexShader, fragmentShader=fragmentShader)
-        self.lights = True
+    def _bounding_box(self, obj, tol=1e-5):
+        bbox = Bnd_Box()
+        bbox.SetGap(self.tol)
+        brepbndlib_Add(obj, bbox, True)
+        values = bbox.Get()
+        return (values[0], values[3], values[1], values[4], values[2], values[5])
 
-    @property
-    def color(self):
-        return self.uniforms["diffuse"]["value"]
+    def bbox(self, objects):
+        bb = reduce(self._opt, [self._bounding_box(obj) for obj in objects])
+        return bb
 
-    @color.setter
-    def color(self, value):
-        self.update("diffuse", value)
-
-    @property
-    def alpha(self):
-        return self.uniforms["alpha"]["value"]
-
-    @alpha.setter
-    def alpha(self, value):
-        self.update("alpha", value)
-
-    def update(self, key, value):
-        uniforms = dict(**self.uniforms)
-        if self.types.get(key) is None:
-            uniforms[key] = {'value': value}
-        else:
-            uniforms[key] = {'type': self.types.get(key), 'value': value}
-        self.uniforms = uniforms
-        self.needsUpdate = True
+    def __repr__(self):
+        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % \
+               (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)
 
 
 class CadqueryView(object):
@@ -100,12 +95,14 @@ class CadqueryView(object):
     def __init__(self,
                  width=600,
                  height=400,
+                 quality=0.5,
                  render_edges=True,
                  default_mesh_color=None,
                  default_edge_color=None,
                  debug=None):
         self.width = width
         self.height = height
+        self.quality = quality
         self.render_edges = render_edges
         self._debug = debug
 
@@ -144,7 +141,7 @@ class CadqueryView(object):
         material.polygonOffset = False
         material.polygonOffsetFactor = 1
         material.polygonOffsetUnits = 1
-        material.transparent=transparent
+        material.transparent = transparent
         material.opacity = opacity
         material.update("metalness", 0.3)
         material.update("roughness", 0.8)
@@ -161,7 +158,6 @@ class CadqueryView(object):
                       render_edges=False,
                       edge_width=1,
                       deflection=0.05,
-                      quality=1.0,
                       transparent=False,
                       opacity=1.0):
 
@@ -174,13 +170,13 @@ class CadqueryView(object):
             if edge_color is None:
                 edge_color = self.default_edge_color
 
-# BEGIN copy 
-# The next lines are copied with light modifications from
-# https://github.com/tpaviot/pythonocc-core/blob/master/src/Display/WebGl/jupyter_renderer.py
+            # BEGIN copy
+            # The next lines are copied with light modifications from
+            # https://github.com/tpaviot/pythonocc-core/blob/master/src/Display/WebGl/jupyter_renderer.py
 
             # first, compute the tesselation
             tess = Tesselator(shape)
-            tess.Compute(uv_coords=False, compute_edges=render_edges, mesh_quality=quality, parallel=True)
+            tess.Compute(uv_coords=False, compute_edges=render_edges, mesh_quality=self.quality, parallel=True)
 
             # get vertices and normals
             vertices_position = tess.GetVerticesPositionAsTuple()
@@ -224,7 +220,7 @@ class CadqueryView(object):
                         [tess.GetEdgeVertex(i_edge, i_vert) for i_vert in range(tess.ObjEdgeGetVertexCount(i_edge))],
                         range(tess.ObjGetEdgeCount())))
 
-# END copy
+            # END copy
 
         if edges is not None:
             shape_mesh = None
@@ -249,17 +245,14 @@ class CadqueryView(object):
             self.mash_edges_mapping.append(index_mapping)
 
     def _scale(self, vec):
-        r = self.bb.max * 2.5
-        n = np.linalg.norm(vec)
-        new_vec = (vec / n * r) + self.bb.center
-        return new_vec.tolist()
+        return [2 * v * self.bb.diagonal for v in vec]
 
     def _sub(self, vec1, vec2):
-        return list(v1-v2 for v1,v2 in zip(vec1, vec2))
+        return list(v1 - v2 for v1, v2 in zip(vec1, vec2))
 
     def _norm(self, vec):
         n = np.linalg.norm(vec)
-        return [v/n for v in vec]
+        return [v / n for v in vec]
 
     def _minus(self, vec):
         return [-v for v in vec]
@@ -360,7 +353,7 @@ class CadqueryView(object):
             if isinstance(value.owner.object, Mesh):
                 _, ind = value.owner.object.name.split("_")
                 shape = self.shapes[int(ind)]
-                bbox = BoundingBox([shape["shape"]])
+                bbox = BoundingBox(shape["shape"])
                 self._debug("\n%s:" % shape["name"])
                 self._debug(" x~[%5.2f,%5.2f] ~ %5.2f" % (bbox.xmin, bbox.xmax, bbox.xsize))
                 self._debug(" y~[%5.2f,%5.2f] ~ %5.2f" % (bbox.ymin, bbox.ymax, bbox.ysize))
@@ -384,31 +377,31 @@ class CadqueryView(object):
     def render(self):
         # Render all shapes
         for i, shape in enumerate(self.shapes):
-            if is_edge(shape["shape"].toOCC()):
+            # Assume that all are edges when first element is an edge
+            if is_edge(shape["shape"][0]):
                 # TODO Check it is safe to omit these edges
                 # The edges with one vertex are CurveOnSurface
                 # curve_adaptator = BRepAdaptor_Curve(edge)
                 # curve_adaptator.IsCurveOnSurface() == True
-                edges = [
-                    edge.wrapped
-                    for edge in shape["shape"].objects
-                    if TopologyExplorer(edge.wrapped).number_of_vertices() >= 2
-                ]
+                edges = [edge for edge in shape["shape"] if TopologyExplorer(edge).number_of_vertices() >= 2]
                 self._render_shape(i, edges=edges, render_edges=True, edge_color=shape["color"], edge_width=3)
             else:
-                self._render_shape(i, shape=shape["shape"].toOCC(), render_edges=True, mesh_color=shape["color"])
+                # shape has only 1 object, hence first=True
+                self._render_shape(i, shape=shape["shape"][0], render_edges=True, mesh_color=shape["color"])
 
         # Get the overall bounding box
         self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
-        bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax), abs(self.bb.zmin),
-                      abs(self.bb.zmax)))
+        #bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax), abs(self.bb.zmin),
+        #              abs(self.bb.zmax)))
+        bb_max = self.bb.max
+        bb_diag = self.bb.diagonal
 
         # Set up camera
         camera_target = self.bb.center
         camera_position = self._scale([1, 1, 1])
 
         self.camera = CombinedCamera(
-            position=camera_position, width=self.width, height=self.height, far=10 * bb_max, orthoFar=10 * bb_max)
+            position=camera_position, width=self.width, height=self.height, far=10 * bb_diag, orthoFar=10 * bb_diag)
         self.camera.up = (0.0, 0.0, 1.0)
         self.camera.lookAt(camera_target)
         self.camera.mode = 'orthographic'
@@ -417,20 +410,20 @@ class CadqueryView(object):
         # Set up lights
         key_lights = [
             DirectionalLight(color='white', position=position, intensity=0.12) for position in [
-                (bb_max, bb_max, bb_max),
-                (-bb_max, bb_max, bb_max),
-                (bb_max, -bb_max, bb_max),
-                (bb_max, bb_max, -bb_max),
-                (-bb_max, -bb_max, bb_max),
-                (-bb_max, bb_max, -bb_max),
-                (bb_max, -bb_max, -bb_max),
-                (-bb_max, -bb_max, bb_max),
+                (bb_diag, bb_diag, bb_diag),
+                (-bb_diag, bb_diag, bb_diag),
+                (bb_diag, -bb_diag, bb_diag),
+                (bb_diag, bb_diag, -bb_diag),
+                (-bb_diag, -bb_diag, bb_diag),
+                (-bb_diag, bb_diag, -bb_diag),
+                (bb_diag, -bb_diag, -bb_diag),
+                (-bb_diag, -bb_diag, bb_diag),
             ]
         ]
         ambient_light = AmbientLight(intensity=1.0)
 
         # Set up Helpers
-        self.axes = Axes(bb_center=self.bb.center, length=bb_max)
+        self.axes = Axes(bb_center=self.bb.center, length=bb_max * 1.1)
         self.grid = Grid(bb_center=self.bb.center, maximum=bb_max, colorCenterLine='#aaa', colorGrid='#ddd')
 
         # Set up scene

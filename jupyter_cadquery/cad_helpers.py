@@ -1,27 +1,24 @@
+#
 # Copyright 2019 Bernhard Walter
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #    http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 import math
-from functools import reduce
-
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from pythreejs import GridHelper, LineSegmentsGeometry, LineSegments2, LineMaterial
-
-from OCC.Core.Bnd import Bnd_Box
-from OCC.Core.BRepBndLib import brepbndlib_Add
+    from pythreejs import GridHelper, LineSegmentsGeometry, LineSegments2, LineMaterial, ShaderMaterial, ShaderLib
 
 
 class Helpers(object):
@@ -127,33 +124,53 @@ class Axes(Helpers):
             self.axes[i].visible = change
 
 
-class BoundingBox(object):
+class CustomMaterial(ShaderMaterial):
 
-    def __init__(self, shapes, tol=1e-5):
-        self.tol = tol
-        bbox = reduce(self._opt, [self.bbox(shape) for shape in shapes])
-        self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
-        self.xsize = self.xmax - self.xmin
-        self.ysize = self.ymax - self.ymin
-        self.zsize = self.zmax - self.zmin
-        self.center = (self.xmin + self.xsize / 2.0, self.ymin + self.ysize / 2.0, self.zmin + self.zsize / 2.0)
-        self.max = reduce(lambda a, b: max(abs(a), abs(b)), bbox)
+    def __init__(self, typ):
+        self.types = {'diffuse': 'c', 'uvTransform': 'm3', 'normalScale': 'v2', 'fogColor': 'c', 'emissive': 'c'}
 
-    def _opt(self, b1, b2):
-        return (min(b1[0], b2[0]), max(b1[1], b2[1]), min(b1[2], b2[2]), max(b1[3], b2[3]), min(b1[4], b2[4]),
-                max(b1[5], b2[5]))
+        shader = ShaderLib[typ]
 
-    def _bounding_box(self, obj, tol=1e-5):
-        bbox = Bnd_Box()
-        bbox.SetGap(self.tol)
-        brepbndlib_Add(obj, bbox, True)
-        values = bbox.Get()
-        return (values[0], values[3], values[1], values[4], values[2], values[5])
+        fragmentShader = """
+        uniform float alpha;
+        """
+        frag_from = "gl_FragColor = vec4( outgoingLight, diffuseColor.a );"
+        frag_to = """
+            if ( gl_FrontFacing ) {
+                gl_FragColor = vec4( outgoingLight, alpha * diffuseColor.a );
+            } else {
+                gl_FragColor = vec4( diffuseColor.r, diffuseColor.g, diffuseColor.b, alpha * diffuseColor.a );
+            }"""
+        fragmentShader += shader["fragmentShader"].replace(frag_from, frag_to)
 
-    def bbox(self, shape):
-        bb = reduce(self._opt, [self._bounding_box(obj.wrapped) for obj in shape.objects])
-        return bb
+        vertexShader = shader["vertexShader"]
+        uniforms = shader["uniforms"]
+        uniforms["alpha"] = dict(value=0.7)
 
-    def __repr__(self):
-        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % \
-               (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)
+        super().__init__(uniforms=uniforms, vertexShader=vertexShader, fragmentShader=fragmentShader)
+        self.lights = True
+
+    @property
+    def color(self):
+        return self.uniforms["diffuse"]["value"]
+
+    @color.setter
+    def color(self, value):
+        self.update("diffuse", value)
+
+    @property
+    def alpha(self):
+        return self.uniforms["alpha"]["value"]
+
+    @alpha.setter
+    def alpha(self, value):
+        self.update("alpha", value)
+
+    def update(self, key, value):
+        uniforms = dict(**self.uniforms)
+        if self.types.get(key) is None:
+            uniforms[key] = {'value': value}
+        else:
+            uniforms[key] = {'type': self.types.get(key), 'value': value}
+        self.uniforms = uniforms
+        self.needsUpdate = True

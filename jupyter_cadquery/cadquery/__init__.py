@@ -14,9 +14,22 @@
 # limitations under the License.
 #
 
-version_info = (0, 9, 0, 'beta', 0)
+from .cad_objects import Assembly, Part, Faces, Edges, show
 
-_specifier_ = {'alpha': 'a', 'beta': 'b', 'candidate': 'rc', 'final': ''}
+print("Overwriting auto display for cadquery Workplane and Shape")
 
-__version__ = '%s.%s.%s%s'%(version_info[0], version_info[1], version_info[2],
-  '' if version_info[3]=='final' else _specifier_[version_info[3]]+str(version_info[4]))
+def _cadquery_display_(cad_obj):
+    # from IPython.display import display as idisplay
+    # idisplay(display(obj))
+    return cad_obj
+
+
+from cadquery import Workplane, Shape
+try:
+    del Workplane._repr_html_
+    del Shape._repr_html_
+except:
+    pass
+
+Workplane._ipython_display_ = _cadquery_display_
+Shape._ipython_display_ = _cadquery_display_
