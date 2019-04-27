@@ -95,6 +95,7 @@ Part(bottle, color="#abdda4")
 ```
 
 [Classic OCC bottle](screenshots/occ_bottle.png)
+
 ![Classic OCC bottle](screenshots/s_occ_bottle.png)
 
 
