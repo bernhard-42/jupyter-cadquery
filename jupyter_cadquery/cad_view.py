@@ -319,11 +319,12 @@ class CadqueryView(object):
 
     def toggle_black_edges(self, change):
         value = self.bool_or_new(change)
-        for i in range(1, len(self.pickable_objects.children), 2):
-            if value:
-                self.pickable_objects.children[i].material.color = "#000"
-            else:
-                self.pickable_objects.children[i].material.color = self.default_edge_color
+        for obj in self.pickable_objects.children:
+            if isinstance(obj, LineSegments2):
+                _, ind = obj.name.split("_")
+                ind = int(ind)
+                if isinstance(self.shapes[ind]["shape"][0], TopoDS_Compound):
+                    obj.material.color = "#000" if value else self.default_edge_color
 
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
@@ -406,7 +407,7 @@ class CadqueryView(object):
         self.camera.mode = 'orthographic'
         self.camera.position = camera_position
 
-        # Set up lights in every of the 8 corners of the global bounding box 
+        # Set up lights in every of the 8 corners of the global bounding box
         key_lights = [
             DirectionalLight(color='white', position=position, intensity=0.12)
             for position in list(itertools.product((-bb_diag, bb_diag), (-bb_diag, bb_diag), (-bb_diag, bb_diag)))
