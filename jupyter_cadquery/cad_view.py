@@ -391,10 +391,9 @@ class CadqueryView(object):
 
         # Get the overall bounding box
         self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
-        #bb_max = max((abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax), abs(self.bb.zmin),
-        #              abs(self.bb.zmax)))
+
         bb_max = self.bb.max
-        bb_diag = self.bb.diagonal
+        bb_diag = 2 * self.bb.diagonal
 
         # Set up camera
         camera_target = self.bb.center
@@ -407,18 +406,10 @@ class CadqueryView(object):
         self.camera.mode = 'orthographic'
         self.camera.position = camera_position
 
-        # Set up lights
+        # Set up lights in every of the 8 corners of the global bounding box 
         key_lights = [
-            DirectionalLight(color='white', position=position, intensity=0.12) for position in [
-                (bb_diag, bb_diag, bb_diag),
-                (-bb_diag, bb_diag, bb_diag),
-                (bb_diag, -bb_diag, bb_diag),
-                (bb_diag, bb_diag, -bb_diag),
-                (-bb_diag, -bb_diag, bb_diag),
-                (-bb_diag, bb_diag, -bb_diag),
-                (bb_diag, -bb_diag, -bb_diag),
-                (-bb_diag, -bb_diag, bb_diag),
-            ]
+            DirectionalLight(color='white', position=position, intensity=0.12)
+            for position in list(itertools.product((-bb_diag, bb_diag), (-bb_diag, bb_diag), (-bb_diag, bb_diag)))
         ]
         ambient_light = AmbientLight(intensity=1.0)
 
