@@ -87,7 +87,7 @@ class _Part(_CADObject):
         return {str(self.id): [self.state_faces, self.state_edges]}
 
     def collect_shapes(self):
-        return {"name": self.name, "shape": self.shape, "color": self.web_color()}
+        return [{"name": self.name, "shape": self.shape, "color": self.web_color()}]
 
 
 class _Faces(_Part):
@@ -116,7 +116,7 @@ class _Edges(_CADObject):
         return {str(self.id): [EMPTY, SELECTED]}
 
     def collect_shapes(self):
-        return {"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}
+        return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
 
     def _ipython_display_(self):
         display(self.show(grid=False, axes=False))
@@ -147,7 +147,7 @@ class _Assembly(_CADObject):
     def collect_shapes(self):
         result = []
         for obj in self.objects:
-            result.append(obj.collect_shapes())
+            result += obj.collect_shapes()
         return result
 
     def obj_mapping(self):
