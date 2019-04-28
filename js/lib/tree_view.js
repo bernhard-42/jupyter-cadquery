@@ -194,7 +194,7 @@ var TreeView = DescriptionView.extend({
       }
       var filtered_states = states.filter(e => e != 3)
       if (filtered_states.length == 0) {
-        state = 0;
+        state = 3;
       } else {
         state = filtered_states.reduce((s1, s2) => (s1 == s2) ? s1 : States.mixed, 
                                        filtered_states[0]);
