@@ -353,7 +353,7 @@ class CadqueryView(object):
             if isinstance(value.owner.object, Mesh):
                 _, ind = value.owner.object.name.split("_")
                 shape = self.shapes[int(ind)]
-                bbox = BoundingBox(shape["shape"])
+                bbox = BoundingBox([shape["shape"]])
                 self._debug("\n%s:" % shape["name"])
                 self._debug(" x~[%5.2f,%5.2f] ~ %5.2f" % (bbox.xmin, bbox.xmax, bbox.xsize))
                 self._debug(" y~[%5.2f,%5.2f] ~ %5.2f" % (bbox.ymin, bbox.ymax, bbox.ysize))
