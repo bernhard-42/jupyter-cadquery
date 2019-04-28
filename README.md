@@ -11,7 +11,6 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 ### Key features:
 
-- Works in Jupyter Notebooks and Jupyter Lab
 - Support for *CadQuery* and *PythonOCC* shapes
 - Switch between Orthographic and Perspective view
 - Auto display of *CadQuery* shapes 
