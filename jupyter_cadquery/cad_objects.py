@@ -45,6 +45,9 @@ class _CADObject(object):
     def to_state(self):
         raise NotImplementedError("not implemented yet")
 
+    def collect_shapes(self):
+        raise NotImplementedError("not implemented yet")
+
     def to_assembly(self):
         raise NotImplementedError("not implemented yet")
 
@@ -83,6 +86,9 @@ class _Part(_CADObject):
     def to_state(self):
         return {str(self.id): [self.state_faces, self.state_edges]}
 
+    def collect_shapes(self):
+        return {"name": self.name, "shape": self.shape, "color": self.web_color()}
+
 
 class _Faces(_Part):
 
@@ -108,6 +114,9 @@ class _Edges(_CADObject):
 
     def to_state(self):
         return {str(self.id): [EMPTY, SELECTED]}
+
+    def collect_shapes(self):
+        return {"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}
 
     def _ipython_display_(self):
         display(self.show(grid=False, axes=False))
@@ -135,6 +144,12 @@ class _Assembly(_CADObject):
             result.update(obj.to_state())
         return result
 
+    def collect_shapes(self):
+        result = []
+        for obj in self.objects:
+            result.append(obj.collect_shapes())
+        return result
+
     def obj_mapping(self):
         return {v: k for k, v in enumerate(self.to_state().keys())}
 
@@ -142,26 +157,6 @@ class _Assembly(_CADObject):
     def reset_id(cls):
         global part_id
         part_id = 0
-
-
-def _collect_states(cad_obj):
-    result = {}
-    if isinstance(cad_obj, _Assembly):
-        for obj in cad_obj.objects:
-            result.update(_collect_states(obj))
-    else:
-        result.update(cad_obj.to_state())
-    return result
-
-
-def _collect_shapes(cad_obj):
-    result = []
-    if isinstance(cad_obj, _Assembly):
-        for obj in cad_obj.objects:
-            result += _collect_shapes(obj)
-    else:
-        result.append({"name": cad_obj.name, "shape": cad_obj.shape, "color": cad_obj.web_color()})
-    return result
 
 
 def _show(assembly,
@@ -178,8 +173,8 @@ def _show(assembly,
 
     d = CadqueryDisplay()
     v = d.display(
-        states=_collect_states(assembly),
-        shapes=_collect_shapes(assembly),
+        states=assembly.to_state(),
+        shapes=assembly.collect_shapes(),
         mapping=assembly.obj_mapping(),
         tree=assembly.to_nav_dict(),
         height=height,
