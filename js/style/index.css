@@ -28,6 +28,11 @@
     overflow-y: visible;
 }
 
+.tab-content-no-padding .widget-tab-contents {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+}
+
 .view_renderer {
     border: 1px solid #ddd;
 }
@@ -71,6 +76,10 @@
     padding: 0px !important;
 }
 
+.node_entry_wrap {
+    white-space: pre;
+}
+
 .node_entry {
     white-space: nowrap;
     padding-top: 4px;
@@ -100,7 +109,7 @@
 
 .toplevel {
     list-style-type: none;
-    padding-inline-start: 16px;
+    padding-inline-start: 0px;
 }
 
 .nested {

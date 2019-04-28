@@ -189,8 +189,8 @@ class CadqueryDisplay(object):
             tree=tree,
             state=states,
             layout=Layout(
-                height="%dpx" % (height * 0.6 - 55),
-                width="%dpx" % tree_width,
+                height="%dpx" % (height * 0.6 - 45),
+                width="%dpx" % (tree_width - 20),
                 overflow_y="scroll",
                 overflow_x="scroll"))
         tree_view.add_class("view_tree")
@@ -205,6 +205,7 @@ class CadqueryDisplay(object):
         tree_clipping.children = [tree_view, clipping.create()]
         for i in range(len(tab_contents)):
             tree_clipping.set_title(i, tab_contents[i])
+        tree_clipping.add_class("tab-content-no-padding")
 
         # Check controls to swith orto, grid and axis
         check_controls = [

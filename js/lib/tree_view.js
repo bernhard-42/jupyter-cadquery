@@ -236,12 +236,12 @@ var TreeView = DescriptionView.extend({
     var img;
 
     var li = tag("li");
-
     var lbl = tag("span", ["tree_label"]);
     lbl.innerHTML = model.name;
     var entry = tag("span", ["node_entry"])
     if (model.type === "node") {
-      li.appendChild(tag("span", ["caret", "caret-down"]));
+      var span = tag("span", ["node_entry_wrap"])
+      span.appendChild(tag("span", ["caret", "caret-down"]));
       for (icon_id in this.icons) {
         img = tag("img", ["icon"], { src: this.getIcon(icon_id, 1) });
         img.setAttribute("icon_id", icon_id);
@@ -252,7 +252,8 @@ var TreeView = DescriptionView.extend({
         model.imgs.push(img);
       }
       entry.appendChild(lbl);
-      li.appendChild(entry);
+      span.appendChild(entry);
+      li.append(span);
       var lu = tag("ul", ["nested", "active"]);
       for (var i in model.children) {
         lu.appendChild(this.toHtml(model.children[i]));
