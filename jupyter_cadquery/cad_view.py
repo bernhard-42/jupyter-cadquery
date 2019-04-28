@@ -245,7 +245,13 @@ class CadqueryView(object):
             self.mash_edges_mapping.append(index_mapping)
 
     def _scale(self, vec):
-        return [2 * v * self.bb.diagonal for v in vec]
+        r = self.bb.diagonal * 2.5
+        n = np.linalg.norm(vec)
+        new_vec = [v / n * r for v in vec]
+        return self._add(new_vec, self.bb.center)
+
+    def _add(self, vec1, vec2):
+        return list(v1 + v2 for v1, v2 in zip(vec1, vec2))
 
     def _sub(self, vec1, vec2):
         return list(v1 - v2 for v1, v2 in zip(vec1, vec2))
