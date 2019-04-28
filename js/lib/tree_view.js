@@ -89,7 +89,7 @@ var TreeView = DescriptionView.extend({
     var toggler = this.el.getElementsByClassName("caret");
     for (var i = 0; i < toggler.length; i++) {
       toggler[i].addEventListener("click", e => { // jshint ignore:line
-        e.srcElement.parentElement.querySelector(".nested").classList.toggle("active");
+        e.srcElement.parentElement.parentElement.querySelector(".nested").classList.toggle("active");
         e.srcElement.classList.toggle("caret-down");
       });
     }
