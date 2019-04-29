@@ -25,10 +25,11 @@ from .cad_view import CadqueryView
 
 class Clipping(object):
 
-    def __init__(self, image_path, out, cq_view):
+    def __init__(self, image_path, out, cq_view, width):
         self.image_path = image_path
         self.cq_view = cq_view
         self.out = out
+        self.width = width
         self.sliders = []
         self.normals = []
         self.labels = []
@@ -63,7 +64,7 @@ class Clipping(object):
             orientation='horizontal',
             readout=True,
             readout_format='.2f',
-            layout=Layout(width="230px"))
+            layout=Layout(width="%dpx" % (self.width - 20)))
 
         slider.observe(self.cq_view.clip(ind), "value")
         return [HBox([button, label]), slider]
@@ -169,9 +170,10 @@ class CadqueryDisplay(object):
         renderer.add_class("view_renderer")
 
         # Output widget
+        output_height = height * 0.4 - 20 + 2
         self.output = Output(
             layout=Layout(
-                height="%dpx" % (height * 0.4), width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll"))
+                height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll"))
         self.output.add_class("view_output")
         self.output.add_class("scroll_down")
 
@@ -179,17 +181,18 @@ class CadqueryDisplay(object):
             self.output.add_class("mac-scrollbar")
 
         bb = self.cq_view.bb
-        clipping = Clipping(self.image_path, self.output, self.cq_view)
+        clipping = Clipping(self.image_path, self.output, self.cq_view, tree_width)
         for normal in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)):
             clipping.add_slider(bb.max * 1.2, -bb.max * 1.3, bb.max * 1.2, 0.01, normal)
 
         # Tree widget to change visibility
+        tree_height = height - output_height - 35
         tree_view = TreeView(
             image_paths=self.image_paths,
             tree=tree,
             state=states,
             layout=Layout(
-                height="%dpx" % (height * 0.6 - 45),
+                height="%dpx" % (height * 0.6 - 25),
                 width="%dpx" % (tree_width - 20),
                 overflow_y="scroll",
                 overflow_x="scroll"))
@@ -201,7 +204,7 @@ class CadqueryDisplay(object):
         tree_view.observe(self.cq_view.change_visibility(mapping), "state")
 
         tab_contents = ['Tree', 'Clipping']
-        tree_clipping = Tab(layout=Layout(height="%dpx" % (height * 0.6), width="%dpx" % tree_width))
+        tree_clipping = Tab(layout=Layout(height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width))
         tree_clipping.children = [tree_view, clipping.create()]
         for i in range(len(tab_contents)):
             tree_clipping.set_title(i, tab_contents[i])

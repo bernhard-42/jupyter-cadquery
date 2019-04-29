@@ -31,14 +31,17 @@
 .tab-content-no-padding .widget-tab-contents {
     overflow-x: visible !important;
     overflow-y: visible !important;
+    padding-bottom: 0px !important;
 }
 
 .view_renderer {
-    border: 1px solid #ddd;
+    border: 1px solid var(--jp-border-color1);
+    margin-top: 3px;
+    margin-left: 2px;
 }
 
 .view_output {
-    border: 1px solid #ddd;
+    border: 1px solid var(--jp-border-color1);
     margin: 2px 2px 1px 1px;
 }
 
@@ -50,6 +53,7 @@
 
 .view_axes {
     width: 60px !important;
+    margin-left: 5px !important;
 }
 
 .view_zero {
