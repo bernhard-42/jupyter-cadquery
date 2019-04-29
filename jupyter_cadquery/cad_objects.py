@@ -187,13 +187,7 @@ def _show(assembly,
         ortho=ortho,
         transparent=transparent,
         mac_scrollbar=mac_scrollbar)
-    d._debug("Rendering done")
-    d._debug("-----------------------------")
-    d._debug("Grid ticks: %5.1f mm" % d.cq_view.grid.step)
-    d._debug("X-Axis: Red")
-    d._debug("Y-Axis: Green")
-    d._debug("Z-Axis: Blue")
-    d._debug("Doubleclick to select objects")
-    d._debug("-----------------------------")
+
+    d.info.ready_msg(d.cq_view.grid.step)
 
     return v

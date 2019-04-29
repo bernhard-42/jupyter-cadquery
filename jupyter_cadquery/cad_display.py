@@ -17,10 +17,67 @@
 import numpy as np
 from os.path import join, dirname
 
-from ipywidgets import ToggleButton, Label, Checkbox, Layout, HBox, VBox, Output, Box, FloatSlider, Tab
+from ipywidgets import ToggleButton, Label, Checkbox, Layout, HBox, VBox, Output, Box, FloatSlider, Tab, HTML, Box
 
 from .widgets import ImageButton, TreeView, state_diff, UNSELECTED, SELECTED, MIXED, EMPTY
 from .cad_view import CadqueryView
+
+
+class Info(object):
+
+    def __init__(self, width=230, height=300):
+        self.html = HTML(
+            value="",
+            layout=Layout(width=("%dpx" % width), height=("%dpx" % height), border="solid 1px #ddd", overflow="scroll"))
+        self.width = width
+        self.height = height
+        self.number = 0
+        self.chunks = []
+
+    def add_text(self, msg):
+        self.add_html('<pre style="white-space: nowrap;">%s</pre>' % msg)
+
+    def add_html(self, html):
+        self.chunks.insert(0, (self.number, html))
+        self.number += 1
+        self.render()
+
+    def render(self):
+        html = '<table style="display: block; overflow-x: visible; white-space: nowrap;">'
+
+        for n, chunk in self.chunks:
+            html += '<tr style="border-bottom: 1px solid #ccc">'
+            html += '<td><pre style="color: #aaa; white-space: nowrap">[%2d]</pre></td>' % n
+            html += '<td>%s</td>' % chunk
+            html += "</tr>"
+        html += "</table>"
+
+        self.html.value = html
+
+    def ready_msg(self, tick_size):
+        html = """
+        <b>Rendering done</b>
+        <table>
+            <tr class="small_table" >                       <td>Tick size</td> <td>%s mm</td> </tr>
+            <tr class="small_table" style="color: red;">   <td>X-Axis</td>     <td>Red</td>    </tr>
+            <tr class="small_table" style="color: green;"> <td>Y-Axis</td>     <td>Green</td>  </tr>
+            <tr class="small_table" style="color: blue;">  <td>Z-Axis</td>     <td>Blue</td>   </tr>
+        </table>
+        """ % tick_size
+        self.add_html(html)
+
+    def bb_info(self, name, bb):
+        html = """
+        <b> Object: '%s':</b>
+        <table>
+        """ % name
+        html += '<tr class="small_table"><th></th><th>min</th><th>max</th><th>center</th></tr>'
+
+        for t, a, c in zip(("x", "y", "z"), bb[:3], bb[3]):
+            html += '<tr class="small_table"><th>%s</th><td>%5.2f</td><td>%5.2f</td><td>%5.2f</td></tr>' % (t, a[0],
+                                                                                                            a[1], c)
+        html += "</table>"
+        self.add_html(html)
 
 
 class Clipping(object):
@@ -95,7 +152,7 @@ class CadqueryDisplay(object):
         self.default_edge_color = default_edge_color
 
         super().__init__()
-        self.output = None
+        self.info = None
         self.cq_view = None
         self.assembly = None
 
@@ -132,10 +189,9 @@ class CadqueryDisplay(object):
         checkbox.add_class("view_%s" % kind)
         return checkbox
 
-    def _debug(self, *msg):
+    def write(self, *msg):
         try:
-            self.output.append_stdout("".join([str(m) for m in msg]))
-            self.output.append_stdout("\n")
+            self.info.add_text(" ".join([str(m) for m in msg]))
         except:
             print(msg)
 
@@ -155,6 +211,21 @@ class CadqueryDisplay(object):
                 transparent=False,
                 mac_scrollbar=True):
 
+        # Output widget
+        output_height = height * 0.4 - 20 + 2
+        # self.output = Output(
+        #     layout=Layout(
+        #         height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll"))
+        self.info = Info(tree_width, output_height)
+        self.output = self.info.html
+        self.output.layout = Layout(
+            height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll")
+        self.output.add_class("view_output")
+        self.output.add_class("scroll_down")
+
+        if mac_scrollbar:
+            self.output.add_class("mac-scrollbar")
+
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(
             width=cad_width,
@@ -162,23 +233,12 @@ class CadqueryDisplay(object):
             quality=quality,
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
-            debug=self._debug)
+            info=self.info)
 
         for shape in shapes:
             self.cq_view.add_shape(shape["name"], shape["shape"], shape["color"])
         renderer = self.cq_view.render()
         renderer.add_class("view_renderer")
-
-        # Output widget
-        output_height = height * 0.4 - 20 + 2
-        self.output = Output(
-            layout=Layout(
-                height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll"))
-        self.output.add_class("view_output")
-        self.output.add_class("scroll_down")
-
-        if mac_scrollbar:
-            self.output.add_class("mac-scrollbar")
 
         bb = self.cq_view.bb
         clipping = Clipping(self.image_path, self.output, self.cq_view, tree_width)
@@ -186,7 +246,7 @@ class CadqueryDisplay(object):
             clipping.add_slider(bb.max * 1.2, -bb.max * 1.3, bb.max * 1.2, 0.01, normal)
 
         # Tree widget to change visibility
-        tree_height = height - output_height - 35
+#       tree_height = height - output_height - 35
         tree_view = TreeView(
             image_paths=self.image_paths,
             tree=tree,

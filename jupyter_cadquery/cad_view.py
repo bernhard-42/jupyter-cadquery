@@ -99,12 +99,12 @@ class CadqueryView(object):
                  render_edges=True,
                  default_mesh_color=None,
                  default_edge_color=None,
-                 debug=None):
+                 info=None):
         self.width = width
         self.height = height
         self.quality = quality
         self.render_edges = render_edges
-        self._debug = debug
+        self.info = info
 
         self.features = ["mesh", "edges"]
 
@@ -361,10 +361,13 @@ class CadqueryView(object):
                 _, ind = value.owner.object.name.split("_")
                 shape = self.shapes[int(ind)]
                 bbox = BoundingBox([shape["shape"]])
-                self._debug("\n%s:" % shape["name"])
-                self._debug(" x~[%5.2f,%5.2f] ~ %5.2f" % (bbox.xmin, bbox.xmax, bbox.xsize))
-                self._debug(" y~[%5.2f,%5.2f] ~ %5.2f" % (bbox.ymin, bbox.ymax, bbox.ysize))
-                self._debug(" z~[%5.2f,%5.2f] ~ %5.2f" % (bbox.zmin, bbox.zmax, bbox.zsize))
+
+                self.info.bb_info(shape["name"], ((bbox.xmin, bbox.xmax), (bbox.ymin, bbox.ymax),
+                                                  (bbox.zmin, bbox.zmax), bbox.center))
+                # self.write("\n%s:" % shape["name"])
+                # self.write(" x~[%5.2f,%5.2f] ~ %5.2f" % (bbox.xmin, bbox.xmax, bbox.xsize))
+                # self.write(" y~[%5.2f,%5.2f] ~ %5.2f" % (bbox.ymin, bbox.ymax, bbox.ysize))
+                # self.write(" z~[%5.2f,%5.2f] ~ %5.2f" % (bbox.zmin, bbox.zmax, bbox.zsize))
                 self.pick_last_mesh = value.owner.object
                 self.pick_last_mesh_color = self.pick_last_mesh.material.color
                 self.pick_last_mesh.material.color = self.pick_color
