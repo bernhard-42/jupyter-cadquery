@@ -18,6 +18,7 @@ from traitlets import Unicode, validate, CUnicode, Bytes
 
 from ipywidgets.widgets import register, Button
 from ipywidgets.widgets.trait_types import bytes_serialization
+from jupyter_cadquery._version import __version__
 
 
 @register
@@ -27,8 +28,8 @@ class ImageButton(Button):
     _model_name = Unicode('ImageButtonModel').tag(sync=True)
     _view_module = Unicode('jupyter_cadquery').tag(sync=True)
     _model_module = Unicode('jupyter_cadquery').tag(sync=True)
-    _view_module_version = Unicode('^0.1.0').tag(sync=True)
-    _model_module_version = Unicode('^0.1.0').tag(sync=True)
+    _view_module_version = Unicode('^%s' % __version__).tag(sync=True)
+    _model_module_version = Unicode('^%s' % __version__).tag(sync=True)
     image_path = Unicode("")
     value = Bytes().tag(sync=True, **bytes_serialization)
     width = CUnicode("36", help="Width of the image in pixels.").tag(sync=True)

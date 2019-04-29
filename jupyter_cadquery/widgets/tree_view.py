@@ -21,6 +21,8 @@ from traitlets import Unicode, List, Dict
 from ipywidgets.widgets import register, Button
 from ipywidgets.widgets.trait_types import bytes_serialization
 
+from jupyter_cadquery._version import __version__
+
 UNSELECTED = 0
 SELECTED = 1
 MIXED = 2
@@ -42,8 +44,8 @@ class TreeView(Button):
     _model_name = Unicode('TreeModel').tag(sync=True)
     _view_module = Unicode('jupyter_cadquery').tag(sync=True)
     _model_module = Unicode('jupyter_cadquery').tag(sync=True)
-    _view_module_version = Unicode('^0.1.0').tag(sync=True)
-    _model_module_version = Unicode('^0.1.0').tag(sync=True)
+    _view_module_version = Unicode('^%s' % __version__).tag(sync=True)
+    _model_module_version = Unicode('^%s' % __version__).tag(sync=True)
     image_paths = List(Dict(None, allow_none=True))
     icons = List(Dict(None, allow_none=True)).tag(sync=True)
     tree = Dict(None, allow_none=True).tag(sync=True)
