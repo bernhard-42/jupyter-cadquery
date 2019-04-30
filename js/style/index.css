@@ -1,7 +1,8 @@
-.mac-scrollbar {
-    overflow: scroll !important;
-    border: unset !important;
+.scroll-area {
+  overflow: scroll !important;
+  border: unset !important;
 }
+
 .mac-scrollbar::-webkit-scrollbar {
     width: 5px!important;
     height: 5px!important;

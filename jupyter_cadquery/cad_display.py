@@ -14,8 +14,9 @@
 # limitations under the License.
 #
 
-import numpy as np
+import platform
 from os.path import join, dirname
+import numpy as np
 
 from ipywidgets import ToggleButton, Label, Checkbox, Layout, HBox, VBox, Output, Box, FloatSlider, Tab, HTML, Box
 
@@ -211,6 +212,9 @@ class CadqueryDisplay(object):
                 transparent=False,
                 mac_scrollbar=True):
 
+        if platform.system() != "Darwin":
+            mac_scrollbar = False
+
         # Output widget
         output_height = height * 0.4 - 20 + 2
         # self.output = Output(
@@ -218,6 +222,7 @@ class CadqueryDisplay(object):
         #         height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll"))
         self.info = Info(tree_width, output_height - 6)
 
+        self.info.html.add_class("scroll-area")
         if mac_scrollbar:
             self.info.html.add_class("mac-scrollbar")
 
@@ -256,7 +261,7 @@ class CadqueryDisplay(object):
                 height="%dpx" % (height * 0.6 - 25),
                 width="%dpx" % (tree_width - 20)))
         tree_view.add_class("view_tree")
-
+        tree_view.add_class("scroll-area")
         if mac_scrollbar:
             tree_view.add_class("mac-scrollbar")
 
