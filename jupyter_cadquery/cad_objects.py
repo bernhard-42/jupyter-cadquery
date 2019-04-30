@@ -62,7 +62,7 @@ class _CADObject(object):
             return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
 
     def _ipython_display_(self):
-        display(self.show())
+        self.show()
 
 
 class _Part(_CADObject):
@@ -97,7 +97,7 @@ class _Faces(_Part):
         self.color = (1, 0, 1) if color is None else color
 
     def _ipython_display_(self):
-        display(self.show(grid=False, axes=False))
+        self.show(grid=False, axes=False)
 
 
 class _Edges(_CADObject):
@@ -119,7 +119,7 @@ class _Edges(_CADObject):
         return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
 
     def _ipython_display_(self):
-        display(self.show(grid=False, axes=False))
+        self.show(grid=False, axes=False)
 
 
 class _Assembly(_CADObject):
@@ -169,10 +169,11 @@ def _show(assembly,
           grid=False,
           ortho=True,
           transparent=False,
-          mac_scrollbar=True):
+          mac_scrollbar=True,
+          sidecar=None):
 
     d = CadqueryDisplay()
-    v = d.display(
+    widget = d.display(
         states=assembly.to_state(),
         shapes=assembly.collect_shapes(),
         mapping=assembly.obj_mapping(),
@@ -190,4 +191,10 @@ def _show(assembly,
 
     d.info.ready_msg(d.cq_view.grid.step)
 
-    return v
+    if sidecar is not None:
+        sidecar.clear_output(True)
+        with sidecar:
+            display(widget)
+        print("Done, using side car '%s'" % sidecar.title)
+    else:
+        display(widget)

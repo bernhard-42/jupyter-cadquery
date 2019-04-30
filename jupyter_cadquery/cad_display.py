@@ -219,9 +219,6 @@ class CadqueryDisplay(object):
 
         # Output widget
         output_height = height * 0.4 - 20 + 2
-        # self.output = Output(
-        #     layout=Layout(
-        #         height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll"))
         self.info = Info(tree_width, output_height - 6)
 
         self.info.html.add_class("scroll-area")
