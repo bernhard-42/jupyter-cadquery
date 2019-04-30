@@ -24,11 +24,11 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 ### Samples
 
-#### Sidecar
+#### Jupyterlab Sidecar
 
-[Sidecar Support](screenshots/sidecar.png)
+- [Sidecar Support](screenshots/sidecar.png)
 
-![Sidecar Support](screenshots/s_sidecar.png)
+    ![Sidecar Support](screenshots/s_sidecar.png)
 
 #### CadQuery
 
@@ -175,9 +175,10 @@ Own classes for assemblies
 
 ## Credits
 
-- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py#L177) are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py` 
+- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py` 
+- Dave Cowden for [CadQuery](https://github.com/dcowden/cadquery) 
 - Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
 ## Known issues
-- [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using clip planes (cannot be solved in general)
+- [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
