@@ -47,7 +47,7 @@ class Info(object):
         html = '<table style="display: block; overflow-x: visible; white-space: nowrap;">'
 
         for n, chunk in self.chunks:
-            html += '<tr style="border-bottom: 1px solid #ccc">'
+            html += '<tr style="vertical-align: text-top;">'
             html += '<td><pre style="color: #aaa; white-space: nowrap">[%2d]</pre></td>' % n
             html += '<td>%s</td>' % chunk
             html += "</tr>"
@@ -59,7 +59,7 @@ class Info(object):
         html = """
         <b>Rendering done</b>
         <table>
-            <tr class="small_table" >                       <td>Tick size</td> <td>%s mm</td> </tr>
+            <tr class="small_table" >                      <td>Tick size</td>  <td>%s mm</td> </tr>
             <tr class="small_table" style="color: red;">   <td>X-Axis</td>     <td>Red</td>    </tr>
             <tr class="small_table" style="color: green;"> <td>Y-Axis</td>     <td>Green</td>  </tr>
             <tr class="small_table" style="color: blue;">  <td>Z-Axis</td>     <td>Blue</td>   </tr>
@@ -75,8 +75,10 @@ class Info(object):
         html += '<tr class="small_table"><th></th><th>min</th><th>max</th><th>center</th></tr>'
 
         for t, a, c in zip(("x", "y", "z"), bb[:3], bb[3]):
-            html += '<tr class="small_table"><th>%s</th><td>%5.2f</td><td>%5.2f</td><td>%5.2f</td></tr>' % (t, a[0],
-                                                                                                            a[1], c)
+            html += """<tr class="small_table">
+                <th>%s</th><td>%5.2f</td><td>%5.2f</td><td>%5.2f</td>
+            </tr>
+            """ % (t, a[0], a[1], c)
         html += "</table>"
         self.add_html(html)
 
