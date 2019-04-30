@@ -19,8 +19,16 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 - Transparency mode
 - Toggle visibilty of shapes and edges
 - Clipping with max 3 clipping planes (of free orientation)
+- Supports (Jupyterlab Sidecar)[https://github.com/jupyter-widgets/jupyterlab-sidecar]
+    
 
 ### Samples
+
+#### Sidecar
+
+[Sidecar Support](screenshots/sidecar.png)
+
+![Sidecar Support](screenshots/s_sidecar.png)
 
 #### CadQuery
 
