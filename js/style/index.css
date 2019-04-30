@@ -1,3 +1,7 @@
+.mac-scrollbar {
+    overflow: scroll !important;
+    border: unset !important;
+}
 .mac-scrollbar::-webkit-scrollbar {
     width: 5px!important;
     height: 5px!important;
@@ -15,15 +19,6 @@
 .mac-scrollbar::-webkit-scrollbar-thumb:active {
     background: #181818!important;
 }
-
-/* .mac-scrollbar .jp-OutputArea .jp-OutputArea-child .jp-OutputArea-output pre {
-    white-space: pre;
-} */
-
-/* .mac-scrollbar .jp-OutputArea .jp-OutputArea-child .jp-OutputArea-output pre,
-.mac-scrollbar .jp-OutputArea .jp-OutputArea-child .jp-OutputArea-output,
-.mac-scrollbar .jp-OutputArea .jp-OutputArea-child,
-.mac-scrollbar .jp-OutputArea { */
 .mac-scrollbar .widget-html-content {
     overflow-x: visible;
     overflow-y: visible;
@@ -43,12 +38,11 @@
 
 .view_output {
     border: 1px solid var(--jp-border-color1);
-    margin: 2px 2px 1px 1px;
+    margin: 2px 2px 2px 2px !important;
+    padding-right: 1px !important;
 }
 
 .view_tree {
-    /* border: 1px solid #ddd; */
-    /* margin: 1px 2px 1px 1px; */
     padding: 0px !important;
 }
 

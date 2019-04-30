@@ -216,15 +216,16 @@ class CadqueryDisplay(object):
         # self.output = Output(
         #     layout=Layout(
         #         height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll"))
-        self.info = Info(tree_width, output_height)
-        self.output = self.info.html
-        self.output.layout = Layout(
-            height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll")
-        self.output.add_class("view_output")
-        self.output.add_class("scroll_down")
+        self.info = Info(tree_width, output_height - 6)
 
         if mac_scrollbar:
-            self.output.add_class("mac-scrollbar")
+            self.info.html.add_class("mac-scrollbar")
+
+        self.output = Box([self.info.html])
+        self.output.layout = Layout(
+            height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll")
+
+        self.output.add_class("view_output")
 
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(
@@ -253,9 +254,7 @@ class CadqueryDisplay(object):
             state=states,
             layout=Layout(
                 height="%dpx" % (height * 0.6 - 25),
-                width="%dpx" % (tree_width - 20),
-                overflow_y="scroll",
-                overflow_x="scroll"))
+                width="%dpx" % (tree_width - 20)))
         tree_view.add_class("view_tree")
 
         if mac_scrollbar:
