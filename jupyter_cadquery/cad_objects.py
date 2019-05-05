@@ -122,6 +122,28 @@ class _Edges(_CADObject):
         self.show(grid=False, axes=False)
 
 
+class _Wires(_CADObject):
+
+    def __init__(self, wires, name="edges", color=None):
+        super().__init__()
+        self.shape = wires
+        self.name = name
+        self.id = self.next_id()
+        self.color = (1, 0, 1) if color is None else color
+
+    def to_nav_dict(self):
+        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
+
+    def to_state(self):
+        return {str(self.id): [EMPTY, SELECTED]}
+
+    def collect_shapes(self):
+        return [{"name": self.name, "shape": [wire for wire in self.shape], "color": self.web_color()}]
+
+    def _ipython_display_(self):
+        self.show(grid=False, axes=False)
+
+
 class _Assembly(_CADObject):
 
     def __init__(self, objects, name="assembly"):

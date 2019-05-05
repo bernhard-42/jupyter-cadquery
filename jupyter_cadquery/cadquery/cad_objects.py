@@ -14,10 +14,10 @@
 # limitations under the License.
 #
 
-from cadquery.occ_impl.shapes import Face, Edge
+from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import Workplane, Shape
 
-from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _show
+from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _Wires, _show
 
 
 class Part(_Part):
@@ -56,6 +56,18 @@ class Edges(_Edges):
         return show(self, grid=grid, axes=axes)
 
 
+class Wires(_Wires):
+
+    def __init__(self, wires, name="wires", color=None):
+        super().__init__(_to_occ(wires), name, color)
+
+    def to_assembly(self):
+        return Assembly([self])
+
+    def show(self, grid=False, axes=False):
+        return show(self, grid=grid, axes=axes)
+
+
 class Assembly(_Assembly):
 
     def to_assembly(self):
@@ -79,6 +91,11 @@ def _edge_list_to_assembly(cad_obj):
          Edges(cad_obj, "edges", color=(1, 0, 1))])
 
 
+def _wire_list_to_assembly(cad_obj):
+    return Assembly(
+        [Wires(cad_obj, "wires", color=(1, 0, 1))])
+
+
 def _face_list_to_assembly(cad_obj):
     return Assembly(
         [Part(cad_obj.parent, show_edges=False, show_faces=False),
@@ -96,6 +113,10 @@ def _is_edge_list(cad_obj):
     return all([isinstance(obj, Edge) for obj in cad_obj.objects])
 
 
+def _is_wire_list(cad_obj):
+    return all([isinstance(obj, Wire) for obj in cad_obj.objects])
+
+
 def show(cad_obj,
          height=600,
          tree_width=250,
@@ -110,10 +131,12 @@ def show(cad_obj,
          sidecar=None):
 
     assembly = None
-    if isinstance(cad_obj, (Assembly, Part, Faces, Edges)):
+    if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Wires)):
         assembly = cad_obj.to_assembly()
     elif _is_edge_list(cad_obj):
         assembly = _edge_list_to_assembly(cad_obj)
+    elif _is_wire_list(cad_obj):
+        assembly = _wire_list_to_assembly(cad_obj)
     elif _is_face_list(cad_obj):
         assembly = _face_list_to_assembly(cad_obj)
     elif isinstance(cad_obj, Workplane):

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from .cad_objects import Assembly, Part, Faces, Edges, show
+from .cad_objects import Assembly, Part, Faces, Edges, Wires, show
 
 print("Overwriting auto display for cadquery Workplane and Shape")
 
