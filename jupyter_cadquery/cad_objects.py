@@ -113,25 +113,6 @@ class _Edges(_CADObject):
         return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
 
 
-class _Wires(_CADObject):
-
-    def __init__(self, wires, name="edges", color=None):
-        super().__init__()
-        self.shape = wires
-        self.name = name
-        self.id = self.next_id()
-        self.color = (1, 0, 1) if color is None else color
-
-    def to_nav_dict(self):
-        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
-
-    def to_state(self):
-        return {str(self.id): [EMPTY, SELECTED]}
-
-    def collect_shapes(self):
-        return [{"name": self.name, "shape": [wire for wire in self.shape], "color": self.web_color()}]
-
-
 class _Assembly(_CADObject):
 
     def __init__(self, objects, name="assembly"):
@@ -215,7 +196,6 @@ def auto_show():
     _Part._ipython_display_ = lambda self: self.show()
     _Faces._ipython_display_ = lambda self: self.show(grid=False, axes=False)
     _Edges._ipython_display_ = lambda self: self.show(grid=False, axes=False)
-    _Wires._ipython_display_ = lambda self: self.show(grid=False, axes=False)
 
     print("Overwriting auto display for cadquery Workplane and Shape")
 

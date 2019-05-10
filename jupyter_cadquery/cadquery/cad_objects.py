@@ -17,7 +17,7 @@
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import Workplane, Shape
 
-from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _Wires, _show
+from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _show
 
 
 class Part(_Part):
@@ -56,18 +56,6 @@ class Edges(_Edges):
         return show(self, grid=grid, axes=axes)
 
 
-class Wires(_Wires):
-
-    def __init__(self, wires, name="wires", color=None):
-        super().__init__(_to_occ(wires), name, color)
-
-    def to_assembly(self):
-        return Assembly([self])
-
-    def show(self, grid=False, axes=False):
-        return show(self, grid=grid, axes=axes)
-
-
 class Assembly(_Assembly):
 
     def to_assembly(self):
@@ -78,10 +66,17 @@ class Assembly(_Assembly):
 
 
 def _to_occ(cad_obj):
-    if isinstance(cad_obj, Workplane):
+    # special cas Wire, must be handled before Workplane
+    if _is_wire_list(cad_obj):
+        all_edges = []
+        for edges in cad_obj.objects:
+            all_edges += edges.Edges()
+        return [edge.wrapped for edge in all_edges]
+    elif isinstance(cad_obj, Workplane):
         return [obj.wrapped for obj in cad_obj.objects]
     elif isinstance(cad_obj, Shape):
         return [cad_obj.wrapped]
+
     else:
         raise NotImplementedError(type(cad_obj))
 
@@ -93,7 +88,7 @@ def _edge_list_to_assembly(cad_obj):
 
 def _wire_list_to_assembly(cad_obj):
     return Assembly(
-        [Wires(cad_obj, "wires", color=(1, 0, 1))])
+        [Edges(cad_obj, "edges", color=(1, 0, 1))])
 
 
 def _face_list_to_assembly(cad_obj):
@@ -131,7 +126,7 @@ def show(cad_obj,
          sidecar=None):
 
     assembly = None
-    if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Wires)):
+    if isinstance(cad_obj, (Assembly, Part, Faces, Edges)):
         assembly = cad_obj.to_assembly()
     elif _is_edge_list(cad_obj):
         assembly = _edge_list_to_assembly(cad_obj)

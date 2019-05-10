@@ -28,7 +28,7 @@ with warnings.catch_warnings():
 import numpy as np
 
 from OCC.Core.Visualization import Tesselator
-from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, is_wire, discretize_edge, discretize_wire
+from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
 from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid, TopoDS_Wire
 from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRepBndLib import brepbndlib_Add
@@ -224,10 +224,7 @@ class CadqueryView(object):
 
         if edges is not None:
             shape_mesh = None
-            if is_wire(edges[0]):  # Wire
-                edge_list = [discretize_wire(edge) for edge in edges]
-            else:
-                edge_list = [discretize_edge(edge, deflection) for edge in edges]
+            edge_list = [discretize_edge(edge, deflection) for edge in edges]
 
         if edge_list is not None:
             edge_list = _flatten(list(map(_explode, edge_list)))
@@ -398,8 +395,6 @@ class CadqueryView(object):
                 # curve_adaptator.IsCurveOnSurface() == True
                 edges = [edge for edge in shape["shape"] if TopologyExplorer(edge).number_of_vertices() >= 2]
                 self._render_shape(i, edges=edges, render_edges=True, edge_color=shape["color"], edge_width=3)
-            elif is_wire(shape["shape"][0]):
-                self._render_shape(i, edges=shape["shape"], render_edges=True, edge_color=shape["color"], edge_width=3)
             else:
                 # shape has only 1 object, hence first=True
                 self._render_shape(i, shape=shape["shape"][0], render_edges=True, mesh_color=shape["color"])
