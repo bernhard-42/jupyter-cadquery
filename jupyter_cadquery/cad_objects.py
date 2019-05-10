@@ -61,9 +61,6 @@ class _CADObject(object):
         else:
             return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
 
-    def _ipython_display_(self):
-        self.show()
-
 
 class _Part(_CADObject):
 
@@ -96,9 +93,6 @@ class _Faces(_Part):
         super().__init__(faces, name, color, show_faces, show_edges)
         self.color = (1, 0, 1) if color is None else color
 
-    def _ipython_display_(self):
-        self.show(grid=False, axes=False)
-
 
 class _Edges(_CADObject):
 
@@ -118,9 +112,6 @@ class _Edges(_CADObject):
     def collect_shapes(self):
         return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
 
-    def _ipython_display_(self):
-        self.show(grid=False, axes=False)
-
 
 class _Wires(_CADObject):
 
@@ -139,9 +130,6 @@ class _Wires(_CADObject):
 
     def collect_shapes(self):
         return [{"name": self.name, "shape": [wire for wire in self.shape], "color": self.web_color()}]
-
-    def _ipython_display_(self):
-        self.show(grid=False, axes=False)
 
 
 class _Assembly(_CADObject):
@@ -220,3 +208,17 @@ def _show(assembly,
         print("Done, using side car '%s'" % sidecar.title)
     else:
         display(widget)
+
+
+def auto_show():
+    _Assembly._ipython_display_ = lambda self: self.show()
+    _Part._ipython_display_ = lambda self: self.show()
+    _Faces._ipython_display_ = lambda self: self.show(grid=False, axes=False)
+    _Edges._ipython_display_ = lambda self: self.show(grid=False, axes=False)
+    _Wires._ipython_display_ = lambda self: self.show(grid=False, axes=False)
+
+    print("Overwriting auto display for cadquery Workplane and Shape")
+
+    import cadquery as cq
+    cq.Workplane._ipython_display_ = lambda cad_obj: cad_obj
+    cq.Shape._ipython_display_ = lambda cad_obj: cad_obj

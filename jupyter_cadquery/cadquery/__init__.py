@@ -16,13 +16,8 @@
 
 from .cad_objects import Assembly, Part, Faces, Edges, Wires, show
 
-print("Overwriting auto display for cadquery Workplane and Shape")
 
-def _cadquery_display_(cad_obj):
-    # from IPython.display import display as idisplay
-    # idisplay(display(obj))
-    return cad_obj
-
+print("Removing auto display for cadquery Workplane and Shape")
 
 from cadquery import Workplane, Shape
 try:
@@ -31,5 +26,4 @@ try:
 except:
     pass
 
-Workplane._ipython_display_ = _cadquery_display_
-Shape._ipython_display_ = _cadquery_display_
+

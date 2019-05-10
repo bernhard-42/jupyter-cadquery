@@ -15,6 +15,7 @@
 #
 
 from ._version import version_info, __version__
+from .cad_objects import auto_show
 
 def _jupyter_nbextension_paths():
     return [{
