@@ -15,7 +15,7 @@
 #
 
 from ._version import version_info, __version__
-from .cad_objects import auto_show
+from .cad_objects import auto_show, set_sidecar
 from .replay import Replay
 
 def _jupyter_nbextension_paths():

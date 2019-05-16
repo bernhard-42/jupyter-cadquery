@@ -22,7 +22,8 @@ from IPython.display import display
 from jupyter_cadquery.cad_display import CadqueryDisplay
 from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
 
-part_id = 0
+PART_ID = 0
+SIDECAR = None
 
 #
 # Simple Part and Assembly classes
@@ -35,9 +36,9 @@ class _CADObject(object):
         self.color = (232, 176, 36)
 
     def next_id(self):
-        global part_id
-        part_id += 1
-        return part_id
+        global PART_ID
+        PART_ID += 1
+        return PART_ID
 
     def to_nav_dict(self):
         raise NotImplementedError("not implemented yet")
@@ -60,7 +61,7 @@ class _CADObject(object):
                 return self.color
         else:
             # Note: (1,1,1) will be interpreted as (1,1,1). Use (255,255,255) if needed
-            if any((c<1) for c in self.color):
+            if any((c < 1) for c in self.color):
                 return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
             else:
                 return "rgb(%d, %d, %d)" % self.color
@@ -150,8 +151,8 @@ class _Assembly(_CADObject):
 
     @classmethod
     def reset_id(cls):
-        global part_id
-        part_id = 0
+        global PART_ID
+        PART_ID = 0
 
 
 def _show(assembly,
@@ -166,6 +167,12 @@ def _show(assembly,
           transparent=False,
           mac_scrollbar=True,
           sidecar=None):
+
+    def sidecar_display(sidecar, widget):
+        sidecar.clear_output(True)
+        with sidecar:
+            display(widget)
+        print("Done, using side car '%s'" % sidecar.title)
 
     d = CadqueryDisplay()
     widget = d.display(
@@ -185,14 +192,22 @@ def _show(assembly,
         mac_scrollbar=mac_scrollbar)
 
     d.info.ready_msg(d.cq_view.grid.step)
-
+    
     if sidecar is not None:
-        sidecar.clear_output(True)
-        with sidecar:
+        if not sidecar:  # global sidecar setting overwritten by False
             display(widget)
-        print("Done, using side car '%s'" % sidecar.title)
+        else:  # use provided sidecar
+            sidecar_display(sidecar, widget)
     else:
-        display(widget)
+        if SIDECAR is not None:  # use global sidecar
+            sidecar_display(SIDECAR, widget)
+        else:
+            display(widget)
+
+
+def set_sidecar(sidecar):
+    global SIDECAR
+    SIDECAR = sidecar
 
 
 def auto_show():
