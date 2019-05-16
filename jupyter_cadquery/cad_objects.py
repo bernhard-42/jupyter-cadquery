@@ -69,7 +69,7 @@ class _CADObject(object):
 
 class _Part(_CADObject):
 
-    def __init__(self, shape, name="part", color=None, show_faces=True, show_edges=True):
+    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
         super().__init__()
         self.name = name
         self.id = self.next_id()
@@ -94,14 +94,14 @@ class _Part(_CADObject):
 
 class _Faces(_Part):
 
-    def __init__(self, faces, name="faces", color=None, show_faces=True, show_edges=True):
+    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
         super().__init__(faces, name, color, show_faces, show_edges)
         self.color = (1, 0, 1) if color is None else color
 
 
 class _Edges(_CADObject):
 
-    def __init__(self, edges, name="edges", color=None):
+    def __init__(self, edges, name="Edges", color=None):
         super().__init__()
         self.shape = edges
         self.name = name
@@ -120,7 +120,7 @@ class _Edges(_CADObject):
 
 class _Assembly(_CADObject):
 
-    def __init__(self, objects, name="assembly"):
+    def __init__(self, objects, name="Assembly"):
         super().__init__()
         self.name = name
         self.id = self.next_id()

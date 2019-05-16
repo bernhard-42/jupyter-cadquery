@@ -22,7 +22,7 @@ from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _show
 
 class Part(_Part):
 
-    def __init__(self, shape, name="part", color=None, show_faces=True, show_edges=True):
+    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -34,7 +34,7 @@ class Part(_Part):
 
 class Faces(_Faces):
 
-    def __init__(self, faces, name="faces", color=None, show_faces=True, show_edges=True):
+    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
         super().__init__(_to_occ(faces.combine()), name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -46,7 +46,7 @@ class Faces(_Faces):
 
 class Edges(_Edges):
 
-    def __init__(self, edges, name="edges", color=None):
+    def __init__(self, edges, name="Edges", color=None):
         super().__init__(_to_occ(edges), name, color)
 
     def to_assembly(self):
@@ -64,6 +64,12 @@ class Assembly(_Assembly):
     def show(self, grid=False, axes=False):
         return show(self, grid=grid, axes=axes)
 
+    def add(self, cad_obj):
+        self.objects.append(cad_obj)
+
+    def add_list(self, cad_objs):
+        self.objects += cad_objs
+
 
 def _to_occ(cad_obj):
     # special cas Wire, must be handled before Workplane
@@ -80,27 +86,30 @@ def _to_occ(cad_obj):
     else:
         raise NotImplementedError(type(cad_obj))
 
-def _edge_list_to_assembly(cad_obj):
+
+def _edge_list_to_objs(cad_obj, obj_id):
     if isinstance(cad_obj.parent.val(), Vector):
-        return Assembly([ Edges(cad_obj, "edges", color=(1, 0, 1)) ])
+        return [Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))]
     else:
-        return Assembly(
-            [Part(cad_obj.parent, show_edges=False, show_faces=False),
-            Edges(cad_obj, "edges", color=(1, 0, 1))])
+        return [
+            Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=False, show_faces=False),
+            Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))
+        ]
 
 
-def _wire_list_to_assembly(cad_obj):
-    return Assembly(
-        [Edges(cad_obj, "edges", color=(1, 0, 1))])
+def _wire_list_to_obj(cad_obj, obj_id):
+    return Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))
 
 
-def _face_list_to_assembly(cad_obj):
-    return Assembly(
-        [Part(cad_obj.parent, show_edges=False, show_faces=False),
-         Faces(cad_obj, "faces", color=(1, 0, 1))])
+def _face_list_to_objs(cad_obj, obj_id):
+    return [
+        Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=False, show_faces=False),
+        Faces(cad_obj, "Faces_%d" % obj_id, color=(1, 0, 1))
+    ]
 
-def _workplane_to_assembly(cad_obj):
-    return Assembly([Part(cad_obj, "part")])
+
+def _workplane_to_obj(cad_obj, obj_id):
+    return Part(cad_obj, "Part_%d" % obj_id)
 
 
 def _is_face_list(cad_obj):
@@ -115,7 +124,7 @@ def _is_wire_list(cad_obj):
     return all([isinstance(obj, Wire) for obj in cad_obj.objects])
 
 
-def show(cad_obj,
+def show(*cad_objs,
          height=600,
          tree_width=250,
          cad_width=800,
@@ -128,17 +137,25 @@ def show(cad_obj,
          mac_scrollbar=True,
          sidecar=None):
 
-    assembly = None
-    if isinstance(cad_obj, (Assembly, Part, Faces, Edges)):
-        assembly = cad_obj.to_assembly()
-    elif _is_edge_list(cad_obj):
-        assembly = _edge_list_to_assembly(cad_obj)
-    elif _is_wire_list(cad_obj):
-        assembly = _wire_list_to_assembly(cad_obj)
-    elif _is_face_list(cad_obj):
-        assembly = _face_list_to_assembly(cad_obj)
-    elif isinstance(cad_obj, Workplane):
-        assembly = _workplane_to_assembly(cad_obj)
+    assembly = Assembly([], "Assembly")
+    obj_id = 0
+    for cad_obj in cad_objs:
+        if isinstance(cad_obj, (Assembly, Part, Faces, Edges)):
+            assembly.add(cad_obj)
+
+        elif _is_face_list(cad_obj):
+            assembly.add_list(_face_list_to_objs(cad_obj, obj_id))
+
+        elif _is_edge_list(cad_obj):
+            assembly.add_list(_edge_list_to_objs(cad_obj, obj_id))
+
+        elif _is_wire_list(cad_obj):
+            assembly.add_list([_wire_list_to_obj(cad_obj, obj_id)])
+
+        elif isinstance(cad_obj, Workplane):
+            assembly.add(_workplane_to_obj(cad_obj, obj_id))
+
+        obj_id += 1
 
     if assembly is None:
         raise ValueError("%s cannot be viewed" % type(cad_obj))
