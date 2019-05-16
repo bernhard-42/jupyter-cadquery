@@ -21,11 +21,29 @@ from jupyter_cadquery.cadquery import show
 
 _last_signature = None
 _skip_objects = 0
-_skip_list = {"fillet": 1, "chamfer": 1, "circle": 1, "rect": 1, "polygon": 1}
+# first element: skip steps for "combine=False"
+# second element: skip steps for "combine=True"
+# Third element: add if clean=True
+_skip_list = {
+    "fillet": (1, 1, 0),
+    "chamfer": (1, 1, 0),
+    "circle": (1, 1, 0),
+    "rect": (1, 1, 0),
+    "polygon": (1, 1, 0),
+    "box": (1, 3, 1),
+    "mirrorX": (4, 4, 0),
+    "mirrorY": (4, 4, 0),
+    "cboreHole": (2, 2, 0),
+    "cskHole": (2, 2, 0),
+    "hole": (2, 2, 0),
+    "extrude": (0, 0, 1),
+    "twistExtrude": (0, 0, 1),
+    "revolve": (0, 0, 1)
+}
 
 
 def _blacklist(name):
-    return name.startswith("_") or name == "newObject"
+    return name.startswith("_") or name in ("workplane", "newObject", "vertices")
 
 
 def _add_function_name(self, name):
@@ -36,14 +54,21 @@ def _add_function_name(self, name):
             global _last_signature, _skip_objects
             if _last_signature is None:
                 _last_signature = (func.__name__, args)
-                _skip_objects = _skip_list.get(func.__name__, 0)
+                skip = _skip_list.get(func.__name__, (0, 0, 0))
+                if kwargs.get("combine", True):
+                    _skip_objects = skip[1]
+                else:
+                    _skip_objects = skip[0]
+                if kwargs.get("clean", True):
+                    _skip_objects += skip[2]
+                # print("New    ", func.__name__, _last_signature, _skip_objects, kwargs)
             return func(*args, **kwargs)
 
         return f
 
     attr = object.__getattribute__(self, name)
-
     if callable(attr):
+        # print("Called", _skip_objects, _last_signature, attr.__name__)
         if not _blacklist(attr.__name__):
             return make_interceptor(attr)
     return attr
@@ -58,10 +83,12 @@ def _newObject(self, objlist):
     ns.ctx = self.ctx
     if _last_signature is not None:
         if _skip_objects == 0:
+            # print("Set   ", _last_signature, "\n")
             ns._caller = list(_last_signature)
             _last_signature = None
         else:
             _skip_objects -= 1
+            # print("Set skip", _skip_objects)
             ns._caller = None
     else:
         ns._caller = None
@@ -86,7 +113,10 @@ class Replay(object):
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
-                stack.insert(0, ("%s%s" % tuple(caller), obj))
+                code = "%s%s" % tuple(caller)
+                if len(caller[1]) == 1:
+                    code = code[:-2] + ")"
+                stack.insert(0, (code, obj))
             obj = obj.parent
         return stack
 
