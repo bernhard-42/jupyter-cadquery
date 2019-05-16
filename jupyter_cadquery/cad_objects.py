@@ -32,7 +32,7 @@ part_id = 0
 class _CADObject(object):
 
     def __init__(self):
-        self.color = (0.3, 0.3, 0.3)
+        self.color = (232, 176, 36)
 
     def next_id(self):
         global part_id
@@ -59,7 +59,11 @@ class _CADObject(object):
             if self.color[0] == "#":
                 return self.color
         else:
-            return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
+            # Note: (1,1,1) will be interpreted as (1,1,1). Use (255,255,255) if needed
+            if any((c<1) for c in self.color):
+                return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
+            else:
+                return "rgb(%d, %d, %d)" % self.color
 
 
 class _Part(_CADObject):

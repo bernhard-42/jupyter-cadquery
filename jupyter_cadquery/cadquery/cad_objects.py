@@ -15,7 +15,7 @@
 #
 
 from cadquery.occ_impl.shapes import Face, Edge, Wire
-from cadquery import Workplane, Shape
+from cadquery import Workplane, Shape, Vector
 
 from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _show
 
@@ -81,9 +81,12 @@ def _to_occ(cad_obj):
         raise NotImplementedError(type(cad_obj))
 
 def _edge_list_to_assembly(cad_obj):
-    return Assembly(
-        [Part(cad_obj.parent, show_edges=False, show_faces=False),
-         Edges(cad_obj, "edges", color=(1, 0, 1))])
+    if isinstance(cad_obj.parent.val(), Vector):
+        return Assembly([ Edges(cad_obj, "edges", color=(1, 0, 1)) ])
+    else:
+        return Assembly(
+            [Part(cad_obj.parent, show_edges=False, show_faces=False),
+            Edges(cad_obj, "edges", color=(1, 0, 1))])
 
 
 def _wire_list_to_assembly(cad_obj):

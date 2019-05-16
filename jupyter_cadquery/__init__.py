@@ -16,6 +16,7 @@
 
 from ._version import version_info, __version__
 from .cad_objects import auto_show
+from .replay import Replay
 
 def _jupyter_nbextension_paths():
     return [{
@@ -24,3 +25,45 @@ def _jupyter_nbextension_paths():
         'dest': 'jupyter_cadquery',
         'require': 'jupyter_cadquery/extension'
     }]
+
+def patch_cq():
+    print("Patch")
+    import cadquery
+    print("  - cadquery.Workplane.lineTo: guard against line length 0")
+
+    def _lineTo(self, x, y, forConstruction=False):
+        """
+        Make a line from the current point to the provided point
+
+        :param float x: the x point, in workplane plane coordinates
+        :param float y: the y point, in workplane plane coordinates
+        :return: the Workplane object with the current point at the end of the new line
+
+        see :py:meth:`line` if you want to use relative dimensions to make a line instead.
+        """
+        startPoint = self._findFromPoint(False)
+
+        endPoint = self.plane.toWorldCoords((x, y))
+
+        if startPoint.sub(endPoint).Length > self.ctx.tolerance:
+            p = cadquery.Edge.makeLine(startPoint, endPoint)
+
+            if not forConstruction:
+                self._addPendingEdge(p)
+
+            return self.newObject([p])
+        else:
+            return self
+
+    cadquery.Workplane.lineTo = _lineTo
+
+
+    print("  - cadquery.Workplane: remove auto display")
+    print("  - cadquery.Shape: remove auto display")
+
+    from cadquery import Workplane, Shape
+    try:
+        del Workplane._repr_html_
+        del Shape._repr_html_
+    except:
+        pass

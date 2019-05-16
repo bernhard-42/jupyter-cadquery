@@ -15,15 +15,3 @@
 #
 
 from .cad_objects import Assembly, Part, Faces, Edges, show
-
-
-print("Removing auto display for cadquery Workplane and Shape")
-
-from cadquery import Workplane, Shape
-try:
-    del Workplane._repr_html_
-    del Shape._repr_html_
-except:
-    pass
-
-
