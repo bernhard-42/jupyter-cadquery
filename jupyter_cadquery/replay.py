@@ -30,7 +30,7 @@ _skip_list = {
     "circle": (1, 1, 0),
     "rect": (1, 1, 0),
     "polygon": (1, 1, 0),
-    "box": (1, 3, 1),
+    "box": (1, 2, 1),
     "mirrorX": (4, 4, 0),
     "mirrorY": (4, 4, 0),
     "cboreHole": (2, 2, 0),
@@ -38,9 +38,9 @@ _skip_list = {
     "hole": (2, 2, 0),
     "extrude": (0, 0, 1),
     "twistExtrude": (0, 0, 1),
-    "revolve": (0, 0, 1)
+    "revolve": (0, 0, 1),
+    "close": (1, 1, 0)
 }
-
 
 def _blacklist(name):
     return name.startswith("_") or name in ("workplane", "newObject", "vertices")
@@ -53,7 +53,7 @@ def _add_function_name(self, name):
         def f(*args, **kwargs):
             global _last_signature, _skip_objects
             if _last_signature is None:
-                _last_signature = (func.__name__, args)
+                _last_signature = (func.__name__, args, [])
                 skip = _skip_list.get(func.__name__, (0, 0, 0))
                 if kwargs.get("combine", True):
                     _skip_objects = skip[1]
@@ -85,6 +85,8 @@ def _newObject(self, objlist):
         if _skip_objects == 0:
             # print("Set   ", _last_signature, "\n")
             ns._caller = list(_last_signature)
+            if self.ctx.pendingEdges:
+                ns._caller[2] = list(self.ctx.pendingEdges)
             _last_signature = None
         else:
             _skip_objects -= 1
@@ -113,10 +115,14 @@ class Replay(object):
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
-                code = "%s%s" % tuple(caller)
-                if len(caller[1]) == 1:
+                name, args, pendingeEdges = caller
+                code = "%s%s" % (name, args)
+                if len(args) == 1:
                     code = code[:-2] + ")"
-                stack.insert(0, (code, obj))
+                if pendingeEdges:
+                    stack.insert(0, (code, obj.newObject(pendingeEdges)))
+                else:
+                    stack.insert(0, (code, obj))
             obj = obj.parent
         return stack
 
