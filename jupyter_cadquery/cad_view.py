@@ -381,22 +381,14 @@ class CadqueryView(object):
 
     def render(self):
         # Render all shapes
-
         for i, shape in enumerate(self.shapes):
             s = shape["shape"]
-            c = shape["color"]
-            w = 3
             # Assume that all are edges when first element is an edge
             if is_edge(s[0]):
-                # TODO Check it is safe to omit these edges
-                # The edges with one vertex are CurveOnSurface
-                # curve_adaptator = BRepAdaptor_Curve(edge)
-                # curve_adaptator.IsCurveOnSurface() == True
-                edges = [edge for edge in s if TopologyExplorer(edge).number_of_vertices() >= 2]
-                self._render_shape(i, edges=edges, render_edges=True, edge_color=c, edge_width=w)
+                self._render_shape(i, edges=s, render_edges=True, edge_color=shape["color"], edge_width=3)
             else:
                 # shape has only 1 object, hence first=True
-                self._render_shape(i, shape=s[0], render_edges=True, mesh_color=c)
+                self._render_shape(i, shape=s[0], render_edges=True, mesh_color=shape["color"])
 
         # Get the overall bounding box
         self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
