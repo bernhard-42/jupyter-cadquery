@@ -192,7 +192,7 @@ def _show(assembly,
         mac_scrollbar=mac_scrollbar)
 
     d.info.ready_msg(d.cq_view.grid.step)
-    
+
     if sidecar is not None:
         if not sidecar:  # global sidecar setting overwritten by False
             display(widget)
