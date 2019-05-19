@@ -33,7 +33,6 @@ from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid, TopoDS_Wire
 from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Core.gp import gp_Vec, gp_Pnt
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
 
 from .widgets import state_diff
 from .cad_helpers import Grid, Axes, CustomMaterial
@@ -148,8 +147,6 @@ class CadqueryView(object):
         material.update("metalness", 0.3)
         material.update("roughness", 0.8)
         return material
-        # return MeshStandardMaterial(color=color, transparent=transparent, opacity=opacity, side='FrontSide',
-        #     polygonOffset = True, polygonOffsetFactor = 1, polygonOffsetUnits = 1)
 
     def _render_shape(self,
                       shape_index,
@@ -366,10 +363,6 @@ class CadqueryView(object):
 
                 self.info.bb_info(shape["name"], ((bbox.xmin, bbox.xmax), (bbox.ymin, bbox.ymax),
                                                   (bbox.zmin, bbox.zmax), bbox.center))
-                # self.write("\n%s:" % shape["name"])
-                # self.write(" x~[%5.2f,%5.2f] ~ %5.2f" % (bbox.xmin, bbox.xmax, bbox.xsize))
-                # self.write(" y~[%5.2f,%5.2f] ~ %5.2f" % (bbox.ymin, bbox.ymax, bbox.ysize))
-                # self.write(" z~[%5.2f,%5.2f] ~ %5.2f" % (bbox.zmin, bbox.zmax, bbox.zsize))
                 self.pick_last_mesh = value.owner.object
                 self.pick_last_mesh_color = self.pick_last_mesh.material.color
                 self.pick_last_mesh.material.color = self.pick_color
@@ -386,12 +379,6 @@ class CadqueryView(object):
     def add_shape(self, name, shape, color="#ff0000"):
         self.shapes.append({"name": name, "shape": shape, "color": color})
 
-    def gp_Vec_to_edge(self, objs):
-        if isinstance(objs[0], gp_Vec):
-            return [BRepBuilderAPI_MakeEdge(gp_Pnt(0, 0, 0), gp_Pnt(obj.XYZ())).Edge() for obj in objs]
-        else:
-            return objs
-
     def render(self):
         # Render all shapes
 
@@ -399,11 +386,6 @@ class CadqueryView(object):
             s = shape["shape"]
             c = shape["color"]
             w = 3
-            if isinstance(s[0], gp_Vec):
-                s = self.gp_Vec_to_edge(s)
-                c = "#000000"
-                w = 1
-
             # Assume that all are edges when first element is an edge
             if is_edge(s[0]):
                 # TODO Check it is safe to omit these edges
@@ -417,8 +399,7 @@ class CadqueryView(object):
                 self._render_shape(i, shape=s[0], render_edges=True, mesh_color=c)
 
         # Get the overall bounding box
-        shapes = [self.gp_Vec_to_edge(shape["shape"]) for shape in self.shapes]
-        self.bb = BoundingBox(shapes)
+        self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
 
         bb_max = self.bb.max
         bb_diag = 2 * self.bb.diagonal

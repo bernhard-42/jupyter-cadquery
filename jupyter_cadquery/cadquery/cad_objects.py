@@ -15,6 +15,7 @@
 #
 
 from cadquery.occ_impl.shapes import Face, Edge, Wire
+from OCC.Core.gp import gp_Vec
 from cadquery import Workplane, Shape, Vector
 
 from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _show
@@ -87,13 +88,14 @@ def _to_occ(cad_obj):
         raise NotImplementedError(type(cad_obj))
 
 
-def _edge_list_to_objs(cad_obj, obj_id):
-    if isinstance(cad_obj.parent.val(), Vector):
-        return [Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))]
+def _edge_list_to_objs(cad_obj, obj_id, color=None):
+    _color = color or (1, 0, 1)
+    if cad_obj.parent is None or isinstance(cad_obj.parent.val(), Vector):
+        return [Edges(cad_obj, "Edges_%d" % obj_id, color=_color)]
     else:
         return [
             Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False),
-            Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))
+            Edges(cad_obj, "Edges_%d" % obj_id, color=_color)
         ]
 
 
@@ -152,9 +154,16 @@ def show(*cad_objs,
         elif _is_wire_list(cad_obj):
             assembly.add_list([_wire_list_to_obj(cad_obj, obj_id)])
 
+        elif isinstance(cad_obj.val(), Vector):
+            v = cad_obj.val()
+            edge = cad_obj.newObject([Edge.makeLine(Vector(0, 0, 0), Vector(v.x, v.y, v.z))])
+            assembly.add_list(_edge_list_to_objs(edge, obj_id, (0.8, 0.8, 0.8)))
+
         elif isinstance(cad_obj, Workplane):
             assembly.add(_workplane_to_obj(cad_obj, obj_id))
 
+        else:
+            raise NotImplementedError("Type:", cad_obj)
         obj_id += 1
 
     if assembly is None:
