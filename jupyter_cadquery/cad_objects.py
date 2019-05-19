@@ -203,7 +203,7 @@ def _show(assembly,
             sidecar_display(SIDECAR, widget)
         else:
             display(widget)
-
+    return d
 
 def set_sidecar(sidecar):
     global SIDECAR
