@@ -92,7 +92,7 @@ def _edge_list_to_objs(cad_obj, obj_id):
         return [Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))]
     else:
         return [
-            Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=False, show_faces=False),
+            Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False),
             Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))
         ]
 
@@ -103,7 +103,7 @@ def _wire_list_to_obj(cad_obj, obj_id):
 
 def _face_list_to_objs(cad_obj, obj_id):
     return [
-        Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=False, show_faces=False),
+        Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False),
         Faces(cad_obj, "Faces_%d" % obj_id, color=(1, 0, 1))
     ]
 
