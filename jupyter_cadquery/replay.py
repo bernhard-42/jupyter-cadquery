@@ -71,18 +71,24 @@ class Replay(object):
         self.select_tmp = 0
 
     def to_array(self, workplane):
+
+        def _to_name(obj):
+            name = getattr(obj, "name", None)
+            return name or obj
+
         stack = []
         obj = workplane
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
                 name, args, kwargs, pendingeEdges = caller
+                args = tuple([_to_name(arg) for arg in args])
                 code = "%s%s" % (name, args)
                 if len(args) == 1:
                     code = code[:-2]
                 else:
                     code = code[:-1]
-                if len(args) > 0:
+                if len(args) > 0 and len(kwargs) > 0:
                     code += ","
                 if kwargs != {}:
                     code += ", ".join(["%s=%s" % (k, v) for k, v in kwargs.items()])
