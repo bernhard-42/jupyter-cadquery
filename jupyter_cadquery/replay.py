@@ -18,7 +18,6 @@ from ipywidgets import Button, HBox, VBox, Output, Select, Layout
 import cadquery as cq
 from IPython.display import display
 from jupyter_cadquery.cadquery import show
-import inspect
 
 _CONTEXT = None
 
