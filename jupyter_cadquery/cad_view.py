@@ -32,6 +32,8 @@ from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
 from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid, TopoDS_Wire
 from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRepBndLib import brepbndlib_Add
+from OCC.Core.gp import gp_Vec, gp_Pnt
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
 
 from .widgets import state_diff
 from .cad_helpers import Grid, Axes, CustomMaterial
@@ -384,23 +386,39 @@ class CadqueryView(object):
     def add_shape(self, name, shape, color="#ff0000"):
         self.shapes.append({"name": name, "shape": shape, "color": color})
 
+    def gp_Vec_to_edge(self, objs):
+        if isinstance(objs[0], gp_Vec):
+            return [BRepBuilderAPI_MakeEdge(gp_Pnt(0, 0, 0), gp_Pnt(obj.XYZ())).Edge() for obj in objs]
+        else:
+            return objs
+
     def render(self):
         # Render all shapes
+
         for i, shape in enumerate(self.shapes):
+            s = shape["shape"]
+            c = shape["color"]
+            w = 3
+            if isinstance(s[0], gp_Vec):
+                s = self.gp_Vec_to_edge(s)
+                c = "#000000"
+                w = 1
+
             # Assume that all are edges when first element is an edge
-            if is_edge(shape["shape"][0]):
+            if is_edge(s[0]):
                 # TODO Check it is safe to omit these edges
                 # The edges with one vertex are CurveOnSurface
                 # curve_adaptator = BRepAdaptor_Curve(edge)
                 # curve_adaptator.IsCurveOnSurface() == True
-                edges = [edge for edge in shape["shape"] if TopologyExplorer(edge).number_of_vertices() >= 2]
-                self._render_shape(i, edges=edges, render_edges=True, edge_color=shape["color"], edge_width=3)
+                edges = [edge for edge in s if TopologyExplorer(edge).number_of_vertices() >= 2]
+                self._render_shape(i, edges=edges, render_edges=True, edge_color=c, edge_width=w)
             else:
                 # shape has only 1 object, hence first=True
-                self._render_shape(i, shape=shape["shape"][0], render_edges=True, mesh_color=shape["color"])
+                self._render_shape(i, shape=s[0], render_edges=True, mesh_color=c)
 
         # Get the overall bounding box
-        self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
+        shapes = [self.gp_Vec_to_edge(shape["shape"]) for shape in self.shapes]
+        self.bb = BoundingBox(shapes)
 
         bb_max = self.bb.max
         bb_diag = 2 * self.bb.diagonal
