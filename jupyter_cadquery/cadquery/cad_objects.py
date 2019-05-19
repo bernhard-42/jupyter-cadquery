@@ -90,7 +90,7 @@ def _to_occ(cad_obj):
 
 def _edge_list_to_objs(cad_obj, obj_id, color=None):
     _color = color or (1, 0, 1)
-    if cad_obj.parent is None or isinstance(cad_obj.parent.val(), Vector):
+    if cad_obj.parent is None or isinstance(cad_obj.parent.val(), (Vector,Edge, Wire)):
         return [Edges(cad_obj, "Edges_%d" % obj_id, color=_color)]
     else:
         return [
