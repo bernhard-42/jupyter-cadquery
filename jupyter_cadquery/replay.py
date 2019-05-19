@@ -14,90 +14,44 @@
 # limitations under the License.
 #
 
-from ipywidgets import Button, HBox, VBox, Output, Select
+from ipywidgets import Button, HBox, VBox, Output, Select, Layout
 import cadquery as cq
 from IPython.display import display
 from jupyter_cadquery.cadquery import show
+import inspect
 
-_DEBUG = False
-_SIDECAR = None
-_LAST_SIGNATURE = None
-_SKIP_OBJECTS = 0
-# first element: skip steps for "combine=False"
-# second element: skip steps for "combine=True"
-# Third element: add if clean=True
-_SKIP_LIST = {
-    "fillet": (1, 1, 0),
-    "chamfer": (1, 1, 0),
-    "circle": (1, 1, 0),
-    "rect": (1, 1, 0),
-    "polygon": (1, 1, 0),
-    "box": (1, 2, 1),
-    "mirrorX": (4, 4, 0),
-    "mirrorY": (4, 4, 0),
-    "cboreHole": (2, 2, 0),
-    "cskHole": (2, 2, 0),
-    "hole": (2, 2, 0),
-    "extrude": (0, 0, 1),
-    "twistExtrude": (0, 0, 1),
-    "revolve": (0, 0, 1),
-    "close": (1, 1, 0),
-    "mirror": (1, 1, 0)
-}
-
-def _blacklist(name):
-    return name.startswith("_") or name in ("workplane", "newObject", "vertices")
+_CONTEXT = None
 
 
-def _add_function_name(self, name):
+# Note: This won't work for circle calls or recursions!
+def _add_context(self, name):
 
-    def make_interceptor(func):
+    def _blacklist(name):
+        return name.startswith("_") or name in ("workplane", "newObject", "vertices", "val", "vals", "all", "size",
+                                                "add", "toOCC", "findSolid", "findFace", "toSvg", "exportSvg",
+                                                "largestDimension")
+
+    def intercept(func):
 
         def f(*args, **kwargs):
-            global _LAST_SIGNATURE, _SKIP_OBJECTS
-            if _LAST_SIGNATURE is None:
-                _LAST_SIGNATURE = (func.__name__, args, [])
-                skip = _SKIP_LIST.get(func.__name__, (0, 0, 0))
-                if kwargs.get("combine", True):
-                    _SKIP_OBJECTS = skip[1]
-                else:
-                    _SKIP_OBJECTS = skip[0]
-                if kwargs.get("clean", True):
-                    _SKIP_OBJECTS += skip[2]
-                if _DEBUG: print("New    ", func.__name__, _LAST_SIGNATURE, _SKIP_OBJECTS, kwargs)
-            return func(*args, **kwargs)
+            global _CONTEXT
+            if _CONTEXT is None:
+                _CONTEXT = [func.__name__, args, kwargs]
+
+            result = func(*args, **kwargs)
+
+            if func.__name__ == _CONTEXT[0]:
+                result._caller = _CONTEXT + [list(result.ctx.pendingEdges)]
+                _CONTEXT = None
+            return result
 
         return f
 
     attr = object.__getattribute__(self, name)
     if callable(attr):
-        if _DEBUG: print("Called", _SKIP_OBJECTS, _LAST_SIGNATURE, attr.__name__)
         if not _blacklist(attr.__name__):
-            return make_interceptor(attr)
+            return intercept(attr)
     return attr
-
-
-def _newObject(self, objlist):
-    global _LAST_SIGNATURE, _SKIP_OBJECTS
-    ns = cq.Workplane("XY")
-    ns.plane = self.plane
-    ns.parent = self
-    ns.objects = list(objlist)
-    ns.ctx = self.ctx
-    if _LAST_SIGNATURE is not None:
-        if _SKIP_OBJECTS == 0:
-            if _DEBUG: print("Set   ", _LAST_SIGNATURE, "\n")
-            ns._caller = list(_LAST_SIGNATURE)
-            if self.ctx.pendingEdges:
-                ns._caller[2] = list(self.ctx.pendingEdges)
-            _LAST_SIGNATURE = None
-        else:
-            _SKIP_OBJECTS -= 1
-            if _DEBUG: print("Set skip", _SKIP_OBJECTS)
-            ns._caller = None
-    else:
-        ns._caller = None
-    return ns
 
 
 class Replay(object):
@@ -106,11 +60,10 @@ class Replay(object):
         global _DEBUG, _SIDECAR
         _DEBUG = debug
         _SIDECAR = sidecar
-        self.debug = debug
-        
+        self._debug = debug
+
         print("Plugging into cadquery.Workplane to enable replay")
-        cq.Workplane.__getattribute__ = _add_function_name
-        cq.Workplane.newObject = _newObject
+        cq.Workplane.__getattribute__ = _add_context
 
         self.debug_output = Output()
         self.cad_width = cad_width
@@ -123,10 +76,17 @@ class Replay(object):
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
-                name, args, pendingeEdges = caller
+                name, args, kwargs, pendingeEdges = caller
                 code = "%s%s" % (name, args)
                 if len(args) == 1:
-                    code = code[:-2] + ")"
+                    code = code[:-2]
+                else:
+                    code = code[:-1]
+                if len(args) > 0:
+                    code += ","
+                if kwargs != {}:
+                    code += ", ".join(["%s=%s" % (k, v) for k, v in kwargs.items()])
+                code += ")"
                 if pendingeEdges:
                     stack.insert(0, (code, obj.newObject(pendingeEdges)))
                 else:
@@ -171,7 +131,7 @@ class Replay(object):
     def replay(self, workplane, index=0):
         self.stack = self.to_array(workplane)
         self.index = index
-        if self.debug:
+        if self._debug:
             print("Dump of stack:")
             self.dump()
 
@@ -180,7 +140,8 @@ class Replay(object):
             index=self.index,
             rows=len(self.stack),
             description='',
-            disabled=False)
+            disabled=False,
+            layout=Layout(width="600px"))
         self.select_box.add_class("monospace")
         self.select_box.observe(self.select_handler)
         display(HBox([self.select_box, self.debug_output]))
