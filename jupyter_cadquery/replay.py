@@ -14,17 +14,19 @@
 # limitations under the License.
 #
 
-from ipywidgets import Button, HBox, Output
+from ipywidgets import Button, HBox, VBox, Output, Select
 import cadquery as cq
 from IPython.display import display
 from jupyter_cadquery.cadquery import show
 
-_last_signature = None
-_skip_objects = 0
+_DEBUG = False
+_SIDECAR = None
+_LAST_SIGNATURE = None
+_SKIP_OBJECTS = 0
 # first element: skip steps for "combine=False"
 # second element: skip steps for "combine=True"
 # Third element: add if clean=True
-_skip_list = {
+_SKIP_LIST = {
     "fillet": (1, 1, 0),
     "chamfer": (1, 1, 0),
     "circle": (1, 1, 0),
@@ -39,7 +41,8 @@ _skip_list = {
     "extrude": (0, 0, 1),
     "twistExtrude": (0, 0, 1),
     "revolve": (0, 0, 1),
-    "close": (1, 1, 0)
+    "close": (1, 1, 0),
+    "mirror": (1, 1, 0)
 }
 
 def _blacklist(name):
@@ -51,46 +54,46 @@ def _add_function_name(self, name):
     def make_interceptor(func):
 
         def f(*args, **kwargs):
-            global _last_signature, _skip_objects
-            if _last_signature is None:
-                _last_signature = (func.__name__, args, [])
-                skip = _skip_list.get(func.__name__, (0, 0, 0))
+            global _LAST_SIGNATURE, _SKIP_OBJECTS
+            if _LAST_SIGNATURE is None:
+                _LAST_SIGNATURE = (func.__name__, args, [])
+                skip = _SKIP_LIST.get(func.__name__, (0, 0, 0))
                 if kwargs.get("combine", True):
-                    _skip_objects = skip[1]
+                    _SKIP_OBJECTS = skip[1]
                 else:
-                    _skip_objects = skip[0]
+                    _SKIP_OBJECTS = skip[0]
                 if kwargs.get("clean", True):
-                    _skip_objects += skip[2]
-                # print("New    ", func.__name__, _last_signature, _skip_objects, kwargs)
+                    _SKIP_OBJECTS += skip[2]
+                if _DEBUG: print("New    ", func.__name__, _LAST_SIGNATURE, _SKIP_OBJECTS, kwargs)
             return func(*args, **kwargs)
 
         return f
 
     attr = object.__getattribute__(self, name)
     if callable(attr):
-        # print("Called", _skip_objects, _last_signature, attr.__name__)
+        if _DEBUG: print("Called", _SKIP_OBJECTS, _LAST_SIGNATURE, attr.__name__)
         if not _blacklist(attr.__name__):
             return make_interceptor(attr)
     return attr
 
 
 def _newObject(self, objlist):
-    global _last_signature, _skip_objects
+    global _LAST_SIGNATURE, _SKIP_OBJECTS
     ns = cq.Workplane("XY")
     ns.plane = self.plane
     ns.parent = self
     ns.objects = list(objlist)
     ns.ctx = self.ctx
-    if _last_signature is not None:
-        if _skip_objects == 0:
-            # print("Set   ", _last_signature, "\n")
-            ns._caller = list(_last_signature)
+    if _LAST_SIGNATURE is not None:
+        if _SKIP_OBJECTS == 0:
+            if _DEBUG: print("Set   ", _LAST_SIGNATURE, "\n")
+            ns._caller = list(_LAST_SIGNATURE)
             if self.ctx.pendingEdges:
                 ns._caller[2] = list(self.ctx.pendingEdges)
-            _last_signature = None
+            _LAST_SIGNATURE = None
         else:
-            _skip_objects -= 1
-            # print("Set skip", _skip_objects)
+            _SKIP_OBJECTS -= 1
+            if _DEBUG: print("Set skip", _SKIP_OBJECTS)
             ns._caller = None
     else:
         ns._caller = None
@@ -99,15 +102,20 @@ def _newObject(self, objlist):
 
 class Replay(object):
 
-    def __init__(self, sc, workplane, cad_width=600, height=600, dump=False):
-        self.stack = self.to_array(workplane)
-        self.index = -1
+    def __init__(self, sidecar, debug=False, cad_width=600, height=600):
+        global _DEBUG, _SIDECAR
+        _DEBUG = debug
+        _SIDECAR = sidecar
+        self.debug = debug
+        
+        print("Plugging into cadquery.Workplane to enable replay")
+        cq.Workplane.__getattribute__ = _add_function_name
+        cq.Workplane.newObject = _newObject
+
         self.debug_output = Output()
-        self.sidecar = sc
         self.cad_width = cad_width
         self.height = height
-        if dump:
-            self.dump()
+        self.select_tmp = 0
 
     def to_array(self, workplane):
         stack = []
@@ -141,25 +149,14 @@ class Replay(object):
         else:
             return cad_obj
 
-    def replay_next(self):
-        if len(self.stack) > self.index:
-            self.index += 1
-            msg, cad_obj = self.stack[self.index]
-            self.debug("(%d/%d) %s" % (self.index + 1, len(self.stack), msg))
-            self.show(cad_obj)
+    def select(self, index):
+        self.index = index
+        cad_obj = self.stack[self.index][1]
+        self.show(cad_obj)
 
-    def replay_prev(self):
-        if self.index > 0:
-            self.index -= 1
-            msg, cad_obj = self.stack[self.index]
-            self.debug("(%d/%d) %s" % (self.index + 1, len(self.stack), msg))
-            self.show(cad_obj)
-
-    def replay_handler(self, b):
-        if b.description == "next":
-            self.replay_next()
-        elif b.description == "prev":
-            self.replay_prev()
+    def select_handler(self, change):
+        if change["name"] == "index":
+            self.select(change["new"])
 
     def show(self, cad_obj):
         show(
@@ -169,21 +166,23 @@ class Replay(object):
             grid=True,
             cad_width=self.cad_width,
             height=self.height,
-            sidecar=self.sidecar)
+            sidecar=_SIDECAR)
 
-    def stepper(self, index=-1):
+    def replay(self, workplane, index=0):
+        self.stack = self.to_array(workplane)
         self.index = index
-        next_button = Button(description="next")
-        next_button.on_click(self.replay_handler)
-        prev_button = Button(description="prev")
-        prev_button.on_click(self.replay_handler)
-        display(HBox([prev_button, next_button, self.debug_output]))
+        if self.debug:
+            print("Dump of stack:")
+            self.dump()
 
-        self.replay_next()
+        self.select_box = Select(
+            options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(self.stack)],
+            index=self.index,
+            rows=len(self.stack),
+            description='',
+            disabled=False)
+        self.select_box.add_class("monospace")
+        self.select_box.observe(self.select_handler)
+        display(HBox([self.select_box, self.debug_output]))
 
-    @classmethod
-    def enable(cls):
-        print("Plugging into cadquery.Workplane to enable replay")
-
-        cq.Workplane.__getattribute__ = _add_function_name
-        cq.Workplane.newObject = _newObject
+        self.select(self.index)

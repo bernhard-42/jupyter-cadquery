@@ -145,3 +145,7 @@
 .small_table {
   line-height: 14px;
 }
+
+.monospace select {
+  font-family: monospace;
+}
