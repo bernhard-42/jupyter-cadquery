@@ -23,14 +23,15 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import (CombinedCamera, BufferAttribute, BufferGeometry, Plane, Mesh, LineSegmentsGeometry,
                            LineMaterial, LineSegments2, AmbientLight, DirectionalLight, Scene, OrbitControls, Renderer,
-                           Picker, Group)
+                           Picker, Group, Points, PointsMaterial)
 
 import numpy as np
 
 from OCC.Core.Visualization import Tesselator
-from OCC.Extend.TopologyUtils import TopologyExplorer, is_edge, discretize_edge
-from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid, TopoDS_Wire
+from OCC.Extend.TopologyUtils import is_edge, is_vertex, discretize_edge
+from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid, TopoDS_Wire, TopoDS_Vertex
 from OCC.Core.Bnd import Bnd_Box
+from OCC.Core.BRep import BRep_Tool
 from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Core.gp import gp_Vec, gp_Pnt
 
@@ -119,7 +120,7 @@ class CadqueryView(object):
         self.pickable_objects = Group()
         self.pick_last_mesh = None
         self.pick_last_mesh_color = None
-        self.mash_edges_mapping = []
+        self.pick_mapping = []
 
         self.camera = None
         self.axes = None
@@ -152,22 +153,29 @@ class CadqueryView(object):
                       shape_index,
                       shape=None,
                       edges=None,
+                      vertices=None,
                       mesh_color=None,
                       edge_color=None,
+                      vertex_color=None,
                       render_edges=False,
                       edge_width=1,
+                      vertex_width=5,
                       deflection=0.05,
                       transparent=False,
                       opacity=1.0):
 
         edge_list = None
         edge_lines = None
+        points = None
+        shape_mesh = None
 
         if shape is not None:
             if mesh_color is None:
                 mesh_color = self.default_mesh_color
             if edge_color is None:
                 edge_color = self.default_edge_color
+            if vertex_color is None:
+                vertex_color = self.default_edge_color  # same as edge_color
 
             # BEGIN copy
             # The next lines are copied with light modifications from
@@ -221,8 +229,20 @@ class CadqueryView(object):
 
             # END copy
 
+        if vertices is not None:
+            vertices_list = []
+            for vertex in vertices:
+                p = BRep_Tool.Pnt(vertex)
+                vertices_list.append((p.X(), p.Y(), p.Z()))
+            vertices_list = np.array(vertices_list, dtype=np.float32)
+
+            attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
+
+            mat = PointsMaterial(color=vertex_color, sizeAttenuation=False, size=vertex_width)
+            geom = BufferGeometry(attributes=attributes)
+            points = Points(geometry=geom, material=mat)
+
         if edges is not None:
-            shape_mesh = None
             edge_list = [discretize_edge(edge, deflection) for edge in edges]
 
         if edge_list is not None:
@@ -231,8 +251,8 @@ class CadqueryView(object):
             mat = LineMaterial(linewidth=edge_width, color=edge_color)
             edge_lines = LineSegments2(lines, mat, name="edges_%d" % shape_index)
 
-        if shape_mesh is not None or edge_lines is not None:
-            index_mapping = {"mesh": None, "edges": None, "shape": shape_index}
+        if shape_mesh is not None or edge_lines is not None or points is not None:
+            index_mapping = {"mesh": None, "edges": None, "vertices": None, "shape": shape_index}
             if shape_mesh is not None:
                 ind = len(self.pickable_objects.children)
                 self.pickable_objects.add(shape_mesh)
@@ -241,7 +261,11 @@ class CadqueryView(object):
                 ind = len(self.pickable_objects.children)
                 self.pickable_objects.add(edge_lines)
                 index_mapping["edges"] = ind
-            self.mash_edges_mapping.append(index_mapping)
+            if points is not None:
+                ind = len(self.pickable_objects.children)
+                self.pickable_objects.add(points)
+                index_mapping["vertices"] = ind
+            self.pick_mapping.append(index_mapping)
 
     def _scale(self, vec):
         r = self.bb.diagonal * 2.5
@@ -333,7 +357,7 @@ class CadqueryView(object):
 
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
-        group_index = self.mash_edges_mapping[ind][feature]
+        group_index = self.pick_mapping[ind][feature]
         if group_index is not None:
             self.pickable_objects.children[group_index].visible = (state == 1)
 
@@ -386,6 +410,8 @@ class CadqueryView(object):
             # Assume that all are edges when first element is an edge
             if is_edge(s[0]):
                 self._render_shape(i, edges=s, render_edges=True, edge_color=shape["color"], edge_width=3)
+            elif is_vertex(s[0]):
+                self._render_shape(i, vertices=s, render_edges=False, vertex_color=shape["color"], vertex_width=6)
             else:
                 # shape has only 1 object, hence first=True
                 self._render_shape(i, shape=s[0], render_edges=True, mesh_color=shape["color"])
@@ -395,7 +421,7 @@ class CadqueryView(object):
 
         bb_max = self.bb.max
         bb_diag = 2 * self.bb.diagonal
-
+        self.info.add_text("%f, %f" % (bb_max, bb_diag))
         # Set up camera
         camera_target = self.bb.center
         camera_position = self._scale([1, 1, 1])

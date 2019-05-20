@@ -16,9 +16,9 @@
 
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from OCC.Core.gp import gp_Vec
-from cadquery import Workplane, Shape, Vector
+from cadquery import Workplane, Shape, Vector, Vertex
 
-from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _show
+from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _Vertices, _show
 
 
 class Part(_Part):
@@ -57,6 +57,18 @@ class Edges(_Edges):
         return show(self, grid=grid, axes=axes)
 
 
+class Vertices(_Vertices):
+
+    def __init__(self, vertices, name="Vertices", color=None):
+        super().__init__(_to_occ(vertices), name, color)
+
+    def to_assembly(self):
+        return Assembly([self])
+
+    def show(self, grid=False, axes=False):
+        return show(self, grid=grid, axes=axes)
+
+
 class Assembly(_Assembly):
 
     def to_assembly(self):
@@ -73,8 +85,8 @@ class Assembly(_Assembly):
 
 
 def _to_occ(cad_obj):
-    # special cas Wire, must be handled before Workplane
-    if _is_wire_list(cad_obj):
+    # special case Wire, must be handled before Workplane
+    if _is_wirelist(cad_obj):
         all_edges = []
         for edges in cad_obj.objects:
             all_edges += edges.Edges()
@@ -87,42 +99,51 @@ def _to_occ(cad_obj):
     else:
         raise NotImplementedError(type(cad_obj))
 
+def _from_facelist(cad_obj, obj_id, show_parents=True):
+    result = [Faces(cad_obj, "Faces_%d" % obj_id, color=(0.8, 0, 0.8))]
+    if show_parents and cad_obj.parent is not None:
+        result.insert(0, Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False))
+    return result
 
-def _edge_list_to_objs(cad_obj, obj_id, color=None):
+
+def _from_edgelist(cad_obj, obj_id, color=None, show_parents=True):
     _color = color or (1, 0, 1)
-    if cad_obj.parent is None or isinstance(cad_obj.parent.val(), (Vector,Edge, Wire)):
-        return [Edges(cad_obj, "Edges_%d" % obj_id, color=_color)]
-    else:
-        return [
-            Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False),
-            Edges(cad_obj, "Edges_%d" % obj_id, color=_color)
-        ]
+    result = [Edges(cad_obj, "Edges_%d" % obj_id, color=_color)]
+    if show_parents and cad_obj.parent is not None and not isinstance(cad_obj.parent.val(), (Vector, Edge, Wire)):
+        result.insert(0, Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False))
+    return result
 
 
-def _wire_list_to_obj(cad_obj, obj_id):
+def _from_vectorlist(cad_obj, obj_id):
+    obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in cad_obj.vals()])
+    return Vertices(obj, "Vertices_%d" % obj_id, color=(1, 0, 1))
+
+
+def _from_vertexlist(cad_obj, obj_id):
+    return Vertices(cad_obj, "Vertices_%d" % obj_id, color=(1, 0, 1))
+
+
+def _from_wirelist(cad_obj, obj_id):
     return Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))
 
 
-def _face_list_to_objs(cad_obj, obj_id):
-    return [
-        Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False),
-        Faces(cad_obj, "Faces_%d" % obj_id, color=(1, 0, 1))
-    ]
-
-
-def _workplane_to_obj(cad_obj, obj_id):
+def _from_workplane(cad_obj, obj_id):
     return Part(cad_obj, "Part_%d" % obj_id)
 
 
-def _is_face_list(cad_obj):
+def _is_facelist(cad_obj):
     return all([isinstance(obj, Face) for obj in cad_obj.objects])
 
 
-def _is_edge_list(cad_obj):
+def _is_vertexlist(cad_obj):
+    return all([isinstance(obj, Vertex) for obj in cad_obj.objects])
+
+
+def _is_edgelist(cad_obj):
     return all([isinstance(obj, Edge) for obj in cad_obj.objects])
 
 
-def _is_wire_list(cad_obj):
+def _is_wirelist(cad_obj):
     return all([isinstance(obj, Wire) for obj in cad_obj.objects])
 
 
@@ -137,30 +158,33 @@ def show(*cad_objs,
          ortho=True,
          transparent=False,
          mac_scrollbar=True,
-         sidecar=None):
+         sidecar=None,
+         show_parents=True):
 
     assembly = Assembly([], "Assembly")
     obj_id = 0
+
     for cad_obj in cad_objs:
-        if isinstance(cad_obj, (Assembly, Part, Faces, Edges)):
+        if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Vertices)):
             assembly.add(cad_obj)
 
-        elif _is_face_list(cad_obj):
-            assembly.add_list(_face_list_to_objs(cad_obj, obj_id))
+        elif _is_facelist(cad_obj):
+            assembly.add_list(_from_facelist(cad_obj, obj_id, show_parents=show_parents))
 
-        elif _is_edge_list(cad_obj):
-            assembly.add_list(_edge_list_to_objs(cad_obj, obj_id))
+        elif _is_edgelist(cad_obj):
+            assembly.add_list(_from_edgelist(cad_obj, obj_id, show_parents=show_parents))
 
-        elif _is_wire_list(cad_obj):
-            assembly.add_list([_wire_list_to_obj(cad_obj, obj_id)])
+        elif _is_wirelist(cad_obj):
+            assembly.add_list([_from_wirelist(cad_obj, obj_id)])
+
+        elif _is_vertexlist(cad_obj):
+            assembly.add_list([_from_vertexlist(cad_obj, obj_id)])
 
         elif isinstance(cad_obj.val(), Vector):
-            v = cad_obj.val()
-            edge = cad_obj.newObject([Edge.makeLine(Vector(0, 0, 0), Vector(v.x, v.y, v.z))])
-            assembly.add_list(_edge_list_to_objs(edge, obj_id, (0.8, 0.8, 0.8)))
+            assembly.add(_from_vectorlist(cad_obj, obj_id))
 
         elif isinstance(cad_obj, Workplane):
-            assembly.add(_workplane_to_obj(cad_obj, obj_id))
+            assembly.add(_from_workplane(cad_obj, obj_id))
 
         else:
             raise NotImplementedError("Type:", cad_obj)

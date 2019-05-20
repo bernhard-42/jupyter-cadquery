@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from ipywidgets import Button, HBox, VBox, Output, Select, Layout
+from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
 import cadquery as cq
 from IPython.display import display
 from jupyter_cadquery.cadquery import show
@@ -26,9 +26,8 @@ _CONTEXT = None
 def _add_context(self, name):
 
     def _blacklist(name):
-        return name.startswith("_") or name in ("workplane", "newObject", "vertices", "val", "vals", "all", "size",
-                                                "add", "toOCC", "findSolid", "findFace", "toSvg", "exportSvg",
-                                                "largestDimension")
+        return name.startswith("_") or name in ("newObject", "val", "vals", "all", "size", "add", "toOCC", "findSolid",
+                                                "findFace", "toSvg", "exportSvg", "largestDimension")
 
     def intercept(func):
 
@@ -40,7 +39,7 @@ def _add_context(self, name):
             result = func(*args, **kwargs)
 
             if func.__name__ == _CONTEXT[0]:
-                result._caller = _CONTEXT + [list(result.ctx.pendingEdges)]
+                result._caller = _CONTEXT
                 _CONTEXT = None
             return result
 
@@ -67,7 +66,7 @@ class Replay(object):
         self.debug_output = Output()
         self.cad_width = cad_width
         self.height = height
-        self.select_tmp = 0
+        self.indexes = [0]
 
     def to_array(self, workplane):
 
@@ -80,7 +79,7 @@ class Replay(object):
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
-                name, args, kwargs, pendingeEdges = caller
+                name, args, kwargs = caller
                 args = tuple([_to_name(arg) for arg in args])
                 code = "%s%s" % (name, args)
                 if len(args) == 1:
@@ -92,10 +91,7 @@ class Replay(object):
                 if kwargs != {}:
                     code += ", ".join(["%s=%s" % (k, v) for k, v in kwargs.items()])
                 code += ")"
-                if pendingeEdges:
-                    stack.insert(0, (code, obj.newObject(pendingeEdges)))
-                else:
-                    stack.insert(0, (code, obj))
+                stack.insert(0, (code, obj))
             obj = obj.parent
         return stack
 
@@ -108,24 +104,18 @@ class Replay(object):
         with self.debug_output:
             print(*msgs)
 
-    def get_ctx(self, cad_obj):
-        if len(cad_obj.ctx.pendingEdges) > 0:
-            return cad_obj.newObject(cad_obj.ctx.pendingEdges)
-        else:
-            return cad_obj
-
-    def select(self, index):
-        self.index = index
-        cad_obj = self.stack[self.index][1]
-        self.show(cad_obj)
+    def select(self, indexes):
+        self.indexes = indexes
+        cad_objs = [self.stack[i][1] for i in self.indexes]
+        self.show(cad_objs)
 
     def select_handler(self, change):
         if change["name"] == "index":
             self.select(change["new"])
 
-    def show(self, cad_obj):
+    def show(self, cad_objs):
         show(
-            cad_obj,
+            *cad_objs,
             transparent=True,
             axes=True,
             grid=True,
@@ -135,14 +125,14 @@ class Replay(object):
 
     def replay(self, workplane, index=0):
         self.stack = self.to_array(workplane)
-        self.index = index
+        self.indexes = [index]
         if self._debug:
             print("Dump of stack:")
             self.dump()
 
-        self.select_box = Select(
+        self.select_box = SelectMultiple(
             options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(self.stack)],
-            index=self.index,
+            index=self.indexes,
             rows=len(self.stack),
             description='',
             disabled=False,
@@ -151,4 +141,5 @@ class Replay(object):
         self.select_box.observe(self.select_handler)
         display(HBox([self.select_box, self.debug_output]))
 
-        self.select(self.index)
+        self.select(self.indexes)
+        return self

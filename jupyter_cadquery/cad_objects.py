@@ -118,6 +118,25 @@ class _Edges(_CADObject):
         return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
 
 
+class _Vertices(_CADObject):
+
+    def __init__(self, vertices, name="Vertices", color=None):
+        super().__init__()
+        self.shape = vertices
+        self.name = name
+        self.id = self.next_id()
+        self.color = (1, 0, 1) if color is None else color
+
+    def to_nav_dict(self):
+        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
+
+    def to_state(self):
+        return {str(self.id): [SELECTED, EMPTY]}
+
+    def collect_shapes(self):
+        return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
+
+
 class _Assembly(_CADObject):
 
     def __init__(self, objects, name="Assembly"):
