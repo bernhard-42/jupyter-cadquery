@@ -252,7 +252,7 @@ class CadqueryView(object):
             edge_lines = LineSegments2(lines, mat, name="edges_%d" % shape_index)
 
         if shape_mesh is not None or edge_lines is not None or points is not None:
-            index_mapping = {"mesh": None, "edges": None, "vertices": None, "shape": shape_index}
+            index_mapping = {"mesh": None, "edges": None, "shape": shape_index}
             if shape_mesh is not None:
                 ind = len(self.pickable_objects.children)
                 self.pickable_objects.add(shape_mesh)
@@ -264,7 +264,7 @@ class CadqueryView(object):
             if points is not None:
                 ind = len(self.pickable_objects.children)
                 self.pickable_objects.add(points)
-                index_mapping["vertices"] = ind
+                index_mapping["mesh"] = ind
             self.pick_mapping.append(index_mapping)
 
     def _scale(self, vec):

@@ -104,7 +104,9 @@ def _to_occ(cad_obj):
 def _parent(cad_obj, obj_id):
     if cad_obj.parent is not None:
         if isinstance(cad_obj.parent.val(), Vector):
-            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
+            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=True)
+        elif isinstance(cad_obj.parent.val(), Vertex):
+            return _from_vertexlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=True)
         elif isinstance(cad_obj.parent.val(), Edge):
             return _from_edgelist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
         elif isinstance(cad_obj.parent.val(), Wire):
@@ -136,8 +138,8 @@ def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=
     return result
 
 
-def _from_vertexlist(cad_obj, obj_id, name="Vertices", show_parents=True):
-    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=(1, 0, 1))]
+def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
+    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=(color or (1, 0, 1)))]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result

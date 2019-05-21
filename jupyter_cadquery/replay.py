@@ -117,7 +117,8 @@ class Replay(object):
                 axes=True,
                 grid=True,
                 cad_width=self.cad_width,
-                height=self.height)
+                height=self.height,
+                show_parents=(len(cad_objs)==1))
 
 
 def replay(workplane, index=0, debug=False, cad_width=600, height=600):
