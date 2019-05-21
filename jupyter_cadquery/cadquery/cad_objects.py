@@ -102,46 +102,53 @@ def _to_occ(cad_obj):
         raise NotImplementedError(type(cad_obj))
 
 def _parent(cad_obj, obj_id):
-    if cad_obj.parent is not None and not isinstance(cad_obj.parent.val(), (Vector, Edge, Wire)):
-        return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False)]
+    if cad_obj.parent is not None:
+        if isinstance(cad_obj.parent.val(), Vector):
+            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
+        elif isinstance(cad_obj.parent.val(), Edge):
+            return _from_edgelist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
+        elif isinstance(cad_obj.parent.val(), Wire):
+            return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8))]
+        else:
+            return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False)]
     else:
         return []
 
-def _from_facelist(cad_obj, obj_id, show_parents=True):
-    result = [Faces(cad_obj, "Faces_%d" % obj_id, color=(0.8, 0, 0.8))]
+def _from_facelist(cad_obj, obj_id, name="Faces", show_parents=True):
+    result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=(0.8, 0, 0.8))]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_edgelist(cad_obj, obj_id, color=None, show_parents=True):
-    result = [Edges(cad_obj, "Edges_%d" % obj_id, color=(color or (1, 0, 1)))]
+def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parents=True):
+    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=(color or (1, 0, 1)))]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_vectorlist(cad_obj, obj_id, show_parents=True):
+def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
     obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in cad_obj.vals()])
-    result = [Vertices(obj, "Vertices_%d" % obj_id, color=(1, 0, 1))]
+    result = [Vertices(obj, "%s_%d" % (name, obj_id), color=(color or (1, 0, 1)))]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_vertexlist(cad_obj, obj_id, show_parents=True):
-    result = [Vertices(cad_obj, "Vertices_%d" % obj_id, color=(1, 0, 1))]
+def _from_vertexlist(cad_obj, obj_id, name="Vertices", show_parents=True):
+    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=(1, 0, 1))]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_wirelist(cad_obj, obj_id):
-    return Edges(cad_obj, "Edges_%d" % obj_id, color=(1, 0, 1))
+def _from_wirelist(cad_obj, obj_id, name="Edges", color=None):
+    return Edges(cad_obj, "%s_%d" % (name, obj_id), color=(color or (1, 0, 1)))
 
 
-def _from_workplane(cad_obj, obj_id):
-    return Part(cad_obj, "Part_%d" % obj_id)
+def _from_workplane(cad_obj, obj_id, name="Part"):
+    return Part(cad_obj, "%s_%d" % (name, obj_id))
 
 
 def _is_facelist(cad_obj):
