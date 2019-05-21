@@ -421,7 +421,7 @@ class CadqueryView(object):
 
         bb_max = self.bb.max
         bb_diag = 2 * self.bb.diagonal
-        self.info.add_text("%f, %f" % (bb_max, bb_diag))
+
         # Set up camera
         camera_target = self.bb.center
         camera_position = self._scale([1, 1, 1])
