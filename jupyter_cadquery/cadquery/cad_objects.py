@@ -102,7 +102,7 @@ def _to_occ(cad_obj):
 def _from_facelist(cad_obj, obj_id, show_parents=True):
     result = [Faces(cad_obj, "Faces_%d" % obj_id, color=(0.8, 0, 0.8))]
     if show_parents and cad_obj.parent is not None:
-        result.insert(0, Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False))
+        result.insert(0, Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False))
     return result
 
 
@@ -110,17 +110,23 @@ def _from_edgelist(cad_obj, obj_id, color=None, show_parents=True):
     _color = color or (1, 0, 1)
     result = [Edges(cad_obj, "Edges_%d" % obj_id, color=_color)]
     if show_parents and cad_obj.parent is not None and not isinstance(cad_obj.parent.val(), (Vector, Edge, Wire)):
-        result.insert(0, Part(cad_obj.parent, "Part_%d" % obj_id, show_edges=True, show_faces=False))
+        result.insert(0, Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False))
     return result
 
 
-def _from_vectorlist(cad_obj, obj_id):
+def _from_vectorlist(cad_obj, obj_id, show_parents=True):
     obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in cad_obj.vals()])
-    return Vertices(obj, "Vertices_%d" % obj_id, color=(1, 0, 1))
+    result = [Vertices(obj, "Vertices_%d" % obj_id, color=(1, 0, 1))]
+    if show_parents and cad_obj.parent is not None:
+        result.insert(0, Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False))
+    return result
 
 
-def _from_vertexlist(cad_obj, obj_id):
-    return Vertices(cad_obj, "Vertices_%d" % obj_id, color=(1, 0, 1))
+def _from_vertexlist(cad_obj, obj_id, show_parents=True):
+    result = [Vertices(cad_obj, "Vertices_%d" % obj_id, color=(1, 0, 1))]
+    if show_parents and cad_obj.parent is not None:
+        result.insert(0, Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False))
+    return result
 
 
 def _from_wirelist(cad_obj, obj_id):
@@ -161,7 +167,7 @@ def show(*cad_objs,
          sidecar=None,
          show_parents=True):
 
-    assembly = Assembly([], "Assembly")
+    assembly = Assembly([], "Replay")
     obj_id = 0
 
     for cad_obj in cad_objs:
@@ -175,13 +181,13 @@ def show(*cad_objs,
             assembly.add_list(_from_edgelist(cad_obj, obj_id, show_parents=show_parents))
 
         elif _is_wirelist(cad_obj):
-            assembly.add_list([_from_wirelist(cad_obj, obj_id)])
+            assembly.add(_from_wirelist(cad_obj, obj_id))
 
         elif _is_vertexlist(cad_obj):
-            assembly.add_list([_from_vertexlist(cad_obj, obj_id)])
+            assembly.add_list(_from_vertexlist(cad_obj, obj_id))
 
         elif isinstance(cad_obj.val(), Vector):
-            assembly.add(_from_vectorlist(cad_obj, obj_id))
+            assembly.add_list(_from_vectorlist(cad_obj, obj_id))
 
         elif isinstance(cad_obj, Workplane):
             assembly.add(_from_workplane(cad_obj, obj_id))
