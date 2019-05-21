@@ -51,17 +51,10 @@ def _add_context(self, name):
             return intercept(attr)
     return attr
 
-
 class Replay(object):
 
-    def __init__(self, sidecar, debug=False, cad_width=600, height=600):
-        global _DEBUG, _SIDECAR
-        _DEBUG = debug
-        _SIDECAR = sidecar
+    def __init__(self, debug=False, cad_width=600, height=600):
         self._debug = debug
-
-        print("Plugging into cadquery.Workplane to enable replay")
-        cq.Workplane.__getattribute__ = _add_context
 
         self.debug_output = Output()
         self.cad_width = cad_width
@@ -93,7 +86,7 @@ class Replay(object):
                 code += ")"
                 stack.insert(0, (code, obj))
             obj = obj.parent
-        return stack
+        self.stack = stack
 
     def dump(self):
         for o in self.stack:
@@ -105,41 +98,52 @@ class Replay(object):
             print(*msgs)
 
     def select(self, indexes):
-        self.indexes = indexes
-        cad_objs = [self.stack[i][1] for i in self.indexes]
-        self.show(cad_objs)
+        with self.debug_output:
+            self.indexes = indexes
+            cad_objs = [self.stack[i][1] for i in self.indexes]
+            self.show(cad_objs)
 
     def select_handler(self, change):
-        if change["name"] == "index":
-            self.select(change["new"])
+        with self.debug_output:
+            if change["name"] == "index":
+                self.select(change["new"])
 
     def show(self, cad_objs):
-        show(
-            *cad_objs,
-            transparent=True,
-            axes=True,
-            grid=True,
-            cad_width=self.cad_width,
-            height=self.height,
-            sidecar=_SIDECAR)
+        self.debug_output.clear_output()
+        with self.debug_output:
+            show(
+                *cad_objs,
+                transparent=True,
+                axes=True,
+                grid=True,
+                cad_width=self.cad_width,
+                height=self.height)
 
-    def replay(self, workplane, index=0):
-        self.stack = self.to_array(workplane)
-        self.indexes = [index]
-        if self._debug:
-            print("Dump of stack:")
-            self.dump()
 
-        self.select_box = SelectMultiple(
-            options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(self.stack)],
-            index=self.indexes,
-            rows=len(self.stack),
-            description='',
-            disabled=False,
-            layout=Layout(width="600px"))
-        self.select_box.add_class("monospace")
-        self.select_box.observe(self.select_handler)
-        display(HBox([self.select_box, self.debug_output]))
+def replay(workplane, index=0, debug=False, cad_width=600, height=600):
 
-        self.select(self.indexes)
-        return self
+    r = Replay(debug, cad_width, height)
+    r.to_array(workplane)
+    r.indexes = [index]
+
+    if r._debug:
+        print("Dump of stack:")
+        r.dump()
+
+    r.select_box = SelectMultiple(
+        options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(r.stack)],
+        index=r.indexes,
+        rows=len(r.stack),
+        description='',
+        disabled=False,
+        layout=Layout(width="600px"))
+    r.select_box.add_class("monospace")
+    r.select_box.observe(r.select_handler)
+    display(HBox([r.select_box, r.debug_output]))
+
+    r.select(r.indexes)
+    return r
+
+
+print("Plugging into cadquery.Workplane to enable replay")
+cq.Workplane.__getattribute__ = _add_context
