@@ -17,7 +17,7 @@
 from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
 import cadquery as cq
 from IPython.display import display
-from jupyter_cadquery.cadquery import show
+from jupyter_cadquery.cadquery import Part, show
 
 _CONTEXT = None
 
@@ -110,8 +110,11 @@ class Replay(object):
 
     def show(self, cad_objs):
         self.debug_output.clear_output()
+        # Add hidden result to start with final size and allow for comparison
+        result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
         with self.debug_output:
             show(
+                result,
                 *cad_objs,
                 transparent=True,
                 axes=True,

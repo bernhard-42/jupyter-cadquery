@@ -104,9 +104,9 @@ def _to_occ(cad_obj):
 def _parent(cad_obj, obj_id):
     if cad_obj.parent is not None:
         if isinstance(cad_obj.parent.val(), Vector):
-            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=True)
+            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
         elif isinstance(cad_obj.parent.val(), Vertex):
-            return _from_vertexlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=True)
+            return _from_vertexlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
         elif isinstance(cad_obj.parent.val(), Edge):
             return _from_edgelist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
         elif isinstance(cad_obj.parent.val(), Wire):
