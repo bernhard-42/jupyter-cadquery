@@ -166,13 +166,13 @@ class CadqueryDisplay(object):
                 UNSELECTED: "%s/no_shape.png" % self.image_path,
                 SELECTED: "%s/shape.png" % self.image_path,
                 MIXED: "%s/mix_shape.png" % self.image_path,
-                EMPTY: "%s/empty.png" % self.image_path
+                EMPTY: "%s/empty_shape.png" % self.image_path
             },
             {
                 UNSELECTED: "%s/no_mesh.png" % self.image_path,
                 SELECTED: "%s/mesh.png" % self.image_path,
                 MIXED: "%s/mix_mesh.png" % self.image_path,
-                EMPTY: "%s/empty.png" % self.image_path
+                EMPTY: "%s/empty_mesh.png" % self.image_path
             }]
 
     def create_button(self, image_name, handler, tooltip):
