@@ -19,11 +19,12 @@ import cadquery as cq
 from IPython.display import display
 from jupyter_cadquery.cadquery import Part, show
 
-_CONTEXT = None
-
+_CONTEXT = [("", None)]
+_LEVEL = 0
 
 # Note: This won't work for circle calls or recursions!
 def _add_context(self, name):
+    global _CONTEXT, _LEVEL
 
     def _blacklist(name):
         return name.startswith("_") or name in ("newObject", "val", "vals", "all", "size", "add", "toOCC", "findSolid",
@@ -32,22 +33,42 @@ def _add_context(self, name):
     def intercept(func):
 
         def f(*args, **kwargs):
-            global _CONTEXT
-            if _CONTEXT is None:
-                _CONTEXT = [func.__name__, args, kwargs]
+            global _CONTEXT, _LEVEL
+
+            print("  1 calling", func.__name__, _CONTEXT, _LEVEL)
+            print("           ", args, kwargs)
+            if _CONTEXT[_LEVEL][1] is None:
+                _CONTEXT[_LEVEL] = (func.__name__, args, kwargs)
+                print("  2        ", _CONTEXT, _LEVEL)
 
             result = func(*args, **kwargs)
+            if func.__name__ == _CONTEXT[_LEVEL][0]:
+                result._caller = _CONTEXT[_LEVEL]
+                print("<== _caller", func.__name__, result._caller)
+                _CONTEXT[_LEVEL] = ("", None)
 
-            if func.__name__ == _CONTEXT[0]:
-                result._caller = _CONTEXT
-                _CONTEXT = None
+            if func.__name__ == "union":
+                _LEVEL -= 1
+                _CONTEXT = _CONTEXT[:-1]
+                print("  --> level down", _CONTEXT, _LEVEL)
+
+            print("  3 leaving", func.__name__)
+            print("           ", _CONTEXT, _LEVEL)
             return result
 
         return f
 
     attr = object.__getattribute__(self, name)
     if callable(attr):
+
         if not _blacklist(attr.__name__):
+            print("==> intercepting", attr.__name__)
+            if attr.__name__ == "union":
+                #                _CONTEXT[_LEVEL]= (attr.__name__, None)
+                _LEVEL += 1
+                _CONTEXT.append(("", None))
+                print("  --> level up", _CONTEXT)
+
             return intercept(attr)
     return attr
 
