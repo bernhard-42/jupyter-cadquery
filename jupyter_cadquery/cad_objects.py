@@ -224,10 +224,13 @@ def _show(assembly,
             display(widget)
     return d
 
-def set_sidecar(sidecar):
+def set_sidecar(title):
     global SIDECAR
-    SIDECAR = sidecar
-
+    try:
+        from sidecar import Sidecar
+        SIDECAR = Sidecar(title=title)
+    except:
+        print("Warning: module sidecar not installed")
 
 def auto_show():
     _Assembly._ipython_display_ = lambda self: self.show()
