@@ -12,3 +12,4 @@ jupyter_cadquery/static/
 .DS_Store
 .mypy_cache
 yarn.lock
+scratch
