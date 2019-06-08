@@ -16,61 +16,155 @@
 
 from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
 import cadquery as cq
+from cadquery import Compound
 from IPython.display import display
 from jupyter_cadquery.cadquery import Part, show
 
-_CONTEXT = [("", None)]
-_LEVEL = 0
 
-# Note: This won't work for circle calls or recursions!
+def attributes(names):
+
+    def wrapper(cls):
+        for name in names:
+
+            def fget(self, name=name):
+                if self.is_empty():
+                    raise ValueError("Context empty")
+                return self.stack[-1][name]
+
+            def fset(self, value, name=name):
+                if self.is_empty():
+                    raise ValueError("Context empty")
+                self.stack[-1][name] = value
+
+            setattr(cls, name, property(fget, fset))
+        return cls
+
+    return wrapper
+
+
+@attributes(("func", "args", "kwargs", "obj", "children"))
+class Context(object):
+
+    def __init__(self):
+        self.stack = []
+        self.new()
+
+    def _to_dict(self, func, args, kwargs, obj, children):
+        return {"func": func, "args": args, "kwargs": kwargs, "obj": obj, "children": children}
+
+    def new(self):
+        self.push(None, None, None, None, [])
+
+    def clear(self):
+        self.stack = []
+
+    def is_empty(self):
+        return self.stack == []
+
+    def is_top_level(self):
+        return len(self.stack) == 1
+
+    def pop(self):
+        if not self.is_empty():
+            result = self.stack[-1]
+            self.stack = self.stack[:-1]
+            return result
+        else:
+            raise ValueError("Empty context")
+
+    def push(self, func, args, kwargs, obj, children):
+        self.stack.append(self._to_dict(func, args, kwargs, obj, children))
+
+    def append(self, func, args, kwargs, obj, children):
+        self.stack[-1].append(self._to_dict(func, args, kwargs, obj, children))
+
+    def update(self, func, args, kwargs, obj=None, children=None):
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        if obj is not None:
+            self.obj = obj
+        if children is not None:
+            self.children = children
+
+    def append_child(self, context):
+        self.stack[-1]["children"].append(context)
+
+    def __repr__(self):
+        if self.is_empty():
+            result = "   >> Context empty"
+        else:
+            result = ""
+            for i, e in enumerate(self.stack):
+                result += "  >> %d: %s(%s, %s); %s / %s\n" % (i, e["func"], e["args"], e["kwargs"], e["obj"],
+                                                              e["children"])
+        return result
+
+
+_CTX = Context()
+DEBUG = True
+
+def _trace(*objs):
+    if DEBUG:
+        print(*objs)
+
 def _add_context(self, name):
-    global _CONTEXT, _LEVEL
 
     def _blacklist(name):
-        return name.startswith("_") or name in ("newObject", "val", "vals", "all", "size", "add", "toOCC", "findSolid",
-                                                "findFace", "toSvg", "exportSvg", "largestDimension")
+        return name.startswith("_") or name in ("Workplane", "newObject", "val", "vals", "all", "size", "add", "toOCC",
+                                                "findSolid", "findFace", "toSvg", "exportSvg", "largestDimension")
 
-    def intercept(func):
+    def _is_recursive(func):
+        return func in ["union", "cut", "intersect"]
+
+    def intercept(parent, func):
 
         def f(*args, **kwargs):
-            global _CONTEXT, _LEVEL
+            _trace("1  calling", func.__name__, args, kwargs)
+            _trace(_CTX)
 
-            print("  1 calling", func.__name__, _CONTEXT, _LEVEL)
-            print("           ", args, kwargs)
-            if _CONTEXT[_LEVEL][1] is None:
-                _CONTEXT[_LEVEL] = (func.__name__, args, kwargs)
-                print("  2        ", _CONTEXT, _LEVEL)
+            if _is_recursive(func.__name__):
+                _ = _CTX.pop()
+                _trace("  --> level down")
+                _trace(_CTX)
+
+            if _CTX.args is None:
+                _trace("2  updating")
+                _CTX.update(func.__name__, args, kwargs)
+                _trace(_CTX)
 
             result = func(*args, **kwargs)
-            if func.__name__ == _CONTEXT[_LEVEL][0]:
-                result._caller = _CONTEXT[_LEVEL]
-                print("<== _caller", func.__name__, result._caller)
-                _CONTEXT[_LEVEL] = ("", None)
 
-            if func.__name__ == "union":
-                _LEVEL -= 1
-                _CONTEXT = _CONTEXT[:-1]
-                print("  --> level down", _CONTEXT, _LEVEL)
+            if func.__name__ == _CTX.func:
+                _CTX.obj = result
 
-            print("  3 leaving", func.__name__)
-            print("           ", _CONTEXT, _LEVEL)
+                if _CTX.is_top_level():
+                    result._caller = _CTX.pop()
+                    _trace("<== _caller", func.__name__, result._caller)
+                else:
+                    context = _CTX.pop()
+                    _CTX.append_child(context)
+                    _trace("<== added child", context)
+                _CTX.new()
+
+            _trace("3  leaving", func.__name__)
+            _trace(_CTX)
             return result
 
         return f
 
     attr = object.__getattribute__(self, name)
     if callable(attr):
-
         if not _blacklist(attr.__name__):
-            print("==> intercepting", attr.__name__)
-            if attr.__name__ == "union":
-                #                _CONTEXT[_LEVEL]= (attr.__name__, None)
-                _LEVEL += 1
-                _CONTEXT.append(("", None))
-                print("  --> level up", _CONTEXT)
+            _trace("==> intercepting", attr.__name__)
+            if _is_recursive(attr.__name__):
+                _trace("  --> level up")
+                _CTX.new()
+            _trace(_CTX)
 
-            return intercept(attr)
+            return intercept(self, attr)
     return attr
+
 
 class Replay(object):
 
@@ -84,29 +178,35 @@ class Replay(object):
 
     def to_array(self, workplane):
 
-        def _to_name(obj):
-            name = getattr(obj, "name", None)
-            return name or obj
+        def to_code(name, args, kwargs, indent):
+            def to_name(obj):
+                name = getattr(obj, "name", None)
+                return name or obj
+
+            args = tuple([to_name(arg) for arg in args])
+            code = "%s%s%s" % (indent, name, args)
+            code = code[:-2] if len(args) == 1 else code[:-1]
+            if len(args) > 0 and len(kwargs) > 0:
+                code += ","
+            if kwargs != {}:
+                code += ", ".join(["%s=%s" % (k, v) for k, v in kwargs.items()])
+            code += ")"
+            return code
+
+        def walk(caller, indent=""):
+            stack = [(to_code(caller["func"], caller["args"], caller["kwargs"], indent), caller["obj"])]
+            for child in reversed(caller["children"]):
+                stack = walk(child, indent + "  ") + stack
+            return stack
 
         stack = []
         obj = workplane
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
-                name, args, kwargs = caller
-                args = tuple([_to_name(arg) for arg in args])
-                code = "%s%s" % (name, args)
-                if len(args) == 1:
-                    code = code[:-2]
-                else:
-                    code = code[:-1]
-                if len(args) > 0 and len(kwargs) > 0:
-                    code += ","
-                if kwargs != {}:
-                    code += ", ".join(["%s=%s" % (k, v) for k, v in kwargs.items()])
-                code += ")"
-                stack.insert(0, (code, obj))
+                stack = walk(caller) + stack
             obj = obj.parent
+
         self.stack = stack
 
     def dump(self):
@@ -142,10 +242,30 @@ class Replay(object):
                 grid=True,
                 cad_width=self.cad_width,
                 height=self.height,
-                show_parents=(len(cad_objs)==1))
+                show_parents=(len(cad_objs) == 1))
+
+
+def reset_replay():
+    _CTX.clear()
+    _CTX.new()
+
+
+def enable_replay(debug=False):
+    global DEBUG
+
+    print("Plugging into cadquery.Workplane to enable replay")
+    DEBUG = debug
+    cq.Workplane.__getattribute__ = _add_context
+    reset_replay()
+
+
+def disable_replay():
+    print("Removing replay from cadquery.Workplane")
+    cq.Workplane.__getattribute__ = object.__getattribute__
 
 
 def replay(workplane, index=0, debug=False, cad_width=600, height=600):
+    reset_replay()
 
     r = Replay(debug, cad_width, height)
     r.to_array(workplane)
@@ -168,7 +288,3 @@ def replay(workplane, index=0, debug=False, cad_width=600, height=600):
 
     r.select(r.indexes)
     return r
-
-
-print("Plugging into cadquery.Workplane to enable replay")
-cq.Workplane.__getattribute__ = _add_context
