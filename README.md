@@ -13,14 +13,14 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 - Support for *CadQuery* and *PythonOCC* shapes
 - Switch between Orthographic and Perspective view
-- Auto display of *CadQuery* shapes 
+- Auto display of *CadQuery* shapes
 - Double click on shapes shows bounding box info in output widget
 - Visual debugging by displaying selected *CadQuery* faces and edges
 - Transparency mode
 - Toggle visibilty of shapes and edges
 - Clipping with max 3 clipping planes (of free orientation)
 - Supports (Jupyterlab Sidecar)[https://github.com/jupyter-widgets/jupyterlab-sidecar]
-    
+
 
 ### Samples
 
@@ -81,7 +81,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 #### PythonOCC
 
-See [core_classic_occ_bottle.py](https://github.com/tpaviot/pythonocc-demos/blob/master/examples/core_classic_occ_bottle.py), however omit lines in the `main`part 
+See [core_classic_occ_bottle.py](https://github.com/tpaviot/pythonocc-demos/blob/master/examples/core_classic_occ_bottle.py), however omit lines in the `main`part
 
 ```python
 from jupyter_cadquery.occ import Part, Assembly, show
@@ -140,43 +140,47 @@ Own classes for assemblies
     - *edges*: List of cadquery edges (`shape(edges(selctor))`)
     - *name*: Part name in the view
     - *color*: Part color in the view
- 
+
 - **Assembly**: Basically a list of parts and some attributes for the view:
     - *name*: Assembly name in the view
     - *objects*: all parts and assemblies included in the assembly as a list
 
 ## Installation
 
-- Install Jupyter, ipywidets and pythreejs:
-    
-        $ conda create -n pycq2 python=3.6 numpy jupyter jupyterlab ipywidgets
-        $ conda activate pycq2
-        $ jupyter labextension install @jupyter-widgets/jupyterlab-manager
-        $ pip install pythreejs
+- Create a conda environment with Jupyterlab:
 
-- Install one of the latest versions of *CadQuery 2* for OCC, e.g.:
+    ```bash
+    conda create -n pycq python=3.6 numpy jupyterlab
+    conda activate pycq
+    ```
 
-        $ conda install -c cadquery pythonocc-core=0.18.2
-        $ pip install git+https://github.com/CadQuery/cadquery@adam-urbanczyk-geom-lut-edge-face-fix
+- Install the latest versions of *CadQuery 2* for OCC:
 
-- Install jupyter-cadquery 
+    ```bash
+    conda install -c conda-forge -c cadquery pythonocc-core=0.18.2 pyparsing python=3.6
+    pip install --upgrade git+https://github.com/CadQuery/cadquery.git@adam-urbanczyk-csg-combine-fix
+    ```
 
-        $ git clone https://github.com/bernhard-42/jupyter-cadquery.git
-        $ cd jupyter-cadquery
-        $ pip install .
+- Install ipywidets, pythreejs and sidecar:
 
-    - For jupyter lab (requires npm)
-    
-            $ jupyter-labextension install js
+    ```bash
+    pip install ipywidgets pythreejs sidecar
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-threejs @jupyter-widgets/jupyterlab-sidecar
+    ```
 
-    - For jupyter
+- Install jupyter-cadquery
 
-            tbd.
+    ```bash
+    git clone https://github.com/bernhard-42/jupyter-cadquery.git
+    cd jupyter-cadquery
+    pip install .
+    jupyter-labextension install js
+    ```
 
 ## Credits
 
-- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py` 
-- Dave Cowden for [CadQuery](https://github.com/dcowden/cadquery) 
+- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py`
+- Dave Cowden for [CadQuery](https://github.com/dcowden/cadquery)
 - Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
 ## Known issues
