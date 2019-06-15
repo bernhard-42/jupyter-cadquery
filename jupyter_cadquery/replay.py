@@ -180,16 +180,20 @@ class Replay(object):
         self.view = None
         self.state = None
 
-    def to_array(self, workplane, indent=""):
 
-        def to_code(name, args, kwargs, indent):
+    def to_array(self, workplane, indent="", result_name=None):
+
+        def to_code(name, args, kwargs, indent, result_name):
 
             def to_name(obj):
                 name = getattr(obj, "name", None)
                 return name or obj
 
             args = tuple([to_name(arg) for arg in args])
-            code = "%s%s%s" % (indent, name, args)
+            if result_name is None:
+                code = "%s%s%s" % (indent, name, args)
+            else:
+                code = "%s[%s] %s%s" % (indent, result_name, name, args)
             code = code[:-2] if len(args) == 1 else code[:-1]
             if len(args) > 0 and len(kwargs) > 0:
                 code += ","
@@ -198,13 +202,16 @@ class Replay(object):
             code += ")"
             return code
 
-        def walk(caller, indent=""):
+        def walk(caller, indent="", result_name=None):
             stack = []
             for arg in caller["args"]:
                 attr = getattr(arg, "_caller", None)
                 if attr is not None:
-                    stack = self.to_array(arg, indent + "  ") + stack
-            stack = stack + [(to_code(caller["func"], caller["args"], caller["kwargs"], indent), caller["obj"])]
+                    result_name = getattr(arg, "name", None)
+                    stack = self.to_array(arg, indent + "  ", result_name) + stack
+                    result_name = None
+            stack = stack + [(to_code(caller["func"], caller["args"], caller["kwargs"], indent, result_name), caller["obj"])
+                            ]
             for child in reversed(caller["children"]):
                 stack = walk(child, indent + "  ") + stack
             return stack
@@ -214,7 +221,7 @@ class Replay(object):
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
-                stack = walk(caller, indent) + stack
+                stack = walk(caller, indent, result_name) + stack
             obj = obj.parent
 
         return stack
@@ -292,7 +299,7 @@ def replay(workplane, index=0, debug=False, cad_width=600, height=600):
     reset_replay()
 
     r = Replay(debug, cad_width, height)
-    r.stack = r.to_array(workplane)
+    r.stack = r.to_array(workplane, result_name = getattr(workplane, "name", None))
     r.indexes = [index]
 
     if r._debug:
