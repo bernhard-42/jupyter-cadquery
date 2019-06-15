@@ -407,6 +407,12 @@ class CadqueryView(object):
     def add_shape(self, name, shape, color="#ff0000"):
         self.shapes.append({"name": name, "shape": shape, "color": color})
 
+    def is_ortho(self):
+        return (self.camera.mode == "orthographic")
+
+    def is_transparent(self):
+        return self.pickable_objects.children[0].material.transparent
+
     def render(self, position=None, rotation=None, zoom=None):
 
         # Render all shapes

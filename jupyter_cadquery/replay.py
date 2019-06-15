@@ -104,9 +104,11 @@ class Context(object):
 _CTX = Context()
 DEBUG = True
 
+
 def _trace(*objs):
     if DEBUG:
         print(*objs)
+
 
 def _add_context(self, name):
 
@@ -178,7 +180,6 @@ class Replay(object):
         self.view = None
         self.state = None
 
-
     def to_array(self, workplane, indent=""):
 
         def to_code(name, args, kwargs, indent):
@@ -222,30 +223,20 @@ class Replay(object):
         for o in self.stack:
             print(o, o[1].val().__class__.__name__)
 
-    def debug(self, *msgs):
-        self.debug_output.clear_output()
-        with self.debug_output:
-            print(*msgs)
-
     def select(self, indexes):
         with self.debug_output:
             self.indexes = indexes
             cad_objs = [self.stack[i][1] for i in self.indexes]
 
             # Save state
-            position = rotation = zoom = None
-            axes = grid = axes0 = ortho = True
-            transparent = False
-            if self.view is not None:
-                position = self.view.cq_view.camera.position
-                rotation = self.view.cq_view.camera.rotation
-                zoom = self.view.cq_view.camera.zoom
-                axes = self.view.cq_view.axes.get_visibility()
-                grid = self.view.cq_view.grid.get_visibility()
-                axes0 = self.view.cq_view.axes.is_center()
-                # TODO Create methods for this
-                ortho = (self.view.cq_view.camera.mode == "orthographic")
-                transparent = self.view.cq_view.pickable_objects.children[0].material.transparent
+            position =    None  if self.view is None else self.view.cq_view.camera.position
+            rotation =    None  if self.view is None else self.view.cq_view.camera.rotation
+            zoom =        None  if self.view is None else self.view.cq_view.camera.zoom
+            axes =        True  if self.view is None else self.view.cq_view.axes.get_visibility()
+            grid =        True  if self.view is None else self.view.cq_view.grid.get_visibility()
+            axes0 =       True  if self.view is None else self.view.cq_view.axes.is_center()
+            ortho =       True  if self.view is None else self.view.cq_view.is_ortho()
+            transparent = False if self.view is None else self.view.cq_view.is_transparent()
 
             # Show new view
             self.view = self.show(cad_objs, position, rotation, zoom, axes, grid, axes0, ortho, transparent)
@@ -255,17 +246,10 @@ class Replay(object):
             if change["name"] == "index":
                 self.select(change["new"])
 
-    def show(self,
-             cad_objs,
-             position,
-             rotation,
-             zoom,
-             axes=True,
-             grid=True,
-             axes0=True,
-             ortho=True,
-             transparent=True):
+    def show(self, cad_objs, position, rotation, zoom, axes=True, grid=True, axes0=True, ortho=True, transparent=True):
+
         self.debug_output.clear_output()
+
         # Add hidden result to start with final size and allow for comparison
         result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
         with self.debug_output:
