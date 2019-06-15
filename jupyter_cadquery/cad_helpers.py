@@ -26,15 +26,26 @@ class Helpers(object):
     def __init__(self, bb_center):
         self.bb_center = bb_center
         self.center = (0, 0, 0)
+        self.zero = True
 
     def _center(self, zero=True):
+        self.zero = zero
         return self.center if zero else self.bb_center
+
+    def get_position(self):
+        raise NotImplementedError()
 
     def set_position(self, position):
         raise NotImplementedError()
 
     def set_visibility(self, change):
         raise NotImplementedError()
+
+    def get_center(self):
+        return self.get_position()
+
+    def is_center(self):
+        return self.zero
 
     def set_center(self, change):
         self.set_position(self._center(change))
@@ -90,8 +101,14 @@ class Grid(Helpers):
 
         return axis_start, axis_end, nice_tick
 
+    def get_position(self,):
+        return self.grid.position
+
     def set_position(self, position):
         self.grid.position = position
+
+    def get_visibility(self):
+        return self.grid.visible
 
     def set_visibility(self, change):
         self.grid.visible = change
@@ -115,9 +132,15 @@ class Axes(Helpers):
     def _shift(self, v, offset):
         return [x + o for x, o in zip(v, offset)]
 
+    def get_position(self):
+        return self.axes[0].position
+
     def set_position(self, position):
         for i in range(3):
             self.axes[i].position = position
+
+    def get_visibility(self):
+        return self.axes[0].visible
 
     def set_visibility(self, change):
         for i in range(3):

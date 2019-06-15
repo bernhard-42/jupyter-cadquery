@@ -267,6 +267,10 @@ class CadqueryView(object):
                 index_mapping["mesh"] = ind
             self.pick_mapping.append(index_mapping)
 
+    def get_transparent(self):
+        # if one object is transparent, all are
+        return self.pickable_objects.children[0].material.transparent
+
     def _scale(self, vec):
         r = self.bb.diagonal * 2.5
         n = np.linalg.norm(vec)
@@ -403,7 +407,8 @@ class CadqueryView(object):
     def add_shape(self, name, shape, color="#ff0000"):
         self.shapes.append({"name": name, "shape": shape, "color": color})
 
-    def render(self):
+    def render(self, position=None, rotation=None, zoom=None):
+
         # Render all shapes
         for i, shape in enumerate(self.shapes):
             s = shape["shape"]
@@ -424,7 +429,8 @@ class CadqueryView(object):
 
         # Set up camera
         camera_target = self.bb.center
-        camera_position = self._scale([1, 1, 1])
+        camera_position = self._scale([1, 1, 1] if position is None else position)
+        camera_zoom = 1.0 if zoom is None else zoom
 
         self.camera = CombinedCamera(
             position=camera_position, width=self.width, height=self.height, far=10 * bb_diag, orthoFar=10 * bb_diag)
@@ -432,6 +438,8 @@ class CadqueryView(object):
         self.camera.lookAt(camera_target)
         self.camera.mode = 'orthographic'
         self.camera.position = camera_position
+        if rotation is not None:
+            self.camera.rotation = rotation
 
         # Set up lights in every of the 8 corners of the global bounding box
         key_lights = [
@@ -477,9 +485,9 @@ class CadqueryView(object):
         self.savestate = (self.camera.rotation, self.controller.target)
 
         # Workaround: Zoom forth and back to update frame. Sometimes necessary :(
-        self.camera.zoom = 1.01
+        self.camera.zoom = camera_zoom + 0.01
         self._update()
-        self.camera.zoom = 1.0
+        self.camera.zoom = camera_zoom
         self._update()
 
         return self.renderer

@@ -212,6 +212,9 @@ class CadqueryDisplay(object):
                 grid=True,
                 ortho=True,
                 transparent=False,
+                position=None,
+                rotation=None,
+                zoom=None,
                 mac_scrollbar=True):
 
         if platform.system() != "Darwin":
@@ -242,7 +245,7 @@ class CadqueryDisplay(object):
 
         for shape in shapes:
             self.cq_view.add_shape(shape["name"], shape["shape"], shape["color"])
-        renderer = self.cq_view.render()
+        renderer = self.cq_view.render(position, rotation, zoom)
         renderer.add_class("view_renderer")
 
         bb = self.cq_view.bb
@@ -274,7 +277,7 @@ class CadqueryDisplay(object):
         tree_clipping.add_class("tab-content-no-padding")
 
         # Check controls to swith orto, grid and axis
-        check_controls = [
+        self.check_controls = [
             self.create_checkbox("axes", "Axes", axes, self.cq_view.toggle_axes),
             self.create_checkbox("grid", "Grid", grid, self.cq_view.toggle_grid),
             self.create_checkbox("zero", "@ 0", axes0, self.cq_view.toggle_center),
@@ -282,7 +285,7 @@ class CadqueryDisplay(object):
             self.create_checkbox("transparent", "Transparency", transparent, self.cq_view.toggle_transparent),
             self.create_checkbox("black_edges", "Black Edges", False, self.cq_view.toggle_black_edges),
         ]
-        check_controls[-2].add_class("indent")
+        self.check_controls[-2].add_class("indent")
 
         # Set initial state
         self.cq_view.toggle_ortho(ortho)
@@ -296,7 +299,7 @@ class CadqueryDisplay(object):
                 self.cq_view.set_visibility(mapping[obj], i, val)
 
         # Buttons to switch camera position
-        view_controls = []
+        self.view_controls = []
         for typ in CadqueryDisplay.types:
             if typ == "refit":
                 tooltip = "Fit view"
@@ -305,9 +308,9 @@ class CadqueryDisplay(object):
             else:
                 tooltip = "Change view to %s" % typ
             button = self.create_button(typ, self.cq_view.change_view(typ, CadqueryDisplay.directions), tooltip)
-            view_controls.append(button)
+            self.view_controls.append(button)
 
         return HBox([
-            VBox([HBox(check_controls[:-2]), tree_clipping, self.output]),
-            VBox([HBox(view_controls + check_controls[-2:]), renderer])
+            VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
+            VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer])
         ])

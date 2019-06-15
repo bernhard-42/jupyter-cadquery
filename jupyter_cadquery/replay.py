@@ -175,6 +175,8 @@ class Replay(object):
         self.cad_width = cad_width
         self.height = height
         self.indexes = [0]
+        self.view = None
+        self.state = None
 
 
     def to_array(self, workplane, indent=""):
@@ -229,27 +231,58 @@ class Replay(object):
         with self.debug_output:
             self.indexes = indexes
             cad_objs = [self.stack[i][1] for i in self.indexes]
-            self.show(cad_objs)
+
+            # Save state
+            position = rotation = zoom = None
+            axes = grid = axes0 = ortho = True
+            transparent = False
+            if self.view is not None:
+                position = self.view.cq_view.camera.position
+                rotation = self.view.cq_view.camera.rotation
+                zoom = self.view.cq_view.camera.zoom
+                axes = self.view.cq_view.axes.get_visibility()
+                grid = self.view.cq_view.grid.get_visibility()
+                axes0 = self.view.cq_view.axes.is_center()
+                # TODO Create methods for this
+                ortho = (self.view.cq_view.camera.mode == "orthographic")
+                transparent = self.view.cq_view.pickable_objects.children[0].material.transparent
+
+            # Show new view
+            self.view = self.show(cad_objs, position, rotation, zoom, axes, grid, axes0, ortho, transparent)
 
     def select_handler(self, change):
         with self.debug_output:
             if change["name"] == "index":
                 self.select(change["new"])
 
-    def show(self, cad_objs):
+    def show(self,
+             cad_objs,
+             position,
+             rotation,
+             zoom,
+             axes=True,
+             grid=True,
+             axes0=True,
+             ortho=True,
+             transparent=True):
         self.debug_output.clear_output()
         # Add hidden result to start with final size and allow for comparison
         result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
         with self.debug_output:
-            show(
+            return show(
                 result,
                 *cad_objs,
-                transparent=True,
-                axes=True,
-                grid=True,
+                transparent=transparent,
+                axes=axes,
+                grid=grid,
+                axes0=axes0,
+                ortho=ortho,
                 cad_width=self.cad_width,
                 height=self.height,
-                show_parents=(len(cad_objs) == 1))
+                show_parents=(len(cad_objs) == 1),
+                position=position,
+                rotation=rotation,
+                zoom=zoom)
 
 
 def reset_replay():

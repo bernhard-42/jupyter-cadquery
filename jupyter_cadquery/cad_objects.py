@@ -184,6 +184,9 @@ def _show(assembly,
           grid=False,
           ortho=True,
           transparent=False,
+          position=None,
+          rotation=None,
+          zoom=None,
           mac_scrollbar=True,
           sidecar=None):
 
@@ -208,6 +211,9 @@ def _show(assembly,
         grid=grid,
         ortho=ortho,
         transparent=transparent,
+        position=position,
+        rotation=rotation,
+        zoom=zoom,
         mac_scrollbar=mac_scrollbar)
 
     d.info.ready_msg(d.cq_view.grid.step)

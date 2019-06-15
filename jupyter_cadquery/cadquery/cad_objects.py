@@ -181,7 +181,10 @@ def show(*cad_objs,
          transparent=False,
          mac_scrollbar=True,
          sidecar=None,
-         show_parents=True):
+         show_parents=True,
+         position=None,
+         rotation=None,
+         zoom=None):
 
     assembly = Assembly([], "Replay")
     obj_id = 0
@@ -214,5 +217,5 @@ def show(*cad_objs,
 
     if assembly is None:
         raise ValueError("%s cannot be viewed" % type(cad_obj))
-    return _show(assembly, height, tree_width, cad_width, quality, axes, axes0, grid, ortho, transparent, mac_scrollbar,
-                 sidecar)
+    return _show(assembly, height, tree_width, cad_width, quality, axes, axes0, grid, ortho, transparent, position,
+                 rotation, zoom, mac_scrollbar, sidecar)
