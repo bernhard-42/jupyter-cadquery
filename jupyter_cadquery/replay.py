@@ -176,9 +176,11 @@ class Replay(object):
         self.height = height
         self.indexes = [0]
 
-    def to_array(self, workplane):
+
+    def to_array(self, workplane, indent=""):
 
         def to_code(name, args, kwargs, indent):
+
             def to_name(obj):
                 name = getattr(obj, "name", None)
                 return name or obj
@@ -194,7 +196,12 @@ class Replay(object):
             return code
 
         def walk(caller, indent=""):
-            stack = [(to_code(caller["func"], caller["args"], caller["kwargs"], indent), caller["obj"])]
+            stack = []
+            for arg in caller["args"]:
+                attr = getattr(arg, "_caller", None)
+                if attr is not None:
+                    stack = self.to_array(arg, indent + "  ") + stack
+            stack = stack + [(to_code(caller["func"], caller["args"], caller["kwargs"], indent), caller["obj"])]
             for child in reversed(caller["children"]):
                 stack = walk(child, indent + "  ") + stack
             return stack
@@ -204,10 +211,10 @@ class Replay(object):
         while obj is not None:
             caller = getattr(obj, "_caller", None)
             if caller is not None:
-                stack = walk(caller) + stack
+                stack = walk(caller, indent) + stack
             obj = obj.parent
 
-        self.stack = stack
+        return stack
 
     def dump(self):
         for o in self.stack:
@@ -268,7 +275,7 @@ def replay(workplane, index=0, debug=False, cad_width=600, height=600):
     reset_replay()
 
     r = Replay(debug, cad_width, height)
-    r.to_array(workplane)
+    r.stack = r.to_array(workplane)
     r.indexes = [index]
 
     if r._debug:
