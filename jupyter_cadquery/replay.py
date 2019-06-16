@@ -190,38 +190,41 @@ class Replay(object):
                 return name or obj
 
             args = tuple([to_name(arg) for arg in args])
-            if result_name is None:
-                code = "%s%s%s" % (indent, name, args)
-            else:
-                code = "%s[%s] %s%s" % (indent, result_name, name, args)
+            code = "%s%s%s" % (indent, name, args)
             code = code[:-2] if len(args) == 1 else code[:-1]
             if len(args) > 0 and len(kwargs) > 0:
                 code += ","
             if kwargs != {}:
                 code += ", ".join(["%s=%s" % (k, v) for k, v in kwargs.items()])
             code += ")"
+            if result_name is not None:
+                code += (" => %s" % result_name)
             return code
 
         def walk(caller, indent="", result_name=None):
-            stack = []
-            for arg in caller["args"]:
-                attr = getattr(arg, "_caller", None)
-                if attr is not None:
-                    result_name = getattr(arg, "name", None)
-                    stack = self.to_array(arg, indent + "  ", result_name) + stack
-                    result_name = None
-            stack = stack + [(to_code(caller["func"], caller["args"], caller["kwargs"], indent, result_name), caller["obj"])
-                            ]
+            delim = "| "
+            stack = [(to_code(caller["func"], caller["args"], caller["kwargs"], indent, result_name), caller["obj"])]
             for child in reversed(caller["children"]):
-                stack = walk(child, indent + "  ") + stack
+                stack = walk(child, indent + delim) + stack
+                for arg in child["args"]:
+                    if isinstance(arg, cq.Workplane):
+                        result_name = getattr(arg, "name", None)
+                        stack = self.to_array(arg, indent + (delim*2), result_name) + stack
             return stack
 
         stack = []
+        delim = "| "
+
         obj = workplane
         while obj is not None:
             caller = getattr(obj, "_caller", None)
+            result_name = getattr(obj, "name", None)
             if caller is not None:
                 stack = walk(caller, indent, result_name) + stack
+                for arg in caller["args"]:
+                    if isinstance(arg, cq.Workplane):
+                        result_name = getattr(arg, "name", None)
+                        stack = self.to_array(arg, indent + delim, result_name) + stack
             obj = obj.parent
 
         return stack
