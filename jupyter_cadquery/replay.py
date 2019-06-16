@@ -239,14 +239,18 @@ class Replay(object):
             cad_objs = [self.stack[i][1] for i in self.indexes]
 
             # Save state
-            position =    None  if self.view is None else self.view.cq_view.camera.position
-            rotation =    None  if self.view is None else self.view.cq_view.camera.rotation
-            zoom =        None  if self.view is None else self.view.cq_view.camera.zoom
             axes =        True  if self.view is None else self.view.cq_view.axes.get_visibility()
             grid =        True  if self.view is None else self.view.cq_view.grid.get_visibility()
             axes0 =       True  if self.view is None else self.view.cq_view.axes.is_center()
             ortho =       True  if self.view is None else self.view.cq_view.is_ortho()
             transparent = False if self.view is None else self.view.cq_view.is_transparent()
+            rotation =    None if self.view is None else self.view.cq_view.camera.rotation
+            zoom =        None  if self.view is None else self.view.cq_view.camera.zoom
+            position =    None  if self.view is None else self.view.cq_view.camera.position
+            # substract center out of position to be prepared for _scale function
+            if position is not None:
+                position = self.view.cq_view._sub(position, self.view.cq_view.bb.center)
+
 
             # Show new view
             self.view = self.show(cad_objs, position, rotation, zoom, axes, grid, axes0, ortho, transparent)
