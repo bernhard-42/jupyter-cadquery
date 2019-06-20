@@ -18,7 +18,9 @@ from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
 import cadquery as cq
 from cadquery import Compound
 from IPython.display import display
+from IPython import get_ipython
 from jupyter_cadquery.cadquery import Part, show
+import warnings
 
 
 def attributes(names):
@@ -244,7 +246,7 @@ class Replay(object):
             axes0 =       True  if self.view is None else self.view.cq_view.axes.is_center()
             ortho =       True  if self.view is None else self.view.cq_view.is_ortho()
             transparent = False if self.view is None else self.view.cq_view.is_transparent()
-            rotation =    None if self.view is None else self.view.cq_view.camera.rotation
+            rotation =    None  if self.view is None else self.view.cq_view.camera.rotation
             zoom =        None  if self.view is None else self.view.cq_view.camera.zoom
             position =    None  if self.view is None else self.view.cq_view.camera.position
             # substract center out of position to be prepared for _scale function
@@ -265,11 +267,14 @@ class Replay(object):
         self.debug_output.clear_output()
 
         # Add hidden result to start with final size and allow for comparison
-        result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
+        if not isinstance(self.stack[-1][1].val(),  cq.Vector):
+            result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
+            objs = [result] + cad_objs
+        else:
+            objs = cad_objs
         with self.debug_output:
             return show(
-                result,
-                *cad_objs,
+                *objs,
                 transparent=transparent,
                 axes=axes,
                 grid=grid,
@@ -284,6 +289,15 @@ class Replay(object):
 
 
 def reset_replay():
+    def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+        return '%s: %s' % (category.__name__, message)
+
+    warn_format = warnings.formatwarning
+    warnings.formatwarning = warning_on_one_line
+    warnings.simplefilter('always', RuntimeWarning)
+    warnings.warn('jupyter_cadquery replay is enabled, turn off with disable_replay()', RuntimeWarning)
+    warnings.formatwarning = warn_format
+
     _CTX.clear()
     _CTX.new()
 
@@ -291,20 +305,25 @@ def reset_replay():
 def enable_replay(debug=False):
     global DEBUG
 
-    print("Plugging into cadquery.Workplane to enable replay")
+    print("\nEnabling jupyter_cadquery replay")
     DEBUG = debug
     cq.Workplane.__getattribute__ = _add_context
-    reset_replay()
+
+    ip = get_ipython()
+    if not 'reset_replay' in [f.__name__ for f in ip.events.callbacks['pre_run_cell']]:
+        ip.events.register('pre_run_cell', reset_replay)
 
 
 def disable_replay():
-    print("Removing replay from cadquery.Workplane")
+    print("Removing replay from cadquery.Workplane (will show a final RuntimeWarning)")
     cq.Workplane.__getattribute__ = object.__getattribute__
+
+    ip = get_ipython()
+    if 'reset_replay' in [f.__name__ for f in ip.events.callbacks['pre_run_cell']]:
+        ip.events.unregister('pre_run_cell', reset_replay)
 
 
 def replay(workplane, index=0, debug=False, cad_width=600, height=600):
-    reset_replay()
-
     r = Replay(debug, cad_width, height)
     r.stack = r.to_array(workplane, result_name = getattr(workplane, "name", None))
     r.indexes = [index]
