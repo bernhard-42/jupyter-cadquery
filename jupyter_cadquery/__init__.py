@@ -17,6 +17,7 @@
 from ._version import version_info, __version__
 from .cad_objects import auto_show, set_sidecar
 from .replay import replay, enable_replay, disable_replay, reset_replay
+from .export import exportSTL
 
 def _jupyter_nbextension_paths():
     return [{
