@@ -14,13 +14,24 @@
 # limitations under the License.
 #
 
-from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
-import cadquery as cq
-from cadquery import Compound
+from dataclasses import dataclass, field
+from typing import Any, List, Dict
+import warnings
+
 from IPython.display import display
 from IPython import get_ipython
+
+from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
+
+import cadquery as cq
+from cadquery import Compound
 from jupyter_cadquery.cadquery import Part, show
-import warnings
+
+#
+# The Runtime part
+# It hooks into __getattribute__ and intercept EVERY python call
+# One should only enable replay when necessary for debugging
+#
 
 
 def attributes(names):
@@ -170,70 +181,134 @@ def _add_context(self, name):
     return attr
 
 
+#
+# The UI part
+# It evaluates and optimizes what the runtime part had collected
+#
+
+
+@dataclass
+class Step:
+    level: int = 0
+    func: str = ""
+    args: List[Any] = field(default_factory=list)
+    kwargs: Dict[Any, str] = field(default_factory=dict)
+    var: str = ""
+    result_name: str = ""
+    result_obj: Any = None
+
+    def clear_func(self):
+        self.func = self.args = self.kwargs = ""
+
+
 class Replay(object):
 
-    def __init__(self, debug=False, cad_width=600, height=600):
-        self._debug = debug
-
+    def __init__(self, debug, cad_width, height):
         self.debug_output = Output()
+        self.debug = debug
         self.cad_width = cad_width
         self.height = height
-        self.indexes = [0]
         self.view = None
-        self.state = None
 
+    def format_steps(self, raw_steps):
 
-    def to_array(self, workplane, indent="", result_name=None):
-
-        def to_code(name, args, kwargs, indent, result_name):
+        def to_code(step, results):
 
             def to_name(obj):
-                name = getattr(obj, "name", None)
-                return name or obj
+                if isinstance(obj, cq.Workplane):
+                    name = results.get(obj, None)
+                else:
+                    name = str(obj)
+                return obj if name is None else name
 
-            args = tuple([to_name(arg) for arg in args])
-            code = "%s%s%s" % (indent, name, args)
-            code = code[:-2] if len(args) == 1 else code[:-1]
-            if len(args) > 0 and len(kwargs) > 0:
-                code += ","
-            if kwargs != {}:
-                code += ", ".join(["%s=%s" % (k, v) for k, v in kwargs.items()])
-            code += ")"
-            if result_name is not None:
-                code += (" => %s" % result_name)
+            if step.func != "":
+                args = tuple([to_name(arg) for arg in step.args])
+                code = "%s%s%s" % ("| " * step.level, step.func, args)
+                code = code[:-2] if len(step.args) == 1 else code[:-1]
+                if len(step.args) > 0 and len(step.kwargs) > 0:
+                    code += ","
+                if step.kwargs != {}:
+                    code += ", ".join(["%s=%s" % (k, v) for k, v in step.kwargs.items()])
+                code += ")"
+                if step.result_name != "":
+                    code += (" => %s" % step.result_name)
+            elif step.var != "":
+                code = "%s%s" % ("| " * step.level, step.var)
+            else:
+                code = ("ERROR")
             return code
 
-        def walk(caller, indent="", result_name=None):
-            delim = "| "
-            stack = [(to_code(caller["func"], caller["args"], caller["kwargs"], indent, result_name), caller["obj"])]
+        steps = []
+        entries = []
+        obj_index = 1
+
+        results = {step.result_obj: None for step in raw_steps}
+
+        for i in range(len(raw_steps)):
+            step = raw_steps[i]
+            next_level = step.level if i == (len(raw_steps) - 1) else raw_steps[i + 1].level
+
+            # level change, so add/use the variable name
+            if step.level > 0 and step.level != next_level and step.result_name == "":
+                obj_name = "_v%d" % obj_index
+                obj_index += 1
+                step.result_name = obj_name
+            steps.append(step)
+
+        for step in steps:
+            if results[step.result_obj] is None:
+                # first occurence, take note and keep
+                results[step.result_obj] = step.result_name
+            else:
+                # next occurences remove function and add variable name
+                step.var = results[step.result_obj]
+                step.clear_func()
+
+        last_level = 1000000
+        for step in reversed(steps):
+            if step.level < last_level:
+                last_level = 1000000
+                entries.insert(0, (to_code(step, results), step.result_obj))
+                if step.var != "":
+                    last_level = step.level
+
+        return entries
+
+    def to_array(self, workplane, level=0, result_name=""):
+
+        def walk(caller, level=0, result_name=""):
+            stack = [
+                Step(
+                    level,
+                    func=caller["func"],
+                    args=caller["args"],
+                    kwargs=caller["kwargs"],
+                    result_name=result_name,
+                    result_obj=caller["obj"])
+            ]
             for child in reversed(caller["children"]):
-                stack = walk(child, indent + delim) + stack
+                stack = walk(child, level + 1) + stack
                 for arg in child["args"]:
                     if isinstance(arg, cq.Workplane):
                         result_name = getattr(arg, "name", None)
-                        stack = self.to_array(arg, indent + (delim*2), result_name) + stack
+                        stack = self.to_array(arg, level=level + 2, result_name=result_name) + stack
             return stack
 
         stack = []
-        delim = "| "
 
         obj = workplane
         while obj is not None:
             caller = getattr(obj, "_caller", None)
-            result_name = getattr(obj, "name", None)
+            result_name = getattr(obj, "name", "")
             if caller is not None:
-                stack = walk(caller, indent, result_name) + stack
+                stack = walk(caller, level, result_name) + stack
                 for arg in caller["args"]:
                     if isinstance(arg, cq.Workplane):
-                        result_name = getattr(arg, "name", None)
-                        stack = self.to_array(arg, indent + delim, result_name) + stack
+                        result_name = getattr(arg, "name", "")
+                        stack = self.to_array(arg, level=level + 1, result_name=result_name) + stack
             obj = obj.parent
 
         return stack
-
-    def dump(self):
-        for o in self.stack:
-            print(o, o[1].val().__class__.__name__)
 
     def select(self, indexes):
         with self.debug_output:
@@ -241,18 +316,17 @@ class Replay(object):
             cad_objs = [self.stack[i][1] for i in self.indexes]
 
             # Save state
-            axes =        True  if self.view is None else self.view.cq_view.axes.get_visibility()
-            grid =        True  if self.view is None else self.view.cq_view.grid.get_visibility()
-            axes0 =       True  if self.view is None else self.view.cq_view.axes.is_center()
-            ortho =       True  if self.view is None else self.view.cq_view.is_ortho()
+            axes = True if self.view is None else self.view.cq_view.axes.get_visibility()
+            grid = True if self.view is None else self.view.cq_view.grid.get_visibility()
+            axes0 = True if self.view is None else self.view.cq_view.axes.is_center()
+            ortho = True if self.view is None else self.view.cq_view.is_ortho()
             transparent = False if self.view is None else self.view.cq_view.is_transparent()
-            rotation =    None  if self.view is None else self.view.cq_view.camera.rotation
-            zoom =        None  if self.view is None else self.view.cq_view.camera.zoom
-            position =    None  if self.view is None else self.view.cq_view.camera.position
+            rotation = None if self.view is None else self.view.cq_view.camera.rotation
+            zoom = None if self.view is None else self.view.cq_view.camera.zoom
+            position = None if self.view is None else self.view.cq_view.camera.position
             # substract center out of position to be prepared for _scale function
             if position is not None:
                 position = self.view.cq_view._sub(position, self.view.cq_view.bb.center)
-
 
             # Show new view
             self.view = self.show(cad_objs, position, rotation, zoom, axes, grid, axes0, ortho, transparent)
@@ -267,7 +341,7 @@ class Replay(object):
         self.debug_output.clear_output()
 
         # Add hidden result to start with final size and allow for comparison
-        if not isinstance(self.stack[-1][1].val(),  cq.Vector):
+        if not isinstance(self.stack[-1][1].val(), cq.Vector):
             result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
             objs = [result] + cad_objs
         else:
@@ -288,7 +362,33 @@ class Replay(object):
                 zoom=zoom)
 
 
+def replay(workplane, index=0, debug=False, cad_width=600, height=600):
+    r = Replay(debug, cad_width, height)
+    r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
+    r.indexes = [index]
+
+    r.select_box = SelectMultiple(
+        options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(r.stack)],
+        index=r.indexes,
+        rows=len(r.stack),
+        description='',
+        disabled=False,
+        layout=Layout(width="600px"))
+    r.select_box.add_class("monospace")
+    r.select_box.observe(r.select_handler)
+    display(HBox([r.select_box, r.debug_output]))
+
+    r.select(r.indexes)
+    return r
+
+
+#
+# Control functions to enable, disable and reset replay
+#
+
+
 def reset_replay():
+
     def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
         return '%s: %s' % (category.__name__, message)
 
@@ -321,27 +421,3 @@ def disable_replay():
     ip = get_ipython()
     if 'reset_replay' in [f.__name__ for f in ip.events.callbacks['pre_run_cell']]:
         ip.events.unregister('pre_run_cell', reset_replay)
-
-
-def replay(workplane, index=0, debug=False, cad_width=600, height=600):
-    r = Replay(debug, cad_width, height)
-    r.stack = r.to_array(workplane, result_name = getattr(workplane, "name", None))
-    r.indexes = [index]
-
-    if r._debug:
-        print("Dump of stack:")
-        r.dump()
-
-    r.select_box = SelectMultiple(
-        options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(r.stack)],
-        index=r.indexes,
-        rows=len(r.stack),
-        description='',
-        disabled=False,
-        layout=Layout(width="600px"))
-    r.select_box.add_class("monospace")
-    r.select_box.observe(r.select_handler)
-    display(HBox([r.select_box, r.debug_output]))
-
-    r.select(r.indexes)
-    return r
