@@ -4,11 +4,11 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 **Note:** The extension relies on *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery 1* or *CadQuery 2*.
 
-## 1 Overview
+## Overview
 
 ![Overview](screenshots/s_intro.png)
 
-### 1.1 Key features:
+### a) Key features:
 
 - Support for *CadQuery*, *CQParts* and *PythonOCC*
 - Auto display of *CadQuery* shapes
@@ -24,7 +24,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
     - replaying steps of the rendered object
 
 
-### 1.2 Example: CadQuery using Sidecar
+### b) Example: CadQuery using Sidecar
 
 ```python
 import cadquery as cq
@@ -57,7 +57,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 ![Sidecar](screenshots/sidecar.png) 
 
-## 2 Demos 
+## Demos 
 
 *(animated gifs)*
 
@@ -69,9 +69,9 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - [CQParts demo](doc/cqparts.md) 
 
 
-## 3 Usage
+## Usage
 
-### 3.1 Show objects
+### a) Show objects
 
 - **show(args)**
     - *cad_objs*: Comma separated list of cadquery objects; **Note**: For OCC only one object is supported
@@ -88,7 +88,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - *sidecar* (`default=None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
     - *show_parents* (`default=True`): Show additionally parent of the current cadquery object
 
-### 3.2 Assembly classes
+### b) ssembly classes
 
 - **Part**: A CadQuery shape plus some attributes for it:
     - *shape*: Cadquery shape
@@ -119,7 +119,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - *objects*: all parts and assemblies included in the assembly as a list
 
 
-## 4 Installation
+## Installation
 
 - Create a conda environment with Jupyterlab:
 
@@ -151,7 +151,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     jupyter-labextension install js
     ```
 
-## 5 Usage of a docker image
+## Usage of a docker image
 
 - Install [docker](https://www.docker.com)
 
@@ -167,12 +167,12 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     docker run -it --rm -v cq-data:/data -p 8888:8888 bernhard-42/jupyter-cadquery:latest
     ```
 
-## 6 Credits
+## Credits
 
 - Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from his `jupyter_renderer.py`
 - Dave Cowden for [CadQuery](https://github.com/dcowden/cadquery)
 - Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
-## 7 Known issues
+## Known issues
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
