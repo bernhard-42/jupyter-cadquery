@@ -177,6 +177,16 @@ Own classes for assemblies
     jupyter-labextension install js
     ```
 
+## Usage of a docker image
+
+- Install [docker](https://www.docker.com)
+
+- Run the docker container
+
+    ```bash
+    docker run -it --rm -v cq-data:/data -p 8888:8888 bernhard-42/jupyter-cadquery:latest
+    ```
+
 ## Credits
 
 - Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py`
