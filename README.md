@@ -4,9 +4,11 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 **Note:** The extension relies on *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery 1* or *CadQuery 2*.
 
-## Overview
+## 1 Overview
 
-### Key features:
+![Overview](screenshots/s_intro.png)
+
+### 1.1 Key features:
 
 - Support for *CadQuery*, *CQParts* and *PythonOCC*
 - Auto display of *CadQuery* shapes
@@ -16,26 +18,24 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
     - Orthographic and perspective view
     - Clipping with max 3 clipping planes (of free orientation)
     - Transparency mode
-    - Double click on shapes shows bounding box info in output widget
+    - Double click on shapes shows bounding box info
 - Visual debugging by 
     - displaying selected *CadQuery* faces and edges
     - replaying steps of the rendered object
 
-![Overview](screenshots/0_intro.png)
 
-
-### CadQuery using Sidecar
+### 1.2 Example: CadQuery using Sidecar
 
 ```python
 import cadquery as cq
 from jupyter_cadquery.cadquery import (Assembly, Part, Edges, Faces, Vertices, show)
+from jupyter_cadquery import set_sidecar
+
+set_sidecar("CadQuery")
 
 box1 = cq.Workplane('XY').box(10, 20, 30).edges(">X or <X").chamfer(2)
-
 box2 = cq.Workplane('XY').box(8, 18, 28).edges(">X or <X").chamfer(2)
-
 box3 = cq.Workplane('XY').transformed(offset=(0, 15, 7)).box(30, 20, 6).edges(">Z").fillet(3)
-
 box4 = box3.mirror("XY").translate((0, -5, 0))
 
 box1 = box1\
@@ -55,39 +55,25 @@ a1 = Assembly(
 show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ```
 
-[Sidecar](screenshots/sidecar.png) 
+![Sidecar](screenshots/sidecar.png) 
 
-#### Viewing Features
+## 2 Demos
 
-[Features demo](doc/features.md) 
-
-#### Clipping
-
-[Clipping demo](doc/clipping.md) 
-
-#### Faces Edges Vertices
-
-[Faces-Edges-Vertices demo](doc/faces-edges-vertices.md) 
-
-#### Replay
-
-[Replay demo](doc/replay.md) 
-
-#### OCC support
-
-[OCC demo](doc/occ.md) 
-
-#### CQParts support
-
-[CQParts demo](doc/cqparts.md) 
+- [Features demo](doc/features.md) 
+- [Clipping demo](doc/clipping.md) 
+- [Faces-Edges-Vertices demo](doc/faces-edges-vertices.md) 
+- [Replay demo](doc/replay.md) 
+- [OCC demo](doc/occ.md) 
+- [CQParts demo](doc/cqparts.md) 
 
 
-## Usage
+## 3 Usage
 
-### Show cadquery objects
+### 3.1 Show objects
 
 - **show(args)**
     - *cad_objs*: Comma separated list of cadquery objects
+        **Note**: for OCC only one object is supported
     - *height* (`default=600`): Height of the CAD view
     - *tree_width* (`default=250`): Width of the object tree view
     - *cad_width* (`default=800`): Width of the CAD view
@@ -99,25 +85,9 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - *transparent* (`default=False`): View cadquery objects in transparent mode
     - *mac_scrollbar* (`default=True`): On macos patch scrollbar behaviour
     - *sidecar* (`default=None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
-    - *show_parents* (`default=True`): Show additinoally parent of the current cadquery object
+    - *show_parents* (`default=True`): Show additionally parent of the current cadquery object
 
-### Show OCC objects
-
-- **show(args)**
-    - *cad_obj*: Single OCC object
-    - *height* (`default=600`): Height of the CAD view
-    - *tree_width* (`default=250`): Width of the object tree view
-    - *cad_width* (`default=800`): Width of the CAD view
-    - *quality* (default=`0.5`): Rendering quality
-    - *axes* (`default=False`): Show X, Y and Z axis
-    - *axes0* (`default=True`): Show axes at (0,0,0) or mass center
-    - *grid* (`default=False`): Show grid
-    - *ortho* (`default=True`): View in orthographic or perspective mode
-    - *transparent* (`default=False`): View cadquery objects in transparent mode
-    - *mac_scrollbar* (`default=True`): On macos patch scrollbar behaviour
-    - *sidecar* (`default=None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
-
-### Assembly classes
+### 3.2 Assembly classes
 
 - **Part**: A CadQuery shape plus some attributes for it:
     - *shape*: Cadquery shape
@@ -148,7 +118,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - *objects*: all parts and assemblies included in the assembly as a list
 
 
-## Installation
+## 4 Installation
 
 - Create a conda environment with Jupyterlab:
 
@@ -161,7 +131,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
     ```bash
     conda install -c conda-forge -c cadquery pythonocc-core=0.18.2 pyparsing python=3.6
-    pip install --upgrade git+https://github.com/CadQuery/cadquery.git@adam-urbanczyk-csg-combine-fix
+    pip install --upgrade git+https://github.com/CadQuery/cadquery.git
     ```
 
 - Install ipywidets, pythreejs and sidecar:
@@ -180,7 +150,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     jupyter-labextension install js
     ```
 
-## Usage of a docker image
+## 5 Usage of a docker image
 
 - Install [docker](https://www.docker.com)
 
@@ -190,12 +160,12 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     docker run -it --rm -v cq-data:/data -p 8888:8888 bernhard-42/jupyter-cadquery:latest
     ```
 
-## Credits
+## 6 Credits
 
-- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from `pythonocc-core/.../src/Display/WebGl/jupyter_renderer.py`
+- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from his `jupyter_renderer.py`
 - Dave Cowden for [CadQuery](https://github.com/dcowden/cadquery)
 - Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
-## Known issues
+## 7 Known issues
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
