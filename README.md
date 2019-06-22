@@ -2,50 +2,49 @@
 
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
-![intro](screenshots/0_intro.png)
-
-
 **Note:** The extension relies on *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery 1* or *CadQuery 2*.
 
 ## Overview
 
 ### Key features:
 
-- Support for *CadQuery* and *PythonOCC* shapes
-- Switch between Orthographic and Perspective view
+- Support for *CadQuery*, *CQParts* and *PythonOCC*
 - Auto display of *CadQuery* shapes
-- Double click on shapes shows bounding box info in output widget
-- Visual debugging by displaying selected *CadQuery* faces and edges
-- Transparency mode
-- Toggle visibilty of shapes and edges
-- Clipping with max 3 clipping planes (of free orientation)
-- Supports (Jupyterlab Sidecar)[https://github.com/jupyter-widgets/jupyterlab-sidecar]
+- Viewer features
+    - Jupyterlab sidecar support
+    - Toggle visibilty of shapes and edges
+    - Orthographic and perspective view
+    - Clipping with max 3 clipping planes (of free orientation)
+    - Transparency mode
+    - Double click on shapes shows bounding box info in output widget
+- Visual debugging by 
+    - displaying selected *CadQuery* faces and edges
+    - replaying steps of the rendered object
 
+![Overview](screenshots/0_intro.png)
 
 ### Samples
 
-#### Jupyterlab Sidecar
 
-- [Sidecar Support](screenshots/sidecar.png)
 
-    ![Sidecar Support](screenshots/s_sidecar.png)
-
-#### CadQuery
+#### CadQuery using Sidecar
 
 ```python
 import cadquery as cq
-from jupyter_cadquery.cadquery import Assembly, Part, Edges, Faces, show
+from jupyter_cadquery.cadquery import (Assembly, Part, Edges, Faces, Vertices, show)
 
-b = cq.Workplane('XY')
-box1 = b.box(10, 20, 30).edges(">X or <X").chamfer(2)
-box2 = b.box(8, 18, 28).edges(">X or <X").chamfer(2)
-box1.cut(box2)
-box3 = b.transformed(offset=cq.Vector(0, 15, 7)).box(30, 20, 6)\
-        .edges(">Z").fillet(3)
-box4 = b.transformed(offset=cq.Vector(0, 10, -7)).box(20, 20, 6)\
-        .edges("<Z").fillet(3)
-box1.cut(box3)
-box1.cut(box4)
+box1 = cq.Workplane('XY').box(10, 20, 30).edges(">X or <X").chamfer(2)
+
+box2 = cq.Workplane('XY').box(8, 18, 28).edges(">X or <X").chamfer(2)
+
+box3 = cq.Workplane('XY').transformed(offset=(0, 15, 7)).box(30, 20, 6).edges(">Z").fillet(3)
+
+box4 = box3.mirror("XY").translate((0, -5, 0))
+
+box1 = box1\
+    .cut(box2)\
+    .cut(box3)\
+    .cut(box4)
 
 a1 = Assembly(
     [
@@ -59,68 +58,69 @@ a1 = Assembly(
 show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ```
 
-- [Orthographic view](screenshots/1_ortho.png)
+![Overview](screenshots/sidecar.png) 
 
-    ![ortho](screenshots/s_1_ortho.png)
+#### Viewing Features
 
-- [Perspective view](screenshots/2_perspective.png)
+![Overview](screenshots/overview.gif) 
 
-    ![perspective](screenshots/s_2_perspective.png)
+#### Clipping
 
-- [Hiding edges and shapes](screenshots/3_ortho_with_hidden_features.png)
+![Overview](screenshots/clipping.gif) 
 
-    ![ortho_with_hidden_features](screenshots/s_3_ortho_with_hidden_features.png)
+#### Faces Edges Vertices
 
-- [Transparency](screenshots/4_transparency.png)
+![Overview](screenshots/faces-edges-vertices.gif) 
 
-    ![transparency](screenshots/s_4_transparency.png)
+#### Replay
 
-- [Clipping with up to 3 clipping planes](screenshots/5_clipping.png)
+![Overview](screenshots/replay.gif) 
 
-    ![clipping](screenshots/s_5_clipping.png)
+#### OCC support
 
-#### PythonOCC
+![Overview](screenshots/occ.gif) 
 
-See [core_classic_occ_bottle.py](https://github.com/tpaviot/pythonocc-demos/blob/master/examples/core_classic_occ_bottle.py), however omit lines in the `main`part
+#### CQParts support
 
-```python
-from jupyter_cadquery.occ import Part, Assembly, show
+![Overview](screenshots/cqparts.gif) 
 
-# ...
-
-# Build the resulting compound
-bottle = TopoDS_Compound()
-aBuilder = BRep_Builder()
-aBuilder.MakeCompound(bottle)
-aBuilder.Add(bottle, myBody.Shape())
-aBuilder.Add(bottle, myThreading)
-print("bottle finished")
-
-# No main lines
-
-Part(bottle, color="#abdda4")
-```
-
-[Classic OCC bottle](screenshots/occ_bottle.png)
-
-![Classic OCC bottle](screenshots/s_occ_bottle.png)
-
-
-### Visual debugging in *CadQuery
-
-- By showing faces [without](screenshots/6_faces.png) or [with](screenshots/7_faces_and_part.png) their shape `box1.faces("not(|Z or |X or |Y)")`
-
-    ![faces](screenshots/s_6_faces.png)
-    ![faces_and_part](screenshots/s_7_faces_and_part.png)
-
-- By showing edges [without](screenshots/8_edges.png) or [with](screenshots/9_edges_and_part.png) their shape `box1.edges("not(|X or |Y or |Z)")`
-
-    ![edges](screenshots/s_8_edges.png)
-    ![edges_and_part](screenshots/s_9_edges_and_part.png)
 
 ## Usage
 
-Own classes for assemblies
+### Show cadquery objects
+
+- **show(args)**
+    - *cad_objs*: Comma separated list of cadquery objects
+    - *height* (`default=600`): Height of the CAD view
+    - *tree_width* (`default=250`): Width of the object tree view
+    - *cad_width* (`default=800`): Width of the CAD view
+    - *quality* (default=`0.5`): Rendering quality
+    - *axes* (`default=False`): Show X, Y and Z axis
+    - *axes0* (`default=True`): Show axes at (0,0,0) or mass center
+    - *grid* (`default=False`): Show grid
+    - *ortho* (`default=True`): View in orthographic or perspective mode
+    - *transparent* (`default=False`): View cadquery objects in transparent mode
+    - *mac_scrollbar* (`default=True`): On macos patch scrollbar behaviour
+    - *sidecar* (`default=None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
+    - *show_parents* (`default=True`): Show additinoally parent of the current cadquery object
+
+### Show OCC objects
+
+- **show(args)**
+    - *cad_obj*: Single OCC object
+    - *height* (`default=600`): Height of the CAD view
+    - *tree_width* (`default=250`): Width of the object tree view
+    - *cad_width* (`default=800`): Width of the CAD view
+    - *quality* (default=`0.5`): Rendering quality
+    - *axes* (`default=False`): Show X, Y and Z axis
+    - *axes0* (`default=True`): Show axes at (0,0,0) or mass center
+    - *grid* (`default=False`): Show grid
+    - *ortho* (`default=True`): View in orthographic or perspective mode
+    - *transparent* (`default=False`): View cadquery objects in transparent mode
+    - *mac_scrollbar* (`default=True`): On macos patch scrollbar behaviour
+    - *sidecar* (`default=None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
+
+### Assembly classes
 
 - **Part**: A CadQuery shape plus some attributes for it:
     - *shape*: Cadquery shape
@@ -130,14 +130,19 @@ Own classes for assemblies
     - *show_edges*: show the edges of this particular part
 
 - **Faces**: Cadquery faces plus some attributes
-    - *faces*: List of cadquery faces (`shape(faces(selctor))`)
+    - *faces*: List of cadquery faces (`shape.faces(selector))`)
     - *name*: Part name in the view
     - *color*: Part color in the view
     - *show_faces*: show the faces for these particular faces
     - *show_edges*: show the edges for these particular faces
 
 - **Edges**:
-    - *edges*: List of cadquery edges (`shape(edges(selctor))`)
+    - *edges*: List of cadquery edges (`shape.edges(selector))`)
+    - *name*: Part name in the view
+    - *color*: Part color in the view
+
+- **Vertices**:
+    - *vertices*: List of cadquery vertices (`shape.vertices(selector))`)
     - *name*: Part name in the view
     - *color*: Part color in the view
 
@@ -145,12 +150,13 @@ Own classes for assemblies
     - *name*: Assembly name in the view
     - *objects*: all parts and assemblies included in the assembly as a list
 
+
 ## Installation
 
 - Create a conda environment with Jupyterlab:
 
     ```bash
-    conda create -n pycq python=3.6 numpy jupyterlab
+    conda create -n pycq python=3.6 numpy jupyterlab dataclasses
     conda activate pycq
     ```
 
