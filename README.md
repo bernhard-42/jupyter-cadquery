@@ -57,7 +57,9 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 ![Sidecar](screenshots/sidecar.png) 
 
-## 2 Demos
+## 2 Demos 
+
+*(animated gifs)*
 
 - [Features demo](doc/features.md) 
 - [Clipping demo](doc/clipping.md) 
