@@ -64,7 +64,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - [Features demo](doc/features.md) 
 - [Clipping demo](doc/clipping.md) 
 - [Faces-Edges-Vertices demo](doc/faces-edges-vertices.md) 
-- [Replay demo](doc/replay.md) 
+- [Replay demo](doc/replay.md) (*experimental*)
 - [OCC demo](doc/occ.md) 
 - [CQParts demo](doc/cqparts.md) 
 
@@ -124,7 +124,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - Create a conda environment with Jupyterlab:
 
     ```bash
-    conda create -n pycq python=3.6 numpy jupyterlab dataclasses
+    conda create -n pycq python=3.6 numpy jupyterlab 
     conda activate pycq
     ```
 
@@ -138,7 +138,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - Install ipywidets, pythreejs and sidecar:
 
     ```bash
-    pip install ipywidgets pythreejs sidecar
+    pip install ipywidgets pythreejs sidecar dataclasses
     jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-threejs @jupyter-widgets/jupyterlab-sidecar
     ```
 
@@ -154,6 +154,12 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ## 5 Usage of a docker image
 
 - Install [docker](https://www.docker.com)
+
+- Build docker image
+
+    ```bash
+    docker build .
+    ```
 
 - Run the docker container
 
