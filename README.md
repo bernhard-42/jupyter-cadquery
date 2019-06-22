@@ -23,11 +23,8 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 ![Overview](screenshots/0_intro.png)
 
-### Samples
 
-
-
-#### CadQuery using Sidecar
+### CadQuery using Sidecar
 
 ```python
 import cadquery as cq
@@ -58,31 +55,31 @@ a1 = Assembly(
 show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ```
 
-![Overview](screenshots/sidecar.png) 
+[Sidecar](screenshots/sidecar.png) 
 
 #### Viewing Features
 
-![Overview](screenshots/overview.gif) 
+[Features demo](doc/features.md) 
 
 #### Clipping
 
-![Overview](screenshots/clipping.gif) 
+[Clipping demo](doc/clipping.md) 
 
 #### Faces Edges Vertices
 
-![Overview](screenshots/faces-edges-vertices.gif) 
+[Faces-Edges-Vertices demo](doc/faces-edges-vertices.md) 
 
 #### Replay
 
-![Overview](screenshots/replay.gif) 
+[Replay demo](doc/replay.md) 
 
 #### OCC support
 
-![Overview](screenshots/occ.gif) 
+[OCC demo](doc/occ.md) 
 
 #### CQParts support
 
-![Overview](screenshots/cqparts.gif) 
+[CQParts demo](doc/cqparts.md) 
 
 
 ## Usage
