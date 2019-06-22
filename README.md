@@ -74,8 +74,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ### 3.1 Show objects
 
 - **show(args)**
-    - *cad_objs*: Comma separated list of cadquery objects
-        **Note**: for OCC only one object is supported
+    - *cad_objs*: Comma separated list of cadquery objects; **Note**: For OCC only one object is supported
     - *height* (`default=600`): Height of the CAD view
     - *tree_width* (`default=250`): Width of the object tree view
     - *cad_width* (`default=800`): Width of the CAD view
