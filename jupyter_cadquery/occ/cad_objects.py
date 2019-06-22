@@ -49,7 +49,11 @@ def show(cad_obj,
          ortho=True,
          transparent=False,
          mac_scrollbar=True,
-         sidecar=None):
+         sidecar=None,
+         show_parents=True,
+         position=None,
+         rotation=None,
+         zoom=None):
 
     assembly = None
     if isinstance(cad_obj, (Assembly, Part)):
@@ -57,5 +61,5 @@ def show(cad_obj,
 
     if assembly is None:
         raise ValueError("%s cannot be viewed" % type(cad_obj))
-    return _show(assembly, height, tree_width, cad_width, quality, axes, axes0, grid, ortho, transparent, mac_scrollbar,
-                 sidecar)
+    return _show(assembly, height, tree_width, cad_width, quality, axes, axes0, grid, ortho, transparent, position,
+                 rotation, zoom, mac_scrollbar, sidecar)
