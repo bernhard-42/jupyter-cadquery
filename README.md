@@ -42,7 +42,7 @@ box1 = box1\
     .cut(box2)\
     .cut(box3)\
     .cut(box4)
-
+ 
 a1 = Assembly(
     [
         Part(box1, "red box",   "#d7191c", show_edges=False),
