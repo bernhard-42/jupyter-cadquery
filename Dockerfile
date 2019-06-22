@@ -7,7 +7,7 @@ RUN conda init bash
 RUN conda create -n pycq python=3.6 numpy jupyterlab
 RUN conda install -n pycq -c conda-forge -c cadquery pythonocc-core=0.18.2 pyparsing python=3.6 nodejs
 
-RUN conda run -n pycq pip install ipywidgets pythreejs sidecar
+RUN conda run -n pycq pip install ipywidgets pythreejs sidecar dataclasses
 RUN conda run -n pycq jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-threejs @jupyter-widgets/jupyterlab-sidecar
 RUN conda run -n pycq pip install --upgrade git+https://github.com/CadQuery/cadquery.git
 
