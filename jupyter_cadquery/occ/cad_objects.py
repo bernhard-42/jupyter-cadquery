@@ -41,7 +41,7 @@ class Assembly(_Assembly):
 def show(cad_obj,
          height=600,
          tree_width=250,
-         cad_width=800,
+         cad_width=600,
          quality=0.5,
          axes=False,
          axes0=True,

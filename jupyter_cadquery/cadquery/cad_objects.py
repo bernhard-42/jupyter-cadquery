@@ -20,6 +20,8 @@ from cadquery import Workplane, Shape, Vector, Vertex
 
 from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _Vertices, _show
 
+from .cqparts import is_cqparts, convert_cqparts
+
 
 class Part(_Part):
 
@@ -172,7 +174,7 @@ def _is_wirelist(cad_obj):
 def show(*cad_objs,
          height=600,
          tree_width=250,
-         cad_width=800,
+         cad_width=600,
          quality=0.5,
          axes=False,
          axes0=True,
@@ -188,10 +190,12 @@ def show(*cad_objs,
 
     assembly = Assembly([], "Replay")
     obj_id = 0
-
     for cad_obj in cad_objs:
         if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Vertices)):
             assembly.add(cad_obj)
+
+        elif is_cqparts(cad_obj):
+            assembly = convert_cqparts(cad_obj)
 
         elif _is_facelist(cad_obj):
             assembly.add_list(_from_facelist(cad_obj, obj_id, show_parents=show_parents))
@@ -210,7 +214,6 @@ def show(*cad_objs,
 
         elif isinstance(cad_obj, Workplane):
             assembly.add(_from_workplane(cad_obj, obj_id))
-
         else:
             raise NotImplementedError("Type:", cad_obj)
         obj_id += 1

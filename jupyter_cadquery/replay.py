@@ -26,6 +26,7 @@ from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
 import cadquery as cq
 from cadquery import Compound
 from jupyter_cadquery.cadquery import Part, show
+from jupyter_cadquery.cadquery.cqparts import is_cqparts_part, convert_cqparts
 
 #
 # The Runtime part
@@ -126,8 +127,9 @@ def _trace(*objs):
 def _add_context(self, name):
 
     def _blacklist(name):
-        return name.startswith("_") or name in ("Workplane", "newObject", "val", "vals", "all", "size", "add", "toOCC",
-                                                "findSolid", "findFace", "toSvg", "exportSvg", "largestDimension")
+        return name.startswith("_") or \
+               name in ("Workplane", "val", "vals", "all", "size", "add", "toOCC",
+                        "findSolid", "findFace", "toSvg", "exportSvg", "largestDimension")
 
     def _is_recursive(func):
         return func in ["union", "cut", "intersect"]
@@ -222,7 +224,10 @@ class Replay(object):
                 return obj if name is None else name
 
             if step.func != "":
-                args = tuple([to_name(arg) for arg in step.args])
+                if step.func == "newObject":
+                    args = ("...", )
+                else:
+                    args = tuple([to_name(arg) for arg in step.args])
                 code = "%s%s%s" % ("| " * step.level, step.func, args)
                 code = code[:-2] if len(step.args) == 1 else code[:-1]
                 if len(step.args) > 0 and len(step.kwargs) > 0:
@@ -362,8 +367,17 @@ class Replay(object):
                 zoom=zoom)
 
 
-def replay(workplane, index=0, debug=False, cad_width=600, height=600):
+def replay(cad_obj, index=0, debug=False, cad_width=600, height=600):
     r = Replay(debug, cad_width, height)
+    
+    if isinstance(cad_obj, cq.Workplane):
+        workplane = cad_obj
+    elif is_cqparts_part(cad_obj):
+        workplane = convert_cqparts(cad_obj, replay=True)
+    else:
+        print("Cannot replay", cad_obj)
+        return None
+
     r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
     r.indexes = [index]
 
