@@ -19,9 +19,12 @@ from os.path import join, dirname
 import numpy as np
 
 from ipywidgets import ToggleButton, Label, Checkbox, Layout, HBox, VBox, Output, Box, FloatSlider, Tab, HTML, Box
+from IPython.display import display
 
 from .widgets import ImageButton, TreeView, state_diff, UNSELECTED, SELECTED, MIXED, EMPTY
 from .cad_view import CadqueryView
+
+SIDECAR = None
 
 
 class Info(object):
@@ -198,7 +201,7 @@ class CadqueryDisplay(object):
         except:
             print(msg)
 
-    def display(self,
+    def create(self,
                 states,
                 shapes,
                 mapping,
@@ -314,3 +317,32 @@ class CadqueryDisplay(object):
             VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
             VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer])
         ])
+
+
+    def sidecar_display(self, widget, sidecar):
+        sidecar.clear_output(True)
+        with sidecar:
+            display(widget)
+        print("Done, using side car '%s'" % sidecar.title)
+
+
+    def display(self, widget, sidecar=None):
+        if sidecar is None:
+            if SIDECAR is None:
+                display(widget)
+            else:
+                self.sidecar_display(widget, SIDECAR)
+        else:
+            if not sidecar:  # global sidecar setting overwritten by False
+                display(widget)
+            else:  # use provided sidecar
+                self.sidecar_display(widget, sidecar)
+
+
+def set_sidecar(title):
+    global SIDECAR
+    try:
+        from sidecar import Sidecar
+        SIDECAR = Sidecar(title=title)
+    except:
+        print("Warning: module sidecar not installed")

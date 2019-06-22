@@ -222,3 +222,22 @@ def show(*cad_objs,
         raise ValueError("%s cannot be viewed" % type(cad_obj))
     return _show(assembly, height, tree_width, cad_width, quality, axes, axes0, grid, ortho, transparent, position,
                  rotation, zoom, mac_scrollbar, sidecar)
+
+
+def auto_show():
+    Assembly._ipython_display_ = lambda self: self.show()
+    Part._ipython_display_ = lambda self: self.show()
+    Faces._ipython_display_ = lambda self: self.show(grid=False, axes=False)
+    Edges._ipython_display_ = lambda self: self.show(grid=False, axes=False)
+    Vertices._ipython_display_ = lambda self: self.show(grid=False, axes=False)
+
+    print("Overwriting auto display for cadquery Workplane and Shape")
+
+    import cadquery as cq
+    try:
+        del cq.Workplane._repr_html_
+        del cq.Shape._repr_html_
+    except:
+        pass
+    cq.Workplane._ipython_display_ = lambda cad_obj: show(cad_obj)
+    cq.Shape._ipython_display_ = lambda cad_obj: show(cad_obj)

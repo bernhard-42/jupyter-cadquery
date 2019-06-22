@@ -15,9 +15,7 @@
 #
 
 from ._version import version_info, __version__
-from .cad_objects import auto_show, set_sidecar
-from .replay import replay, enable_replay, disable_replay, reset_replay
-from .export import exportSTL
+from .cad_display import set_sidecar
 
 def _jupyter_nbextension_paths():
     return [{
@@ -58,13 +56,3 @@ def patch_cq():
 
     cadquery.Workplane.lineTo = lineTo
 
-
-    print("  - cadquery.Workplane: remove auto display")
-    print("  - cadquery.Shape: remove auto display")
-
-    from cadquery import Workplane, Shape
-    try:
-        del Workplane._repr_html_
-        del Shape._repr_html_
-    except:
-        pass

@@ -23,7 +23,6 @@ from jupyter_cadquery.cad_display import CadqueryDisplay
 from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
 
 PART_ID = 0
-SIDECAR = None
 
 #
 # Simple Part and Assembly classes
@@ -190,14 +189,8 @@ def _show(assembly,
           mac_scrollbar=True,
           sidecar=None):
 
-    def sidecar_display(sidecar, widget):
-        sidecar.clear_output(True)
-        with sidecar:
-            display(widget)
-        print("Done, using side car '%s'" % sidecar.title)
-
     d = CadqueryDisplay()
-    widget = d.display(
+    widget = d.create(
         states=assembly.to_state(),
         shapes=assembly.collect_shapes(),
         mapping=assembly.obj_mapping(),
@@ -218,34 +211,6 @@ def _show(assembly,
 
     d.info.ready_msg(d.cq_view.grid.step)
 
-    if sidecar is not None:
-        if not sidecar:  # global sidecar setting overwritten by False
-            display(widget)
-        else:  # use provided sidecar
-            sidecar_display(sidecar, widget)
-    else:
-        if SIDECAR is not None:  # use global sidecar
-            sidecar_display(SIDECAR, widget)
-        else:
-            display(widget)
+    d.display(widget, sidecar)
+
     return d
-
-def set_sidecar(title):
-    global SIDECAR
-    try:
-        from sidecar import Sidecar
-        SIDECAR = Sidecar(title=title)
-    except:
-        print("Warning: module sidecar not installed")
-
-def auto_show():
-    _Assembly._ipython_display_ = lambda self: self.show()
-    _Part._ipython_display_ = lambda self: self.show()
-    _Faces._ipython_display_ = lambda self: self.show(grid=False, axes=False)
-    _Edges._ipython_display_ = lambda self: self.show(grid=False, axes=False)
-
-    print("Overwriting auto display for cadquery Workplane and Shape")
-
-    import cadquery as cq
-    cq.Workplane._ipython_display_ = lambda cad_obj: cad_obj
-    cq.Shape._ipython_display_ = lambda cad_obj: cad_obj
