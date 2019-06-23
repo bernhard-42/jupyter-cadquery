@@ -6,6 +6,8 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 ## Overview
 
+The screenshot shows one of the official cadquery examples in *replay* mode with more than one build step being selected and visualized
+
 ![Overview](screenshots/0_intro.png)
 
 ### a) Key features:
@@ -31,7 +33,7 @@ import cadquery as cq
 from jupyter_cadquery.cadquery import (Assembly, Part, Edges, Faces, Vertices, show)
 from jupyter_cadquery import set_sidecar
 
-set_sidecar("CadQuery")
+set_sidecar("CadQuery")  # force usage of one cad view on the right
 
 box1 = cq.Workplane('XY').box(10, 20, 30).edges(">X or <X").chamfer(2)
 box2 = cq.Workplane('XY').box(8, 18, 28).edges(">X or <X").chamfer(2)
