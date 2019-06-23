@@ -6,7 +6,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 ## Overview
 
-![Overview](screenshots/s_intro.png)
+![Overview](screenshots/0_intro.png)
 
 ### a) Key features:
 
