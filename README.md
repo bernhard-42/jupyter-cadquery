@@ -158,13 +158,8 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
     conda env create -f ./environment-jl-$JUPYTERLAB_VERSION.yml -n $CONDA_ENV
     conda activate $CONDA_ENV
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager 
-    ```
-
-    For Jupyterlab 1.0 (but **not** for Jupyterlab 0.35) additionally enable sidecar 
-
-    ```bash
-    jupyter-labextension install @jupyter-widgets/jupyterlab-sidecar
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager
+    if [ "$JUPYTERLAB_VERSION" = "1.0" ]; then jupyter-labextension install @jupyter-widgets/jupyterlab-sidecar; fi
     ```
 
 - **Install jupyter-cadquery**
