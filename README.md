@@ -136,19 +136,15 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - `objects`: all parts and assemblies included in the assembly as a list
 
 
-## Installation
+## Installation 
+
+### a) Via conda and pip
 
 - **Select Jupyterlab version**
 
-    Use the older version of Jupyterlab.
-
     ```bash
     JUPYTERLAB_VERSION=0.35
-    ```
-
-    Use the new 1.0 Version of Jupyterlab.
-
-    ```bash
+    # or
     JUPYTERLAB_VERSION=1.0
     ```
 
@@ -165,7 +161,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     jupyter labextension install @jupyter-widgets/jupyterlab-manager 
     ```
 
-    For Jupyterlab 1.0 (but NOT for Jupyterlab 0.25) additionall call 
+    For Jupyterlab 1.0 (but **not** for Jupyterlab 0.35) additionally enable sidecar 
 
     ```bash
     jupyter-labextension install @jupyter-widgets/jupyterlab-sidecar
@@ -179,21 +175,15 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     ```
 
 
-## Usage of a docker image
+### b) Using a docker image
 
 - Install [docker](https://www.docker.com)
 
 - Select Jupyterlab version
 
-    Use the older version of Jupyterlab.
-
     ```bash
     JUPYTERLAB_VERSION=0.35
-    ```
-
-    Use the new 1.0 Version of Jupyterlab.
-
-    ```bash
+    # or
     JUPYTERLAB_VERSION=1.0
     ```
     
@@ -201,8 +191,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
     ```bash
     IMAGE=bernhard-42/jupyter-cadquery-$JUPYTERLAB_VERSION:0.9.1
-    cp Dockerfile-$JUPYTERLAB_VERSION Dockerfile
-    docker build -t $IMAGE .
+    docker build --build-arg jl_version=$JUPYTERLAB_VERSION -t $IMAGE .
     ```
 
 - Run the docker container
@@ -212,7 +201,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     docker run -it --rm -v $WORKDIR:/data/workdir -p 8888:8888 $IMAGE
     ```
 
-    **Note:** Don't store new notebooks in the `examples` folder. THEY WILL BE LOST. Use the workdir folder that is mapped to a local persistent folder.
+    **Note:** Don't store new notebooks in the `examples` folder, **they will be lost**. Use the `workdir` folder that is mapped to a local persistent folder on the host.
 
 ## Credits
 
