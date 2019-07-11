@@ -140,13 +140,13 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 - **Select Jupyterlab version**
 
-    Use the older version of Jupyterlab. This version will also install jupyterlab-sidecar:
+    Use the older version of Jupyterlab.
 
     ```bash
     JUPYTERLAB_VERSION=0.35
     ```
 
-    Use the new 1.0 Version of Jupyterlab. Unfortunately, jupyterlab-sidecar does not install currently:
+    Use the new 1.0 Version of Jupyterlab.
 
     ```bash
     JUPYTERLAB_VERSION=1.0
@@ -161,17 +161,15 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     CONDA_ENV=cq-jl-$JUPYTERLAB_VERSION
 
     conda env create -f ./environment-jl-$JUPYTERLAB_VERSION.yml -n $CONDA_ENV
-
     conda activate $CONDA_ENV
-    ```
-
-- **Rebuild *jupyter labextensions* for ipywidgets:**
-
-    ```bash
     jupyter labextension install @jupyter-widgets/jupyterlab-manager 
     ```
 
-    Note: *pythreejs* and *jupyterlab-sidecar* extensions are also enabled during this step.
+    For Jupyterlab 1.0 (but NOT for Jupyterlab 0.25) additionall call 
+
+    ```bash
+    jupyter-labextension install @jupyter-widgets/jupyterlab-sidecar
+    ```
 
 - **Install jupyter-cadquery**
 
@@ -187,13 +185,13 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 - Select Jupyterlab version
 
-    Use the older version of Jupyterlab. This version will also install jupyterlab-sidecar:
+    Use the older version of Jupyterlab.
 
     ```bash
     JUPYTERLAB_VERSION=0.35
     ```
 
-    Use the new 1.0 Version of Jupyterlab. Unfortunately, jupyterlab-sidecar does not install currently:
+    Use the new 1.0 Version of Jupyterlab.
 
     ```bash
     JUPYTERLAB_VERSION=1.0
@@ -223,6 +221,5 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
 ## Known issues
-- *jupyterlab-sidecar* not working for Jupyterlab 1.0
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
