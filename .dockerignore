@@ -1,8 +1,8 @@
 Dockerfile
 .dockerignore
 .git
+.gitignore
 README.md
 RELEASE.md
 screenshots
-examples
 doc

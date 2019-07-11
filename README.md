@@ -185,17 +185,36 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 - Install [docker](https://www.docker.com)
 
+- Select Jupyterlab version
+
+    Use the older version of Jupyterlab. This version will also install jupyterlab-sidecar:
+
+    ```bash
+    JUPYTERLAB_VERSION=0.35
+    ```
+
+    Use the new 1.0 Version of Jupyterlab. Unfortunately, jupyterlab-sidecar does not install currently:
+
+    ```bash
+    JUPYTERLAB_VERSION=1.0
+    ```
+    
 - Build docker image
 
     ```bash
-    docker build -t bernhard-42/jupyter-cadquery .
+    IMAGE=bernhard-42/jupyter-cadquery-$JUPYTERLAB_VERSION:0.9.1
+    cp Dockerfile-$JUPYTERLAB_VERSION Dockerfile
+    docker build -t $IMAGE .
     ```
 
 - Run the docker container
 
     ```bash
-    docker run -it --rm -v cq-data:/data -p 8888:8888 bernhard-42/jupyter-cadquery:latest
+    WORKDIR=/tmp/jupyter
+    docker run -it --rm -v $WORKDIR:/data/workdir -p 8888:8888 $IMAGE
     ```
+
+    **Note:** Don't store new notebooks in the `examples` folder. THEY WILL BE LOST. Use the workdir folder that is mapped to a local persistent folder.
 
 ## Credits
 
