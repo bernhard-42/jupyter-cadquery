@@ -21,7 +21,7 @@ The screenshot shows one of the official cadquery examples in *replay* mode with
     - Clipping with max 3 clipping planes (of free orientation)
     - Transparency mode
     - Double click on shapes shows bounding box info
-- Visual debugging by 
+- Visual debugging by
     - displaying selected *CadQuery* faces and edges
     - replaying steps of the rendered object
 
@@ -44,7 +44,7 @@ box1 = box1\
     .cut(box2)\
     .cut(box3)\
     .cut(box4)
- 
+
 a1 = Assembly(
     [
         Part(box1, "red box",   "#d7191c", show_edges=False),
@@ -57,18 +57,18 @@ a1 = Assembly(
 show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ```
 
-![Sidecar](screenshots/sidecar.png) 
+![Sidecar](screenshots/sidecar.png)
 
-## Demos 
+## Demos
 
 *(animated gifs)*
 
-- [Features demo](doc/features.md) 
-- [Clipping demo](doc/clipping.md) 
-- [Faces-Edges-Vertices demo](doc/faces-edges-vertices.md) 
+- [Features demo](doc/features.md)
+- [Clipping demo](doc/clipping.md)
+- [Faces-Edges-Vertices demo](doc/faces-edges-vertices.md)
 - [Replay demo](doc/replay.md) (*experimental*)
-- [OCC demo](doc/occ.md) 
-- [CQParts demo](doc/cqparts.md) 
+- [OCC demo](doc/occ.md)
+- [CQParts demo](doc/cqparts.md)
 
 
 ## Usage
@@ -76,9 +76,9 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ### a) Show objects
 
 - `show(args)`
-    
+
     args:
-    
+
     - `cad_objs`: Comma separated list of cadquery objects; **Note**: For OCC only one object is supported
     - `height` (`default=600`): Height of the CAD view
     - `tree_width` (`default=250`): Width of the object tree view
@@ -136,7 +136,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - `objects`: all parts and assemblies included in the assembly as a list
 
 
-## Installation 
+## Installation
 
 ### a) Via conda and pip
 
@@ -181,7 +181,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     # or
     JUPYTERLAB_VERSION=1.0
     ```
-    
+
 - Build docker image
 
     ```bash
@@ -205,5 +205,6 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
 ## Known issues
+
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
