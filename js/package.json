@@ -35,7 +35,8 @@
     "css-loader": "^2.1.1",
     "jquery": "^3.4.0",
     "lodash": "^4.17.4",
-    "style-loader": "^0.23.1"
+    "style-loader": "^0.23.1",
+    "@jupyter-widgets/controls": "^1.5.1"
   },
   "jupyterlab": {
     "extension": "lib/labplugin"
