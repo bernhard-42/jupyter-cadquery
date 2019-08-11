@@ -169,6 +169,13 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     jupyter-labextension install js
     ```
 
+- ** Run jupyter-cadquery**
+
+    ```bash
+    conda activate $CONDA_ENV
+    jupyter lab
+    ```
+
 
 ### b) Using a docker image
 
