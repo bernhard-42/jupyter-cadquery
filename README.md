@@ -169,7 +169,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     jupyter-labextension install js
     ```
 
-- ** Run jupyter-cadquery**
+- **Run jupyter-cadquery**
 
     ```bash
     conda activate $CONDA_ENV
