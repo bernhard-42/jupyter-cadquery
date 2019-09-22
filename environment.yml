@@ -20,3 +20,4 @@ dependencies:
     - git+https://github.com/CadQuery/cadquery.git
     - sidecar==0.3.0
     - pythreejs==2.1.1
+    - jupyter_cadquery==0.9.1
