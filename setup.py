@@ -81,9 +81,9 @@ class NPM(Command):
         npmName = 'npm';
         if platform.system() == 'Windows':
             npmName = 'npm.cmd';
-            
+
         return npmName;
-    
+
     def has_npm(self):
         npmName = self.get_npm_name();
         try:
@@ -121,13 +121,9 @@ class NPM(Command):
         # update package data in case this created new files
         update_package_data(self.distribution)
 
-version_ns = {}
-with open(os.path.join(here, 'jupyter_cadquery', '_version.py')) as f:
-    exec(f.read(), {}, version_ns)
-
 setup_args = {
     'name': 'jupyter_cadquery',
-    'version': version_ns['__version__'],
+    'version': "0.9.1",
     'description': 'An extension to render cadquery objects in JupyterLab via pythreejs',
     'long_description': LONG_DESCRIPTION,
     'include_package_data': True,
@@ -140,7 +136,8 @@ setup_args = {
         ('etc/jupyter/nbconfig/notebook.d' ,['jupyter_cadquery.json'])
     ],
     'install_requires': [
-        'ipywidgets>=7.0.0',
+        'ipywidgets>=7.5.0',
+        'jupyterlab>=1.1.4'
     ],
     'packages': find_packages(),
     'zip_safe': False,
@@ -165,8 +162,6 @@ setup_args = {
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'Topic :: Multimedia :: Graphics',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',

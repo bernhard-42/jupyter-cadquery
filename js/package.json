@@ -1,6 +1,6 @@
 {
   "name": "jupyter_cadquery",
-  "version": "0.9.1",
+  "version": "0.9.0",
   "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
   "author": "Bernhard Walter",
   "main": "lib/index.js",
@@ -27,16 +27,16 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "rimraf": "^2.6.3",
-    "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.5"
+    "rimraf": "^2.7.1",
+    "webpack": "^4.40.2",
+    "webpack-cli": "^3.3.9"
   },
   "dependencies": {
-    "css-loader": "^2.1.1",
-    "jquery": "^3.4.0",
-    "lodash": "^4.17.4",
+    "css-loader": "^3.2.1",
+    "jquery": "^3.4.1",
+    "lodash": "^4.17.15",
     "style-loader": "^0.23.1",
-    "@jupyter-widgets/controls": "^1.5.1"
+    "@jupyter-widgets/controls": "^1.5.2"
   },
   "jupyterlab": {
     "extension": "lib/labplugin"
