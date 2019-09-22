@@ -174,19 +174,11 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 - Install [docker](https://www.docker.com)
 
-- Select Jupyterlab version
-
-    ```bash
-    JUPYTERLAB_VERSION=0.35
-    # or
-    JUPYTERLAB_VERSION=1.0
-    ```
-
 - Build docker image
 
     ```bash
-    IMAGE=bernhard-42/jupyter-cadquery-$JUPYTERLAB_VERSION:0.9.1
-    docker build --build-arg jl_version=$JUPYTERLAB_VERSION -t $IMAGE .
+    IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc0
+    docker build --build-arg -t $IMAGE .
     ```
 
 - Run the docker container
