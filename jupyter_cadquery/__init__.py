@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from ._version import version_info, __version__
+from ._version import __version_info__, __version__
 from .cad_display import set_sidecar
 
 def _jupyter_nbextension_paths():
