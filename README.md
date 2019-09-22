@@ -59,9 +59,14 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 ![Sidecar](screenshots/sidecar.png)
 
+## Quick use via Binder
+
+Click on the icon to start *jupyter-cadquery* on binder:
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
+
 ## Installation
 
-### a) Via conda and pip
+### a) Using conda
 
 - **Create a conda environment with Jupyterlab:**
 
@@ -75,23 +80,21 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - Create the conda environment and install the Jupyter labextensions
 
         ```bash
-        CONDA_ENV=cq-jl
+        conda env create -f ./environment.yml -n cq-jl
+        conda activate cq-jl
 
-        conda env create -f ./environment.yml -n $CONDA_ENV
-
-        conda activate $CONDA_ENV
-        jupyter-labextension install $(cat labextensions.txt)
+        jupyter-labextension install --no-build $(cat labextensions.txt)
         jupyter lab build
-        jupyter-labextension list  # all should have green OK at the end
         ```
+
+        Note, `jupyter-labextension list` should now show green "enabled OK" for “*@jupyter-widgets/jupyterlab-manager*, *@jupyter-widgets/jupyterlab-sidecar*, *jupyter-threejs*, *jupyter_cadquery* and *jupyterlab-datawidgets*
 
 - **Run jupyter-cadquery**
 
     ```bash
-    conda activate $CONDA_ENV
+    conda activate cq-jl
     jupyter lab
     ```
-
 
 ### b) Using a docker image
 
@@ -100,8 +103,9 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - Build docker image
 
     ```bash
+    cd docker
     IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc3
-    docker build --build-arg -t $IMAGE .
+    docker build -t $IMAGE .
     ```
 
 - Run the docker container
