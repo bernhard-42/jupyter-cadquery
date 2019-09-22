@@ -13,3 +13,4 @@ jupyter_cadquery/static/
 .mypy_cache
 yarn.lock
 scratch
+labextensions.txt.bak
