@@ -4,6 +4,12 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 **Note:** The extension relies on *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery 1* or *CadQuery 2*.
 
+## Quick use via Binder
+
+Click on the icon to start *jupyter-cadquery* on binder:
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
+
 ## Overview
 
 The screenshot shows one of the official cadquery examples in *replay* mode with more than one build step being selected and visualized
@@ -58,11 +64,6 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 ```
 
 ![Sidecar](screenshots/sidecar.png)
-
-## Quick use via Binder
-
-Click on the icon to start *jupyter-cadquery* on binder:
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
 
 ## Installation
 
