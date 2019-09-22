@@ -39,9 +39,9 @@ else
 endif
 endif
 	@echo "=> New version: $(cur_version:v%=%)"
-	@sed -i.bak 's|databrickslabs-jupyterlab-statusbar@.*|databrickslabs-jupyterlab-statusbar@$(cur_version)|' labextensions.txt
+	@sed -i.bak 's|jupyter_cadquery@.*|jupyter_cadquery@$(cur_version)|' labextensions.txt
 	cat labextensions.txt
-	git add labextensions.txt extensions/databrickslabs_jupyterlab_statusbar/package.json
+	git add labextensions.txt js/package.json
 	git commit -m "extension release $(cur_version)"
 
 # Dist commands
