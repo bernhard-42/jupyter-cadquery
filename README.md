@@ -140,26 +140,18 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 ### a) Via conda and pip
 
-- **Select Jupyterlab version**
-
-    ```bash
-    JUPYTERLAB_VERSION=0.35
-    # or
-    JUPYTERLAB_VERSION=1.0
-    ```
-
 - **Create a conda environment with Jupyterlab:**
 
     ```bash
     git clone https://github.com/bernhard-42/jupyter-cadquery.git
     cd jupyter-cadquery
 
-    CONDA_ENV=cq-jl-$JUPYTERLAB_VERSION
+    CONDA_ENV=cq-jl
 
-    conda env create -f ./environment-jl-$JUPYTERLAB_VERSION.yml -n $CONDA_ENV
+    conda env create -f ./environment.yml -n $CONDA_ENV
+
     conda activate $CONDA_ENV
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager
-    if [ "$JUPYTERLAB_VERSION" = "1.0" ]; then jupyter-labextension install @jupyter-widgets/jupyterlab-sidecar; fi
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager @jupyter-widgets/jupyterlab-sidecar
     ```
 
 - **Install jupyter-cadquery**
@@ -167,6 +159,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     ```bash
     pip install .
     jupyter-labextension install js
+    jupyter lab build
     ```
 
 - **Run jupyter-cadquery**
