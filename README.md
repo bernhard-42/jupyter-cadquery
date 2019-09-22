@@ -170,7 +170,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - Build docker image
 
     ```bash
-    IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc1
+    IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc2
     docker build --build-arg -t $IMAGE .
     ```
 
