@@ -68,8 +68,8 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - Download the environment definition files:
 
         ```bash
-        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.2-rc2/environment.yml
-        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.2-rc2/labextensions.txt
+        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.2-rc3/environment.yml
+        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.2-rc3/labextensions.txt
         ```
 
     - Create the conda environment and install the Jupyter labextensions
@@ -100,7 +100,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 - Build docker image
 
     ```bash
-    IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc2
+    IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc3
     docker build --build-arg -t $IMAGE .
     ```
 
