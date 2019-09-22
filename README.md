@@ -151,14 +151,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     conda env create -f ./environment.yml -n $CONDA_ENV
 
     conda activate $CONDA_ENV
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager @jupyter-widgets/jupyterlab-sidecar
-    ```
-
-- **Install jupyter-cadquery**
-
-    ```bash
-    pip install .
-    jupyter-labextension install js
+    jupyter-labextension install $(cat labextensions.txt)
     jupyter lab build
     ```
 
