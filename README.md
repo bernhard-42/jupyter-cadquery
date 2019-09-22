@@ -59,6 +59,60 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 ![Sidecar](screenshots/sidecar.png)
 
+## Installation
+
+### a) Via conda and pip
+
+- **Create a conda environment with Jupyterlab:**
+
+    - Download the environment definition files:
+
+        ```bash
+        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.2-rc2/environment.yml
+        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.2-rc2/labextensions.txt
+        ```
+
+    - Create the conda environment and install the Jupyter labextensions
+
+        ```bash
+        CONDA_ENV=cq-jl
+
+        conda env create -f ./environment.yml -n $CONDA_ENV
+
+        conda activate $CONDA_ENV
+        jupyter-labextension install $(cat labextensions.txt)
+        jupyter lab build
+        jupyter-labextension list  # all should have green OK at the end
+        ```
+
+- **Run jupyter-cadquery**
+
+    ```bash
+    conda activate $CONDA_ENV
+    jupyter lab
+    ```
+
+
+### b) Using a docker image
+
+- Install [docker](https://www.docker.com)
+
+- Build docker image
+
+    ```bash
+    IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc2
+    docker build --build-arg -t $IMAGE .
+    ```
+
+- Run the docker container
+
+    ```bash
+    WORKDIR=/tmp/jupyter
+    docker run -it --rm -v $WORKDIR:/data/workdir -p 8888:8888 $IMAGE
+    ```
+
+    **Note:** Don't store new notebooks in the `examples` folder, **they will be lost**. Use the `workdir` folder that is mapped to a local persistent folder on the host.
+
 ## Demos
 
 *(animated gifs)*
@@ -135,53 +189,6 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - `name`: Assembly name in the view
     - `objects`: all parts and assemblies included in the assembly as a list
 
-
-## Installation
-
-### a) Via conda and pip
-
-- **Create a conda environment with Jupyterlab:**
-
-    ```bash
-    git clone https://github.com/bernhard-42/jupyter-cadquery.git
-    cd jupyter-cadquery
-
-    CONDA_ENV=cq-jl
-
-    conda env create -f ./environment.yml -n $CONDA_ENV
-
-    conda activate $CONDA_ENV
-    jupyter-labextension install $(cat labextensions.txt)
-    jupyter lab build
-    ```
-
-- **Run jupyter-cadquery**
-
-    ```bash
-    conda activate $CONDA_ENV
-    jupyter lab
-    ```
-
-
-### b) Using a docker image
-
-- Install [docker](https://www.docker.com)
-
-- Build docker image
-
-    ```bash
-    IMAGE=bernhard-42/jupyter-cadquery:0.9.2-rc2
-    docker build --build-arg -t $IMAGE .
-    ```
-
-- Run the docker container
-
-    ```bash
-    WORKDIR=/tmp/jupyter
-    docker run -it --rm -v $WORKDIR:/data/workdir -p 8888:8888 $IMAGE
-    ```
-
-    **Note:** Don't store new notebooks in the `examples` folder, **they will be lost**. Use the `workdir` folder that is mapped to a local persistent folder on the host.
 
 ## Credits
 
