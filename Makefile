@@ -48,6 +48,8 @@ endif
 
 dist:
 	@python setup.py sdist bdist_wheel
+	@echo "jupyter-labextension install --no-build $(shell cat labextensions.txt | xargs)" > postBuild
+	@echo "jupyter lab build" >> postBuild
 
 release:
 	git add .
