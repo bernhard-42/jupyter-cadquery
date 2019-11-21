@@ -20,4 +20,5 @@
 
 // Export widget models and views, and the npm package version number.
 module.exports = require('./image_button.js');
+module.exports = require('./tree_view.js');
 module.exports['version'] = require('../package.json').version;
