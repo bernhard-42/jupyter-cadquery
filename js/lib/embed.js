@@ -19,6 +19,7 @@
 // already be loaded by the notebook otherwise.
 
 // Export widget models and views, and the npm package version number.
-module.exports = require('./image_button.js');
-module.exports = require('./tree_view.js');
+image_button = require('./image_button.js');
+tree_view = require('./tree_view.js');
+module.exports = Object.assign({}, image_button, tree_view)
 module.exports['version'] = require('../package.json').version;
