@@ -19,6 +19,8 @@ import json
 
 from IPython.display import display
 
+from cadquery import Compound
+
 from jupyter_cadquery.cad_display import CadqueryDisplay
 from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
 
@@ -89,6 +91,12 @@ class _Part(_CADObject):
 
     def collect_shapes(self):
         return [{"name": self.name, "shape": self.shape, "color": self.web_color()}]
+
+    def compound(self):
+        return self.shape[0]
+
+    def compounds(self):
+        return [self.compound()]
 
 
 class _Faces(_Part):
@@ -171,6 +179,15 @@ class _Assembly(_CADObject):
     def reset_id(cls):
         global PART_ID
         PART_ID = 0
+
+    def compounds(self):
+        result = []
+        for obj in self.objects:
+            result += obj.compounds()
+        return result
+
+    def compound(self):
+        return Compound._makeCompound(self.compounds())
 
 
 def _show(assembly,

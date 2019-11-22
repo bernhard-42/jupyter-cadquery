@@ -16,6 +16,8 @@
 
 from ._version import __version_info__, __version__
 from .cad_display import set_sidecar
+from .export import exportSTL
+
 
 def _jupyter_nbextension_paths():
     return [{
