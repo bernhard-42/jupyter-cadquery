@@ -40,11 +40,12 @@ endif
 endif
 	@echo "=> New version: $(cur_version:v%=%)"
 	@sed -i.bak 's|jupyter_cadquery@.*|jupyter_cadquery@$(cur_version)|' labextensions.txt
-	@sed -i.bak 's|__npm_version__.*|__npm_version__ = $(cur_version)|' jupyter_cadquery/_version.py
-	@sed -i.bak 's|_model_module_version:.*|_model_module_version: "$(cur_version)"|' js/lib/tree_view.js
-	@sed -i.bak 's|_view_module_version:.*|_view_module_version: "$(cur_version)"|' js/lib/tree_view.js
-	@sed -i.bak 's|_model_module_version:.*|_model_module_version: "$(cur_version)"|' js/lib/image_button.js
-	@sed -i.bak 's|_view_module_version:.*|_view_module_version: "$(cur_version)"|' js/lib/image_button.js
+	@sed -i.bak 's|__npm_version__.*|__npm_version__ = "$(cur_version)"|' jupyter_cadquery/_version.py
+	@sed -i.bak 's|_model_module_version:.*|_model_module_version: "$(cur_version)",|' js/lib/tree_view.js
+	@sed -i.bak 's|_view_module_version:.*|_view_module_version: "$(cur_version)",|' js/lib/tree_view.js
+	@sed -i.bak 's|_model_module_version:.*|_model_module_version: "$(cur_version)",|' js/lib/image_button.js
+	@sed -i.bak 's|_view_module_version:.*|_view_module_version: "$(cur_version)",|' js/lib/image_button.js
+	@rm labextensions.txt.bak jupyter_cadquery/_version.py.bak js/lib/tree_view.js.bak js/lib/image_button.js.bak
 	cat labextensions.txt
 	git add labextensions.txt js/package.json js/package-lock.json jupyter_cadquery/_version.py js/lib/tree_view.js js/lib/image_button.js
 	git commit -m "extension release $(cur_version)"
