@@ -53,8 +53,8 @@ var TreeModel = SelectionModel.extend({
     _view_name: 'TreeView',
     _model_module: 'jupyter_cadquery',
     _view_module: 'jupyter_cadquery',
-    _model_module_version: "v0.9.5"
-    _view_module_version: "v0.9.5"
+    _model_module_version: "",
+    _view_module_version: "",
     icons: null,
     tree: null,
     state: null
@@ -196,7 +196,7 @@ var TreeView = DescriptionView.extend({
       if (filtered_states.length == 0) {
         state = 3;
       } else {
-        state = filtered_states.reduce((s1, s2) => (s1 == s2) ? s1 : States.mixed, 
+        state = filtered_states.reduce((s1, s2) => (s1 == s2) ? s1 : States.mixed,
                                        filtered_states[0]);
       }
       model.states[icon_id] = state;
