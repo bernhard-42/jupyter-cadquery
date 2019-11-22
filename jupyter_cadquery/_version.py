@@ -28,4 +28,4 @@ def get_version(version):
 
 __version__ = "0.9.2-rc3"  # DO NOT EDIT THIS DIRECTLY!  It is managed by bumpversion
 __version_info__ = get_version(__version__)
-__npm_version__ = "0.9.4"
+__npm_version__ = v0.9.5

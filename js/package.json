@@ -1,6 +1,6 @@
 {
   "name": "jupyter_cadquery",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
   "author": "Bernhard Walter",
   "main": "lib/index.js",
