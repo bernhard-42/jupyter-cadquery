@@ -164,7 +164,50 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - `cad_width` (`default=600`): Width of the CAD view
     - `height` (`default=600`): Height of the CAD view
 
-### c) Jupyter_cadquery classes
+### c) Export the rendered object as STL:
+
+- OCC
+
+    ```python
+    from jupyter_cadquery import exportSTL
+
+    exportSTL(a1, "a1.stl", linear_deflection=0.01, angular_deflection=0.1)
+    ```
+
+    Lower `linear_deflection` and `angular_deflection` means more details.
+
+### d) Export the rendering view as HTML:
+
+A straight forward approach is to use
+
+```python
+w = show(a1)
+```
+
+adapt the cad view as wanted (axis, viewpoint, transparency, ...) and then call
+
+```python
+from ipywidgets.embed import embed_minimal_html
+embed_minimal_html('export.html', views=[w.cq_view.renderer], title='Renderer')
+```
+
+Using `w.cq_view.renderer` this will save the exact state of the visible pythreejs view.
+
+Of course, you can also call `w = show(a1, *params)` where `params` is the dict of show parameters you'd like to be used and then call the `embed_minimal_html` with `views=w.cq_view.renderer`
+
+Notes:
+
+1. If you use `sidecar`then you need to close it first:
+
+    ```
+    from jupyter_cadquery import cad_display
+    cad_display.SIDECAR.close()
+    ```
+
+2. Buttons and treeview can be exported, however the interaction logic of the UI is implemented in Python. So the treeview and the buttons won't have any effect in an exported HTML page.
+
+
+## Jupyter_cadquery classes
 
 - `Part`: A CadQuery shape plus some attributes for it:
     - `shape`: Cadquery shape
