@@ -76,6 +76,11 @@
     padding: 0px !important;
 }
 
+.view_button>img {
+    height: 28px;
+    width: 36px;
+}
+
 .node_entry_wrap {
     white-space: pre;
 }
