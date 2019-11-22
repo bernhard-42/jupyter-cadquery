@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import cadquery as cq
 from .cad_objects import _Assembly, _Part
 from OCC.Extend.DataExchange import write_stl_file
 from OCC.Core.TopoDS import TopoDS_Compound
@@ -25,6 +26,8 @@ def exportSTL(cadObj, filename, linear_deflection=0.01, angular_deflection=0.5):
         compound = cadObj.compound()
     elif isinstance(cadObj, TopoDS_Compound):
         compound = cadObj
+    elif isinstance(cadObj, (cq.Shape, cq.Workplane)):
+        compound = Part(cadObj).compound()
     else:
         print("Unsupported CAD object %s, convert to Assembly or Part" % type(cadObj))
 
