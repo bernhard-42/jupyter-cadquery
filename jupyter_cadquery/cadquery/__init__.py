@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from .cad_objects import Assembly, Part, Faces, Edges, Vertices, show, auto_show
+from .cad_objects import Assembly, Part, Faces, Edges, Vertices, show, show_object, auto_show
 from .replay import replay, enable_replay, disable_replay, reset_replay
 
 auto_show()

@@ -241,3 +241,5 @@ def auto_show():
         pass
     cq.Workplane._ipython_display_ = lambda cad_obj: show(cad_obj)
     cq.Shape._ipython_display_ = lambda cad_obj: show(cad_obj)
+
+show_object = show
