@@ -188,7 +188,7 @@ def show(*cad_objs,
          rotation=None,
          zoom=None):
 
-    assembly = Assembly([], "Replay")
+    assembly = Assembly([], "Assembly")
     obj_id = 0
     for cad_obj in cad_objs:
         if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Vertices)):
