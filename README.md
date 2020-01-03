@@ -85,7 +85,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
         conda activate cq-jl
 
         jupyter-labextension install --no-build $(cat labextensions.txt)
-        jupyter lab build
+        jupyter lab build --dev-build=True --minimize=False
         ```
 
         Note, `jupyter-labextension list` should now show green "enabled OK" for “*@jupyter-widgets/jupyterlab-manager*, *@jupyter-widgets/jupyterlab-sidecar*, *jupyter-threejs*, *jupyter_cadquery* and *jupyterlab-datawidgets*
