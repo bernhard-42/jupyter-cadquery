@@ -490,10 +490,6 @@ class CadqueryView(object):
 
         self.savestate = (self.camera.rotation, self.controller.target)
 
-        # Workaround: Zoom forth and back to update frame. Sometimes necessary :(
-        self.camera.zoom = camera_zoom + 0.01
-        self._update()
-        self.camera.zoom = camera_zoom
-        self._update()
+        self.controller.reset()
 
         return self.renderer
