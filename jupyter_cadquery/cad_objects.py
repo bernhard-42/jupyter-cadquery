@@ -205,7 +205,8 @@ def _show(assembly,
           rotation=None,
           zoom=None,
           mac_scrollbar=True,
-          sidecar=None):
+          sidecar=None,
+          timeit=False):
 
     d = CadqueryDisplay()
     widget = d.create(
@@ -226,7 +227,8 @@ def _show(assembly,
         position=position,
         rotation=rotation,
         zoom=zoom,
-        mac_scrollbar=mac_scrollbar)
+        mac_scrollbar=mac_scrollbar,
+        timeit=timeit)
 
     d.info.ready_msg(d.cq_view.grid.step)
 

@@ -24,6 +24,7 @@ with warnings.catch_warnings():
     from pythreejs import (CombinedCamera, BufferAttribute, BufferGeometry, Plane, Mesh, LineSegmentsGeometry,
                            LineMaterial, LineSegments2, AmbientLight, DirectionalLight, Scene, OrbitControls, Renderer,
                            Picker, Group, Points, PointsMaterial)
+import time
 
 import numpy as np
 
@@ -102,14 +103,16 @@ class CadqueryView(object):
                  render_edges=True,
                  default_mesh_color=None,
                  default_edge_color=None,
-                 info=None):
-                 
+                 info=None,
+                 timeit=False):
+
         self.width = width
         self.height = height
         self.quality = quality
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
         self.info = info
+        self.timeit = timeit
 
         self.features = ["mesh", "edges"]
 
@@ -136,6 +139,13 @@ class CadqueryView(object):
 
     def _format_color(self, r, g, b):
         return '#%02x%02x%02x' % (r, g, b)
+
+    def _start_timer(self):
+        return time.time() if self.timeit else None
+
+    def _stop_timer(self, msg, start):
+        if self.timeit:
+            print("%20s: %7.2f sec" % (msg, time.time() - start))
 
     def _material(self, color, transparent=False, opacity=1.0):
         material = CustomMaterial("standard")
@@ -171,7 +181,7 @@ class CadqueryView(object):
         edge_lines = None
         points = None
         shape_mesh = None
-
+        start_render_time = self._start_timer()
         if shape is not None:
             if mesh_color is None:
                 mesh_color = self.default_mesh_color
@@ -185,9 +195,10 @@ class CadqueryView(object):
             # https://github.com/tpaviot/pythonocc-core/blob/master/src/Display/WebGl/jupyter_renderer.py
 
             # first, compute the tesselation
+            start_tesselation_time = self._start_timer()
             tess = Tesselator(shape)
             tess.Compute(uv_coords=False, compute_edges=render_edges, mesh_quality=self.quality, parallel=True)
-
+            self._stop_timer("tesselation time", start_tesselation_time)
             # get vertices and normals
             vertices_position = tess.GetVerticesPositionAsTuple()
 
@@ -246,7 +257,9 @@ class CadqueryView(object):
             points = Points(geometry=geom, material=mat)
 
         if edges is not None:
+            start_discretize_time = self._start_timer()
             edge_list = [discretize_edge(edge, self.edge_accuracy) for edge in edges]
+            self._stop_timer("discretize time",start_discretize_time)
 
         if edge_list is not None:
             edge_list = _flatten(list(map(_explode, edge_list)))
@@ -269,6 +282,7 @@ class CadqueryView(object):
                 self.pickable_objects.add(points)
                 index_mapping["mesh"] = ind
             self.pick_mapping.append(index_mapping)
+        self._stop_timer("shape render time", start_render_time)
 
     def get_transparent(self):
         # if one object is transparent, all are
@@ -417,7 +431,7 @@ class CadqueryView(object):
         return self.pickable_objects.children[0].material.transparent
 
     def render(self, position=None, rotation=None, zoom=None):
-
+        start_render_time = self._start_timer()
         # Render all shapes
         for i, shape in enumerate(self.shapes):
             s = shape["shape"]
@@ -494,5 +508,6 @@ class CadqueryView(object):
         self.savestate = (self.camera.rotation, self.controller.target)
 
         self.controller.reset()
+        self._stop_timer("overall render time", start_render_time)
 
         return self.renderer

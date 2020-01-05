@@ -219,7 +219,8 @@ class CadqueryDisplay(object):
                 position=None,
                 rotation=None,
                 zoom=None,
-                mac_scrollbar=True):
+                mac_scrollbar=True,
+                timeit=False):
 
         if platform.system() != "Darwin":
             mac_scrollbar = False
@@ -246,7 +247,8 @@ class CadqueryDisplay(object):
             edge_accuracy=edge_accuracy,
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
-            info=self.info)
+            info=self.info,
+            timeit=timeit)
 
         for shape in shapes:
             self.cq_view.add_shape(shape["name"], shape["shape"], shape["color"])
