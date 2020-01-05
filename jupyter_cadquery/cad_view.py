@@ -98,13 +98,16 @@ class CadqueryView(object):
                  width=600,
                  height=400,
                  quality=0.5,
+                 edge_accuracy=0.5,
                  render_edges=True,
                  default_mesh_color=None,
                  default_edge_color=None,
                  info=None):
+                 
         self.width = width
         self.height = height
         self.quality = quality
+        self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
         self.info = info
 
@@ -243,7 +246,7 @@ class CadqueryView(object):
             points = Points(geometry=geom, material=mat)
 
         if edges is not None:
-            edge_list = [discretize_edge(edge, deflection) for edge in edges]
+            edge_list = [discretize_edge(edge, self.edge_accuracy) for edge in edges]
 
         if edge_list is not None:
             edge_list = _flatten(list(map(_explode, edge_list)))

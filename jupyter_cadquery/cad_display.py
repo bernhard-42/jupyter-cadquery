@@ -210,6 +210,7 @@ class CadqueryDisplay(object):
                 tree_width=250,
                 cad_width=800,
                 quality=0.5,
+                edge_accuracy=0.5,
                 axes=True,
                 axes0=True,
                 grid=True,
@@ -242,6 +243,7 @@ class CadqueryDisplay(object):
             width=cad_width,
             height=height,
             quality=quality,
+            edge_accuracy=edge_accuracy,
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             info=self.info)

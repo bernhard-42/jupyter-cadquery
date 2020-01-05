@@ -43,6 +43,7 @@ def show(cad_obj,
          tree_width=250,
          cad_width=600,
          quality=0.5,
+         edge_accuracy=0.5,
          axes=False,
          axes0=True,
          grid=False,
@@ -61,5 +62,5 @@ def show(cad_obj,
 
     if assembly is None:
         raise ValueError("%s cannot be viewed" % type(cad_obj))
-    return _show(assembly, height, tree_width, cad_width, quality, axes, axes0, grid, ortho, transparent, position,
-                 rotation, zoom, mac_scrollbar, sidecar)
+    return _show(assembly, height, tree_width, cad_width, quality, edge_accuracy, axes, axes0, grid, ortho,
+                 transparent, position, rotation, zoom, mac_scrollbar, sidecar)
