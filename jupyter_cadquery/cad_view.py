@@ -68,8 +68,16 @@ class BoundingBox(object):
         self.zsize = self.zmax - self.zmin
         self.center = (self.xmin + self.xsize / 2.0, self.ymin + self.ysize / 2.0, self.zmin + self.zsize / 2.0)
         self.max = reduce(lambda a, b: max(abs(a), abs(b)), bbox)
-        self.diagonal = max([
+
+    def max_dist_from_center(self):
+        return max([
             distance(self.center, v)
+            for v in itertools.product((self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax))
+        ])
+
+    def max_dist_from_origin(self):
+        return max([
+            np.linalg.norm(v)
             for v in itertools.product((self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax))
         ])
 
@@ -113,6 +121,9 @@ class CadqueryView(object):
         self.render_edges = render_edges
         self.info = info
         self.timeit = timeit
+
+        self.camera_distance_factor = 6
+        self.camera_initial_zoom = 2.5
 
         self.features = ["mesh", "edges"]
 
@@ -173,7 +184,6 @@ class CadqueryView(object):
                       render_edges=False,
                       edge_width=1,
                       vertex_width=5,
-                      deflection=0.05,
                       transparent=False,
                       opacity=1.0):
 
@@ -289,10 +299,10 @@ class CadqueryView(object):
         return self.pickable_objects.children[0].material.transparent
 
     def _scale(self, vec):
-        r = self.bb.diagonal * 2.5
+        r = self.bb.max_dist_from_center() * self.camera_distance_factor
         n = np.linalg.norm(vec)
         new_vec = [v / n * r for v in vec]
-        return self._add(new_vec, self.bb.center)
+        return new_vec
 
     def _add(self, vec1, vec2):
         return list(v1 + v2 for v1, v2 in zip(vec1, vec2))
@@ -320,8 +330,8 @@ class CadqueryView(object):
 
     def _reset(self):
         self.camera.rotation, self.controller.target = self.savestate
-        self.camera.position = self._scale((1, 1, 1))
-        self.camera.zoom = 1.0
+        self.camera.position = self._add(self.bb.center, self._scale((1, 1, 1)))
+        self.camera.zoom = self.camera_initial_zoom
         self._update()
 
     # UI Handler
@@ -332,11 +342,11 @@ class CadqueryView(object):
             self._reset()
 
         def refit(b):
-            self.camera.zoom = 1.0
+            self.camera.zoom = self.camera_initial_zoom
             self._update()
 
         def change(b):
-            self.camera.position = self._scale(directions[typ])
+            self.camera.position = self._add(self.bb.center, self._scale(directions[typ]))
             self._update()
 
         if typ == "fit":
@@ -431,6 +441,9 @@ class CadqueryView(object):
         return self.pickable_objects.children[0].material.transparent
 
     def render(self, position=None, rotation=None, zoom=None):
+        if zoom is not None:
+            self.camera_initial_zoom = zoom
+
         start_render_time = self._start_timer()
         # Render all shapes
         for i, shape in enumerate(self.shapes):
@@ -448,26 +461,33 @@ class CadqueryView(object):
         self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
 
         bb_max = self.bb.max
-        bb_diag = 2 * self.bb.diagonal
+        orbit_radius = 2 * self.bb.max_dist_from_center()
 
         # Set up camera
         camera_target = self.bb.center
-        camera_position = self._scale([1, 1, 1] if position is None else position)
-        camera_zoom = 1.0 if zoom is None else zoom
+        camera_position = self._add(self.bb.center,
+                                    self._scale([1, 1, 1] if position is None else self._scale(position)))
+        camera_zoom = self.camera_initial_zoom if zoom is None else zoom
 
         self.camera = CombinedCamera(
-            position=camera_position, width=self.width, height=self.height, far=10 * bb_diag, orthoFar=10 * bb_diag)
+            position=camera_position,
+            width=self.width,
+            height=self.height
+            #            far=10 * orbit_radius,
+            #            orthoFar=10 * orbit_radius
+        )
         self.camera.up = (0.0, 0.0, 1.0)
-        self.camera.lookAt(camera_target)
+
         self.camera.mode = 'orthographic'
         self.camera.position = camera_position
+
         if rotation is not None:
             self.camera.rotation = rotation
 
         # Set up lights in every of the 8 corners of the global bounding box
+        positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
         key_lights = [
-            DirectionalLight(color='white', position=position, intensity=0.12)
-            for position in list(itertools.product((-bb_diag, bb_diag), (-bb_diag, bb_diag), (-bb_diag, bb_diag)))
+            DirectionalLight(color='white', position=position, intensity=0.12) for position in positions
         ]
         ambient_light = AmbientLight(intensity=1.0)
 
@@ -480,7 +500,11 @@ class CadqueryView(object):
         self.scene = Scene(children=environment + [self.pickable_objects])
 
         # Set up Controllers
-        self.controller = OrbitControls(controlling=self.camera, target=camera_target)
+        self.controller = OrbitControls(controlling=self.camera, target=camera_target, target0=camera_target)
+
+        # Update controller to instantiate camera position
+        self.camera.zoom = camera_zoom
+        self._update()
 
         self.picker = Picker(controlling=self.pickable_objects, event='dblclick')
         self.picker.observe(self.pick)
@@ -507,7 +531,6 @@ class CadqueryView(object):
 
         self.savestate = (self.camera.rotation, self.controller.target)
 
-        self.controller.reset()
         self._stop_timer("overall render time", start_render_time)
 
         return self.renderer
