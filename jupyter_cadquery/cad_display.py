@@ -212,7 +212,7 @@ class CadqueryDisplay(object):
                 quality=0.5,
                 edge_accuracy=0.5,
                 axes=True,
-                axes0=True,
+                axes0=False,
                 grid=True,
                 ortho=True,
                 transparent=False,
