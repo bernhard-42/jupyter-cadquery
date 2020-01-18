@@ -164,7 +164,7 @@ class CadqueryView(object):
         material.clipping = True
         material.side = "DoubleSide"
         material.alpha = 0.7
-        material.polygonOffset = False
+        material.polygonOffset = True
         material.polygonOffsetFactor = 1
         material.polygonOffsetUnits = 1
         material.transparent = transparent
