@@ -200,10 +200,10 @@ def show(*cad_objs,
             assembly = convert_cqparts(cad_obj)
 
         elif _is_facelist(cad_obj):
-            assembly.add_list(_from_facelist(cad_obj, obj_id, show_parents=show_parents))
+            assembly.add_list(_from_facelist(cad_obj, obj_id))
 
         elif _is_edgelist(cad_obj):
-            assembly.add_list(_from_edgelist(cad_obj, obj_id, show_parents=show_parents))
+            assembly.add_list(_from_edgelist(cad_obj, obj_id))
 
         elif _is_wirelist(cad_obj):
             assembly.add(_from_wirelist(cad_obj, obj_id))
