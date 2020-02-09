@@ -20,6 +20,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import GridHelper, LineSegmentsGeometry, LineSegments2, LineMaterial, ShaderMaterial, ShaderLib
 
+import numpy as np
 
 class Helpers(object):
 
@@ -197,3 +198,45 @@ class CustomMaterial(ShaderMaterial):
             uniforms[key] = {'type': self.types.get(key), 'value': value}
         self.uniforms = uniforms
         self.needsUpdate = True
+
+
+def rad(deg):
+    return deg / 180.0 * math.pi
+
+
+def rotate_x(vector, angle):
+    angle = rad(angle)
+    mat = np.array([
+        [1, 0,                0              ], 
+        [0, math.cos(angle), -math.sin(angle)], 
+        [0, math.sin(angle),  math.cos(angle)]])
+    return tuple(np.matmul(mat, vector))
+
+
+def rotate_y(vector, angle):
+    angle = rad(angle)
+    mat = np.array([
+        [ math.cos(angle), 0, math.sin(angle)], 
+        [ 0,               1, 0              ], 
+        [-math.sin(angle), 0, math.cos(angle)]])
+    return tuple(np.matmul(mat, vector))
+
+
+def rotate_z(vector, angle):
+    angle = rad(angle)
+    mat = np.array([
+        [math.cos(angle), -math.sin(angle), 0], 
+        [math.sin(angle),  math.cos(angle), 0], 
+        [0,                0,               1]])
+    return tuple(np.matmul(mat, vector))
+
+
+def rotate(vector, angle_x=0, angle_y=0, angle_z=0):
+    v = tuple(vector)
+    if angle_z != 0:
+        v = rotate_z(v, angle_z)
+    if angle_y != 0:
+        v = rotate_y(v, angle_y)
+    if angle_x != 0:
+        v = rotate_x(v, angle_x)
+    return v
