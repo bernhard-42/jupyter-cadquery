@@ -37,9 +37,10 @@ The screenshot shows one of the official cadquery examples in *replay* mode with
 ```python
 import cadquery as cq
 from jupyter_cadquery.cadquery import (Assembly, Part, Edges, Faces, Vertices, show)
-from jupyter_cadquery import set_sidecar
+from jupyter_cadquery import set_sidecar, set_defaults, reset_defaults
 
 set_sidecar("CadQuery")  # force usage of one cad view on the right
+set_defaults(axes=False, grid=True, axes0=True, ortho=True, transparent=True) # Set default values
 
 box1 = cq.Workplane('XY').box(10, 20, 30).edges(">X or <X").chamfer(2)
 box2 = cq.Workplane('XY').box(8, 18, 28).edges(">X or <X").chamfer(2)
@@ -60,7 +61,7 @@ a1 = Assembly(
     "example 1"
 )
 
-show(a1, axes=True, grid=True, ortho=True, axes0=True)
+show(a1, grid=False)  # overwrite grid default value
 ```
 
 ![Sidecar](screenshots/sidecar.png)
@@ -134,25 +135,43 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
 ### a) Show objects
 
-- `show(args)`
+- `show(cad_objs, **kwargs)`
 
-    args:
+    kwargs:
 
     - `cad_objs`: Comma separated list of cadquery objects; **Note**: For OCC only one object is supported
-    - `height` (`default=600`): Height of the CAD view
-    - `tree_width` (`default=250`): Width of the object tree view
-    - `cad_width` (`default=800`): Width of the CAD view
-    - `quality` (`default=0.5`): Rendering quality
-    - `axes` (`default=False`): Show X, Y and Z axis
-    - `axes0` (`default=True`): Show axes at (0,0,0) or mass center
-    - `grid` (`default=False`): Show grid
-    - `ortho` (`default=True`): View in orthographic or perspective mode
-    - `transparent` (`default=False`): View cadquery objects in transparent mode
-    - `mac_scrollbar` (`default=True`): On macos patch scrollbar behaviour
-    - `sidecar` (`default=None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
-    - `show_parents` (`default=True`): Show additionally parent of the current cadquery object
+    - `height` (default=`600`): Height of the CAD view
+    - `tree_width` (default=`250`): Width of the object tree view
+    - `cad_width` (default=`800`): Width of the CAD view
+    - `quality` (default=`0.5`): Rendering quality (mesh quality)
+    - `edge_accuracy` (default=`0.5`) Precision of edge discretisation
+    - `axes` (default=`False`): Show X, Y and Z axis
+    - `axes0` (default=`True`): Show axes at (0,0,0) or mass center
+    - `grid` (default=`False`): Show grid
+    - `ortho` (default=`True`): View in orthographic or perspective mode
+    - `transparent` (default=`False`): View cadquery objects in transparent mode
+    - `position` (default=`(1, 1, 1)`): Relative camera position that will be scaled 
+    - `rotation` (default=`(0, 0, 0)`): z, y and y rotation angles to apply to position vector
+    - `zoom` (default=`2.5`): Zoom factor of view 
+    - `mac_scrollbar` (default=`True`): On macos patch scrollbar behaviour
+    - `sidecar` (default=`None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
+    - `timeit` (default=`False`): Show rendering times
+    
+    For example isometric projection can be achieved in two ways:
+    - position = (1, 1, 1)
+    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0) 
+    
+### b) Manage default values
 
-### b) Replay objects
+- `set_defaults(**kwargs)`
+
+    kwargs: 
+    
+    - see `show`
+- `get_defaults()`
+- `reset_defaults()`
+
+### c) Replay objects
 
 - `replay(args)`
 
@@ -164,7 +183,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
     - `cad_width` (`default=600`): Width of the CAD view
     - `height` (`default=600`): Height of the CAD view
 
-### c) Export the rendered object as STL:
+### d) Export the rendered object as STL:
 
 - OCC
 
@@ -176,7 +195,7 @@ show(a1, axes=True, grid=True, ortho=True, axes0=True)
 
     Lower `linear_deflection` and `angular_deflection` means more details.
 
-### d) Export the rendering view as HTML:
+### e) Export the rendering view as HTML:
 
 A straight forward approach is to use
 

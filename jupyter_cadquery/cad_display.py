@@ -152,6 +152,24 @@ class CadqueryDisplay(object):
         "bottom": (0, 0, -1),
         "isometric": (1, 1, 1)
     }
+    defaults = {
+        "height": 600,
+        "tree_width": 250,
+        "cad_width": 800,
+        "quality": 0.5,
+        "edge_accuracy": 0.5,
+        "axes": False,
+        "axes0": False,
+        "grid": False,
+        "ortho": True,
+        "transparent": False,
+        "position": (1, 1, 1),
+        "rotation": (0, 0, 0),
+        "zoom": 2.5,
+        "mac_scrollbar": True,
+        "sidecar": None,
+        "timeit": False
+    }
 
     def __init__(self, default_mesh_color=None, default_edge_color=None):
         self.default_mesh_color = default_mesh_color
@@ -216,9 +234,9 @@ class CadqueryDisplay(object):
                 grid=True,
                 ortho=True,
                 transparent=False,
-                position=None,
-                rotation=None,
-                zoom=None,
+                position=(1, 1, 1),
+                rotation=(0, 0, 0),
+                zoom=2.5,
                 mac_scrollbar=True,
                 timeit=False):
 

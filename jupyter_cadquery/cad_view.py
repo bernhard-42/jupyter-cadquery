@@ -37,7 +37,7 @@ from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Core.gp import gp_Vec, gp_Pnt
 
 from .widgets import state_diff
-from .cad_helpers import Grid, Axes, CustomMaterial
+from .cad_helpers import Grid, Axes, CustomMaterial, rotate
 
 
 def _decomp(a):
@@ -440,9 +440,8 @@ class CadqueryView(object):
     def is_transparent(self):
         return self.pickable_objects.children[0].material.transparent
 
-    def render(self, position=None, rotation=None, zoom=None):
-        if zoom is not None:
-            self.camera_initial_zoom = zoom
+    def render(self, position=None, rotation=None, zoom=2.5):
+        self.camera_initial_zoom = zoom
 
         start_render_time = self._start_timer()
         # Render all shapes
@@ -465,9 +464,13 @@ class CadqueryView(object):
 
         # Set up camera
         camera_target = self.bb.center
+        camera_up = (0.0, 0.0, 1.0)
+
+        if rotation != (0, 0, 0):
+            position = rotate(position, *rotation)
+
         camera_position = self._add(self.bb.center,
                                     self._scale([1, 1, 1] if position is None else self._scale(position)))
-        camera_zoom = self.camera_initial_zoom if zoom is None else zoom
 
         self.camera = CombinedCamera(
             position=camera_position,
@@ -476,13 +479,10 @@ class CadqueryView(object):
             #            far=10 * orbit_radius,
             #            orthoFar=10 * orbit_radius
         )
-        self.camera.up = (0.0, 0.0, 1.0)
+        self.camera.up = camera_up
 
         self.camera.mode = 'orthographic'
         self.camera.position = camera_position
-
-        if rotation is not None:
-            self.camera.rotation = rotation
 
         # Set up lights in every of the 8 corners of the global bounding box
         positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
@@ -503,7 +503,7 @@ class CadqueryView(object):
         self.controller = OrbitControls(controlling=self.camera, target=camera_target, target0=camera_target)
 
         # Update controller to instantiate camera position
-        self.camera.zoom = camera_zoom
+        self.camera.zoom = zoom
         self._update()
 
         self.picker = Picker(controlling=self.pickable_objects, event='dblclick')

@@ -190,48 +190,125 @@ class _Assembly(_CADObject):
         return Compound._makeCompound(self.compounds())
 
 
-def _show(assembly,
-          height=600,
-          tree_width=250,
-          cad_width=800,
-          quality=0.5,
-          edge_accuracy=0.5,
-          axes=False,
-          axes0=False,
-          grid=False,
-          ortho=True,
-          transparent=False,
-          position=None,
-          rotation=None,
-          zoom=None,
-          mac_scrollbar=True,
-          sidecar=None,
-          timeit=False):
+def set_defaults(height=600,
+                 tree_width=250,
+                 cad_width=800,
+                 quality=0.5,
+                 edge_accuracy=0.5,
+                 axes=False,
+                 axes0=False,
+                 grid=False,
+                 ortho=True,
+                 transparent=False,
+                 position=(1, 1, 1),
+                 rotation=(0, 0, 0),
+                 zoom=2.5,
+                 mac_scrollbar=True,
+                 sidecar=None,
+                 timeit=False):
+    """Set defaults for CAD viewer
+
+    Valid keywords:
+    - height:        Height of the CAD view
+    - tree_width:    Width of navigation tree part of the view
+    - cad_width:     Width of CAD view part of the view
+    - quality:       Mesh quality for tesselation
+    - edge_accuracy: Presicion of edge discretizaion
+    - axes:          Show axes
+    - axes0:         Show axes at (0,0,0)
+    - grid:          Show grid
+    - ortho:         Use orthographic projections
+    - transparent:   Show objects transparent
+    - position:      Relative camera position that will be scaled
+    - rotation:      z, y and y rotation angles of position
+    - zoom:          Zoom factor of view
+    - mac_scrollbar: Prettify scrollbasrs on Macs
+    - sidecar:       Use provided sidecar
+    - timeit:        Show rendering times
+
+    For example isometric projection can be achieved in two ways:
+    - position = (1, 1, 1)
+    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0) 
+    """
+    CadqueryDisplay.defaults["height"] = height
+    CadqueryDisplay.defaults["tree_width"] = tree_width
+    CadqueryDisplay.defaults["cad_width"] = cad_width
+    CadqueryDisplay.defaults["quality"] = quality
+    CadqueryDisplay.defaults["edge_accuracy"] = edge_accuracy
+    CadqueryDisplay.defaults["axes"] = axes
+    CadqueryDisplay.defaults["axes0"] = axes0
+    CadqueryDisplay.defaults["grid"] = grid
+    CadqueryDisplay.defaults["ortho"] = ortho
+    CadqueryDisplay.defaults["transparent"] = transparent
+    CadqueryDisplay.defaults["position"] = position
+    CadqueryDisplay.defaults["rotation"] = rotation
+    # for zoom == 1 viewing has a bug, so slightly increase it
+    if zoom == 1:
+        zoom = 1 + 1e-6
+    CadqueryDisplay.defaults["zoom"] = zoom
+    CadqueryDisplay.defaults["mac_scrollbar"] = mac_scrollbar
+    CadqueryDisplay.defaults["sidecar"] = sidecar
+    CadqueryDisplay.defaults["timeit"] = timeit
+
+
+def get_defaults():
+    return CadqueryDisplay.defaults
+
+
+def reset_defaults():
+    CadqueryDisplay.defaults = {
+        "height": 600,
+        "tree_width": 250,
+        "cad_width": 800,
+        "quality": 0.5,
+        "edge_accuracy": 0.5,
+        "axes": False,
+        "axes0": False,
+        "grid": False,
+        "ortho": True,
+        "transparent": False,
+        "position": (1, 1, 1),
+        "rotation": (0, 0, 0),
+        "zoom": 2.5,
+        "mac_scrollbar": True,
+        "sidecar": None,
+        "timeit": False
+    }
+
+
+def _show(assembly, **kwargs):
 
     d = CadqueryDisplay()
+    params = d.defaults.copy()
+    for k,v in kwargs.items():
+        if params.get(k, None) is None:
+            raise KeyError("Paramater %s is not a valid argument for show()" % k)
+        else:
+            params[k] = v
+
     widget = d.create(
         states=assembly.to_state(),
         shapes=assembly.collect_shapes(),
         mapping=assembly.obj_mapping(),
         tree=assembly.to_nav_dict(),
-        height=height,
-        tree_width=tree_width,
-        cad_width=cad_width,
-        quality=quality,
-        edge_accuracy=edge_accuracy,
-        axes=axes,
-        axes0=axes0,
-        grid=grid,
-        ortho=ortho,
-        transparent=transparent,
-        position=position,
-        rotation=rotation,
-        zoom=zoom,
-        mac_scrollbar=mac_scrollbar,
-        timeit=timeit)
+        height=params["height"],
+        tree_width=params["tree_width"],
+        cad_width=params["cad_width"],
+        quality=params["quality"],
+        edge_accuracy=params["edge_accuracy"],
+        axes=params["axes"],
+        axes0=params["axes0"],
+        grid=params["grid"],
+        ortho=params["ortho"],
+        transparent=params["transparent"],
+        position=params["position"],
+        rotation=params["rotation"],
+        zoom=params["zoom"],
+        mac_scrollbar=params["mac_scrollbar"],
+        timeit=params["timeit"])
 
     d.info.ready_msg(d.cq_view.grid.step)
 
-    d.display(widget, sidecar)
+    d.display(widget, params["sidecar"])
 
     return d
