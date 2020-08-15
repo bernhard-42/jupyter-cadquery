@@ -1,4 +1,4 @@
-.PHONY: clean wheel install tests check_version dist check_dist upload_test upload dev_tools bump bump_ext release
+.PHONY: clean wheel install tests check_version dist check_dist upload_test upload dev_tools bump bump_ext release docker docker_upload
 
 PYCACHE := $(shell find . -name '__pycache__')
 EGGS := $(wildcard *.egg-info)
@@ -81,3 +81,12 @@ upload_ext:
 dev_tools:
 	pip install twine bumpversion yapf pylint pyYaml
 
+docker:
+	@rm -fr docker/examples
+	@rm -f docker/environment.yml docker/labextensions.txt
+	@cp environment.yml labextensions.txt docker/
+	@cd docker && docker build -t bwalter42/jupyter_cadquery:$(CURRENT_VERSION) .
+	@rm -f docker/environment.yml docker/labextensions.txt
+
+upload_docker: docker
+	@docker push bwalter42/jupyter_cadquery:$(CURRENT_VERSION)

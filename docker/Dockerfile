@@ -6,15 +6,11 @@ RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir /data && chown cq:cq /data
 
-ADD --chown=cq:cq examples /home/cq
-
-RUN chown -R 1000 /home/cq
-
 COPY environment.yml labextensions.txt /tmp/
 RUN conda env create -f /tmp/environment.yml -n cq && \
     conda run -n cq conda install -y nodejs
 RUN conda run -n cq jupyter labextension install --no-build $(cat /tmp/labextensions.txt) && \
-    conda run -n cq jupyter lab build
+    conda run -n cq jupyter lab build --dev-build=True --minimize=False
 
 VOLUME /home/cq/
 WORKDIR /home/cq

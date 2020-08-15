@@ -2,7 +2,7 @@
 
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
-**Note:** The extension relies on *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery 1* or *CadQuery 2*.
+**Note:** The extension relies on *CadQuery 2.0* with *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery*.
 
 ## Quick use via Binder
 
@@ -105,19 +105,17 @@ show(a1, grid=False)  # overwrite grid default value
 - Build docker image
 
     ```bash
-    cd docker
-    IMAGE=bernhard-42/jupyter-cadquery:1.0.0
-    docker build -t $IMAGE .
+    make docker
     ```
 
-- Run the docker container
+- Run the docker container (jupyter in the cntainer will start in `/home/cq`)
 
     ```bash
     WORKDIR=/tmp/jupyter
-    docker run -it --rm -v $WORKDIR:/data/workdir -p 8888:8888 $IMAGE
+    docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 $IMAGE
     ```
 
-    **Note:** Don't store new notebooks in the `examples` folder, **they will be lost**. Use the `workdir` folder that is mapped to a local persistent folder on the host.
+    **Note:** To start you can copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
 
 ## Demos
 
