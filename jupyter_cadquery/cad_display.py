@@ -234,11 +234,16 @@ class CadqueryDisplay(object):
                 grid=True,
                 ortho=True,
                 transparent=False,
-                position=(1, 1, 1),
-                rotation=(0, 0, 0),
+                position=None,
+                rotation=None,
                 zoom=2.5,
                 mac_scrollbar=True,
                 timeit=False):
+
+        if position is None:
+            position = (1, 1, 1)
+        if rotation is None:
+            rotation = (0, 0 ,0)
 
         if platform.system() != "Darwin":
             mac_scrollbar = False

@@ -327,12 +327,15 @@ class Replay(object):
             ortho = True if self.view is None else self.view.cq_view.is_ortho()
             transparent = False if self.view is None else self.view.cq_view.is_transparent()
             rotation = None if self.view is None else self.view.cq_view.camera.rotation
-            zoom = None if self.view is None else self.view.cq_view.camera.zoom
+            zoom = 2.5 if self.view is None else self.view.cq_view.camera.zoom
             position = None if self.view is None else self.view.cq_view.camera.position
             # substract center out of position to be prepared for _scale function
+            print("-->", rotation)
             if position is not None:
                 position = self.view.cq_view._sub(position, self.view.cq_view.bb.center)
-
+            if rotation is not None and len(rotation) == 4:
+                rotation = rotation[:3]
+                
             # Show new view
             self.view = self.show(cad_objs, position, rotation, zoom, axes, grid, axes0, ortho, transparent)
 
@@ -361,7 +364,7 @@ class Replay(object):
                 ortho=ortho,
                 cad_width=self.cad_width,
                 height=self.height,
-                show_parents=(len(cad_objs) == 1),
+                # show_parents=(len(cad_objs) == 1),
                 position=position,
                 rotation=rotation,
                 zoom=zoom)

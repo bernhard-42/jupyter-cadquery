@@ -466,6 +466,7 @@ class CadqueryView(object):
         camera_target = self.bb.center
         camera_up = (0.0, 0.0, 1.0)
 
+        print("==>", rotation)
         if rotation != (0, 0, 0):
             position = rotate(position, *rotation)
 
