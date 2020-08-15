@@ -13,4 +13,4 @@ dependencies:
   - pythreejs>=2.2,<2.3
   - cadquery=2.0.0
   - pip:
-    - jupyter_cadquery==0.9.5
+    - jupyter_cadquery==1.0.0

@@ -75,8 +75,8 @@ show(a1, grid=False)  # overwrite grid default value
     - Download the environment definition files:
 
         ```bash
-        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.5/environment.yml
-        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v0.9.5/labextensions.txt
+        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/environment.yml
+        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/labextensions.txt
         ```
 
     - Create the conda environment and install the Jupyter labextensions
@@ -106,7 +106,7 @@ show(a1, grid=False)  # overwrite grid default value
 
     ```bash
     cd docker
-    IMAGE=bernhard-42/jupyter-cadquery:0.9.5
+    IMAGE=bernhard-42/jupyter-cadquery:1.0.0
     docker build -t $IMAGE .
     ```
 
