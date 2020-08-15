@@ -1,23 +1,16 @@
 channels:
-  - pythonocc
-  - oce
-  - dlr-sc
-  - conda-forge
-  - cadquery
   - defaults
+  - cadquery
+  - conda-forge
 dependencies:
   - python=3.7
-  - ipywidgets=7.5.1
-  - jupyter=1.0.0
-  - jupyterlab=1.2.4
-  - notebook=6.0.2
-  - pyparsing=2.4.6
-  - numpy=1.17.4
-  - oce=0.18.3
+  - numpy=1.19.1
   - pip=19.3.1
-  - pythonocc-core=0.18.2
+  - notebook>=6.1,<6.2
+  - jupyterlab>=2.2,<3
+  - sidecar=0.4.0
+  - ipywidgets=7.5.1
+  - pythreejs>=2.2,<2.3
+  - cadquery=2.0.0
   - pip:
-    - git+https://github.com/CadQuery/cadquery.git
-    - sidecar==0.3.0
-    - pythreejs==2.1.1
     - jupyter_cadquery==0.9.5

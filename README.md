@@ -82,8 +82,8 @@ show(a1, grid=False)  # overwrite grid default value
     - Create the conda environment and install the Jupyter labextensions
 
         ```bash
-        conda env create -f ./environment.yml -n cq-jl
-        conda activate cq-jl
+        conda env create -f ./environment.yml -n cq2-jl
+        conda activate cq2-jl
 
         jupyter-labextension install --no-build $(cat labextensions.txt)
         jupyter lab build --dev-build=True --minimize=False
@@ -94,7 +94,7 @@ show(a1, grid=False)  # overwrite grid default value
 - **Run jupyter-cadquery**
 
     ```bash
-    conda activate cq-jl
+    conda activate cq2-jl
     jupyter lab
     ```
 
