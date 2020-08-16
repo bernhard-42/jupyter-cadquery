@@ -8,7 +8,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 Click on the icon to start *jupyter-cadquery* on binder:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
 
 ## Overview
 
@@ -100,22 +100,18 @@ show(a1, grid=False)  # overwrite grid default value
 
 ### b) Using a docker image
 
-- Install [docker](https://www.docker.com)
-
-- Build docker image
-
-    ```bash
-    make docker
-    ```
-
-- Run the docker container (jupyter in the cntainer will start in `/home/cq`)
+- Run the docker container (jupyter in the container will start in `/home/cq`)
 
     ```bash
     WORKDIR=/tmp/jupyter
-    docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 $IMAGE
+    docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:1.0.0
     ```
 
-    **Note:** To start you can copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
+    **Notes:** 
+    - To start with examples, you can 
+        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:1.0.0` or
+        - copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
+    - If you want to change the Dockerfile, `make docker` will create a new docker image
 
 ## Demos
 
