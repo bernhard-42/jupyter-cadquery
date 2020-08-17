@@ -104,6 +104,7 @@ show(a1, grid=False)  # overwrite grid default value
 
     ```bash
     WORKDIR=/tmp/jupyter
+    mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:1.0.0
     ```
 
