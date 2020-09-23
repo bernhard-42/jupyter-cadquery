@@ -18,7 +18,6 @@ from jupyter_cadquery.cad_objects import _Assembly, _Part, _show
 
 
 class Part(_Part):
-
     def __init__(self, shape, name="part", color=None, show_faces=True, show_edges=True):
         super().__init__([shape], name, color, show_faces, show_edges)
 
@@ -30,7 +29,6 @@ class Part(_Part):
 
 
 class Assembly(_Assembly):
-
     def to_assembly(self):
         return self
 
@@ -38,7 +36,7 @@ class Assembly(_Assembly):
         return show(self, grid=grid, axes=axes)
 
 
-def show(cad_obj,**kwargs):
+def show(cad_obj, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:

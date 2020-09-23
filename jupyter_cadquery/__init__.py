@@ -21,16 +21,20 @@ from .export import exportSTL
 
 
 def _jupyter_nbextension_paths():
-    return [{
-        'section': 'notebook',
-        'src': 'static',
-        'dest': 'jupyter_cadquery',
-        'require': 'jupyter_cadquery/extension'
-    }]
+    return [
+        {
+            "section": "notebook",
+            "src": "static",
+            "dest": "jupyter_cadquery",
+            "require": "jupyter_cadquery/extension",
+        }
+    ]
+
 
 def patch_cq():
     print("Patch")
     import cadquery
+
     print("  - cadquery.Workplane.lineTo: guard against line length 0")
 
     def lineTo(self, x, y, forConstruction=False):

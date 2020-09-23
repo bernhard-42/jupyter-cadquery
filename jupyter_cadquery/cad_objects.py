@@ -32,7 +32,6 @@ PART_ID = 0
 
 
 class _CADObject(object):
-
     def __init__(self):
         self.color = (232, 176, 36)
 
@@ -69,7 +68,6 @@ class _CADObject(object):
 
 
 class _Part(_CADObject):
-
     def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
         super().__init__()
         self.name = name
@@ -100,14 +98,12 @@ class _Part(_CADObject):
 
 
 class _Faces(_Part):
-
     def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
         super().__init__(faces, name, color, show_faces, show_edges)
         self.color = (1, 0, 1) if color is None else color
 
 
 class _Edges(_CADObject):
-
     def __init__(self, edges, name="Edges", color=None):
         super().__init__()
         self.shape = edges
@@ -122,11 +118,12 @@ class _Edges(_CADObject):
         return {str(self.id): [EMPTY, SELECTED]}
 
     def collect_shapes(self):
-        return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
+        return [
+            {"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}
+        ]
 
 
 class _Vertices(_CADObject):
-
     def __init__(self, vertices, name="Vertices", color=None):
         super().__init__()
         self.shape = vertices
@@ -141,11 +138,12 @@ class _Vertices(_CADObject):
         return {str(self.id): [SELECTED, EMPTY]}
 
     def collect_shapes(self):
-        return [{"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}]
+        return [
+            {"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}
+        ]
 
 
 class _Assembly(_CADObject):
-
     def __init__(self, objects, name="Assembly"):
         super().__init__()
         self.name = name
@@ -157,7 +155,7 @@ class _Assembly(_CADObject):
             "type": "node",
             "name": self.name,
             "id": self.id,
-            "children": [obj.to_nav_dict() for obj in self.objects]
+            "children": [obj.to_nav_dict() for obj in self.objects],
         }
 
     def to_state(self):
@@ -190,22 +188,24 @@ class _Assembly(_CADObject):
         return Compound._makeCompound(self.compounds())
 
 
-def set_defaults(height=600,
-                 tree_width=250,
-                 cad_width=800,
-                 quality=0.5,
-                 edge_accuracy=0.5,
-                 axes=False,
-                 axes0=False,
-                 grid=False,
-                 ortho=True,
-                 transparent=False,
-                 position=(1, 1, 1),
-                 rotation=(0, 0, 0),
-                 zoom=2.5,
-                 mac_scrollbar=True,
-                 sidecar=None,
-                 timeit=False):
+def set_defaults(
+    height=600,
+    tree_width=250,
+    cad_width=800,
+    quality=0.5,
+    edge_accuracy=0.5,
+    axes=False,
+    axes0=False,
+    grid=False,
+    ortho=True,
+    transparent=False,
+    position=(1, 1, 1),
+    rotation=(0, 0, 0),
+    zoom=2.5,
+    mac_scrollbar=True,
+    sidecar=None,
+    timeit=False,
+):
     """Set defaults for CAD viewer
 
     Valid keywords:
@@ -272,7 +272,7 @@ def reset_defaults():
         "zoom": 2.5,
         "mac_scrollbar": True,
         "sidecar": None,
-        "timeit": False
+        "timeit": False,
     }
 
 
@@ -280,7 +280,7 @@ def _show(assembly, **kwargs):
 
     d = CadqueryDisplay()
     params = d.defaults.copy()
-    for k,v in kwargs.items():
+    for k, v in kwargs.items():
         if params.get(k, None) is None:
             raise KeyError("Paramater %s is not a valid argument for show()" % k)
         else:
@@ -305,7 +305,8 @@ def _show(assembly, **kwargs):
         rotation=params["rotation"],
         zoom=params["zoom"],
         mac_scrollbar=params["mac_scrollbar"],
-        timeit=params["timeit"])
+        timeit=params["timeit"],
+    )
 
     d.info.ready_msg(d.cq_view.grid.step)
 

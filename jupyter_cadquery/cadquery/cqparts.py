@@ -18,6 +18,7 @@ try:
     import cqparts
     from cqparts.display.material import COLOR
     from cqparts.utils.geometry import CoordSystem
+
     has_cqparts = True
 except:
     has_cqparts = False

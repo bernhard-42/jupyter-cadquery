@@ -16,14 +16,22 @@
 
 import math
 import warnings
+
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from pythreejs import GridHelper, LineSegmentsGeometry, LineSegments2, LineMaterial, ShaderMaterial, ShaderLib
+    from pythreejs import (
+        GridHelper,
+        LineSegmentsGeometry,
+        LineSegments2,
+        LineMaterial,
+        ShaderMaterial,
+        ShaderLib,
+    )
 
 import numpy as np
 
-class Helpers(object):
 
+class Helpers(object):
     def __init__(self, bb_center):
         self.bb_center = bb_center
         self.center = (0, 0, 0)
@@ -53,42 +61,47 @@ class Helpers(object):
 
 
 class Grid(Helpers):
-
-    def __init__(self, bb_center=None, maximum=5, ticks=10, colorCenterLine='#aaa', colorGrid='#ddd'):
+    def __init__(
+        self, bb_center=None, maximum=5, ticks=10, colorCenterLine="#aaa", colorGrid="#ddd"
+    ):
         super().__init__(bb_center)
         self.maximum = maximum
         axis_start, axis_end, nice_tick = self.nice_bounds(-maximum, maximum, 2 * ticks)
         self.step = nice_tick
         self.size = axis_end - axis_start
         self.grid = GridHelper(
-            self.size, int(self.size / self.step), colorCenterLine=colorCenterLine, colorGrid=colorGrid)
+            self.size,
+            int(self.size / self.step),
+            colorCenterLine=colorCenterLine,
+            colorGrid=colorGrid,
+        )
         self.set_center(True)
 
     # https://stackoverflow.com/questions/4947682/intelligently-calculating-chart-tick-positions
     def _nice_number(self, value, round_=False):
         exponent = math.floor(math.log(value, 10))
-        fraction = value / 10**exponent
+        fraction = value / 10 ** exponent
 
         if round_:
             if fraction < 1.5:
-                nice_fraction = 1.
-            elif fraction < 3.:
-                nice_fraction = 2.
-            elif fraction < 7.:
-                nice_fraction = 5.
+                nice_fraction = 1.0
+            elif fraction < 3.0:
+                nice_fraction = 2.0
+            elif fraction < 7.0:
+                nice_fraction = 5.0
             else:
-                nice_fraction = 10.
+                nice_fraction = 10.0
         else:
             if fraction <= 1:
-                nice_fraction = 1.
+                nice_fraction = 1.0
             elif fraction <= 2:
-                nice_fraction = 2.
+                nice_fraction = 2.0
             elif fraction <= 5:
-                nice_fraction = 5.
+                nice_fraction = 5.0
             else:
-                nice_fraction = 10.
+                nice_fraction = 10.0
 
-        return nice_fraction * 10**exponent
+        return nice_fraction * 10 ** exponent
 
     def nice_bounds(self, axis_start, axis_end, num_ticks=10):
         axis_width = axis_end - axis_start
@@ -119,16 +132,21 @@ class Grid(Helpers):
 
 
 class Axes(Helpers):
-
     def __init__(self, bb_center, length=1, width=3):
         super().__init__(bb_center)
 
         self.axes = []
-        for vector, color in zip(([length, 0, 0], [0, length, 0], [0, 0, length]), ('red', 'green', 'blue')):
+        for vector, color in zip(
+            ([length, 0, 0], [0, length, 0], [0, 0, length]), ("red", "green", "blue")
+        ):
             self.axes.append(
                 LineSegments2(
-                    LineSegmentsGeometry(positions=[[self.center, self._shift(self.center, vector)]]),
-                    LineMaterial(linewidth=width, color=color)))
+                    LineSegmentsGeometry(
+                        positions=[[self.center, self._shift(self.center, vector)]]
+                    ),
+                    LineMaterial(linewidth=width, color=color),
+                )
+            )
 
     def _shift(self, v, offset):
         return [x + o for x, o in zip(v, offset)]
@@ -149,9 +167,14 @@ class Axes(Helpers):
 
 
 class CustomMaterial(ShaderMaterial):
-
     def __init__(self, typ):
-        self.types = {'diffuse': 'c', 'uvTransform': 'm3', 'normalScale': 'v2', 'fogColor': 'c', 'emissive': 'c'}
+        self.types = {
+            "diffuse": "c",
+            "uvTransform": "m3",
+            "normalScale": "v2",
+            "fogColor": "c",
+            "emissive": "c",
+        }
 
         shader = ShaderLib[typ]
 
@@ -171,7 +194,9 @@ class CustomMaterial(ShaderMaterial):
         uniforms = shader["uniforms"]
         uniforms["alpha"] = dict(value=0.7)
 
-        super().__init__(uniforms=uniforms, vertexShader=vertexShader, fragmentShader=fragmentShader)
+        super().__init__(
+            uniforms=uniforms, vertexShader=vertexShader, fragmentShader=fragmentShader
+        )
         self.lights = True
 
     @property
@@ -193,9 +218,9 @@ class CustomMaterial(ShaderMaterial):
     def update(self, key, value):
         uniforms = dict(**self.uniforms)
         if self.types.get(key) is None:
-            uniforms[key] = {'value': value}
+            uniforms[key] = {"value": value}
         else:
-            uniforms[key] = {'type': self.types.get(key), 'value': value}
+            uniforms[key] = {"type": self.types.get(key), "value": value}
         self.uniforms = uniforms
         self.needsUpdate = True
 
@@ -206,28 +231,25 @@ def rad(deg):
 
 def rotate_x(vector, angle):
     angle = rad(angle)
-    mat = np.array([
-        [1, 0,                0              ], 
-        [0, math.cos(angle), -math.sin(angle)], 
-        [0, math.sin(angle),  math.cos(angle)]])
+    mat = np.array(
+        [[1, 0, 0], [0, math.cos(angle), -math.sin(angle)], [0, math.sin(angle), math.cos(angle)]]
+    )
     return tuple(np.matmul(mat, vector))
 
 
 def rotate_y(vector, angle):
     angle = rad(angle)
-    mat = np.array([
-        [ math.cos(angle), 0, math.sin(angle)], 
-        [ 0,               1, 0              ], 
-        [-math.sin(angle), 0, math.cos(angle)]])
+    mat = np.array(
+        [[math.cos(angle), 0, math.sin(angle)], [0, 1, 0], [-math.sin(angle), 0, math.cos(angle)]]
+    )
     return tuple(np.matmul(mat, vector))
 
 
 def rotate_z(vector, angle):
     angle = rad(angle)
-    mat = np.array([
-        [math.cos(angle), -math.sin(angle), 0], 
-        [math.sin(angle),  math.cos(angle), 0], 
-        [0,                0,               1]])
+    mat = np.array(
+        [[math.cos(angle), -math.sin(angle), 0], [math.sin(angle), math.cos(angle), 0], [0, 0, 1]]
+    )
     return tuple(np.matmul(mat, vector))
 
 

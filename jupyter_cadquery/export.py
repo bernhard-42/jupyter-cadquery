@@ -32,4 +32,9 @@ def exportSTL(cadObj, filename, linear_deflection=0.01, angular_deflection=0.5):
         print("Unsupported CAD object %s, convert to Assembly or Part" % type(cadObj))
 
     if compound is not None:
-        write_stl_file(compound, filename, linear_deflection=linear_deflection, angular_deflection=angular_deflection)
+        write_stl_file(
+            compound,
+            filename,
+            linear_deflection=linear_deflection,
+            angular_deflection=angular_deflection,
+        )
