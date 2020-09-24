@@ -15,7 +15,6 @@
 #
 
 from cadquery.occ_impl.shapes import Face, Edge, Wire
-from OCC.Core.gp import gp_Vec
 from cadquery import Workplane, Shape, Vector, Vertex
 
 from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _Vertices, _show
@@ -181,8 +180,9 @@ def show(*cad_objs, **kwargs):
     - height:        Height of the CAD view (default=600)
     - tree_width:    Width of navigation tree part of the view (default=250)
     - cad_width:     Width of CAD view part of the view (default=800)
-    - quality:       Mesh quality for tesselation (default=0.5)
-    - edge_accuracy: Presicion of edge discretisation (default=0.5)
+    - quality:           Tolerance for tessellation (default=0.1)
+    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
+    - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
     - axes:          Show axes (default=False)
     - axes0:         Show axes at (0,0,0) (default=False)
     - grid:          Show grid (default=False)

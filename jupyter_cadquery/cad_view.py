@@ -45,100 +45,22 @@ import time
 
 import numpy as np
 
-from OCC.Core.Visualization import Tesselator
-from OCC.Extend.TopologyUtils import is_edge, is_vertex, discretize_edge
-from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid, TopoDS_Wire, TopoDS_Vertex
-from OCC.Core.Bnd import Bnd_Box
-from OCC.Core.BRep import BRep_Tool
-from OCC.Core.BRepBndLib import brepbndlib_Add
-from OCC.Core.gp import gp_Vec, gp_Pnt
-
 from .widgets import state_diff
-from .cad_helpers import Grid, Axes, CustomMaterial, rotate
-
-
-def _decomp(a):
-    [item] = a.items()
-    return item
-
-
-def _explode(edge_list):
-    return [[edge_list[i], edge_list[i + 1]] for i in range(len(edge_list) - 1)]
-
-
-def _flatten(nested_list):
-    return [y for x in nested_list for y in x]
-
-
-def distance(v1, v2):
-    return np.linalg.norm([x - y for x, y in zip(v1, v2)])
-
-
-class BoundingBox(object):
-    def __init__(self, objects, tol=1e-5):
-        self.tol = tol
-        bbox = reduce(self._opt, [self.bbox(obj) for obj in objects])
-        self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
-        self.xsize = self.xmax - self.xmin
-        self.ysize = self.ymax - self.ymin
-        self.zsize = self.zmax - self.zmin
-        self.center = (
-            self.xmin + self.xsize / 2.0,
-            self.ymin + self.ysize / 2.0,
-            self.zmin + self.zsize / 2.0,
-        )
-        self.max = reduce(lambda a, b: max(abs(a), abs(b)), bbox)
-
-    def max_dist_from_center(self):
-        return max(
-            [
-                distance(self.center, v)
-                for v in itertools.product(
-                    (self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax)
-                )
-            ]
-        )
-
-    def max_dist_from_origin(self):
-        return max(
-            [
-                np.linalg.norm(v)
-                for v in itertools.product(
-                    (self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax)
-                )
-            ]
-        )
-
-    def _opt(self, b1, b2):
-        return (
-            min(b1[0], b2[0]),
-            max(b1[1], b2[1]),
-            min(b1[2], b2[2]),
-            max(b1[3], b2[3]),
-            min(b1[4], b2[4]),
-            max(b1[5], b2[5]),
-        )
-
-    def _bounding_box(self, obj, tol=1e-5):
-        bbox = Bnd_Box()
-        bbox.SetGap(self.tol)
-        brepbndlib_Add(obj, bbox, True)
-        values = bbox.Get()
-        return (values[0], values[3], values[1], values[4], values[2], values[5])
-
-    def bbox(self, objects):
-        bb = reduce(self._opt, [self._bounding_box(obj) for obj in objects])
-        return bb
-
-    def __repr__(self):
-        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % (
-            self.xmin,
-            self.xmax,
-            self.ymin,
-            self.ymax,
-            self.zmin,
-            self.zmax,
-        )
+from .cad_helpers import Grid, Axes, CustomMaterial
+from .utils import (
+    is_vertex,
+    is_edge,
+    is_compound,
+    discretize_edge,
+    get_faces,
+    get_edges,
+    get_point,
+    tessellate,
+    explode,
+    flatten,
+    rotate,
+    BoundingBox,
+)
 
 
 class CadqueryView(object):
@@ -146,8 +68,9 @@ class CadqueryView(object):
         self,
         width=600,
         height=400,
-        quality=0.5,
-        edge_accuracy=0.5,
+        quality=0.1,
+        angular_tolerance=0.1,
+        edge_accuracy=0.01,
         render_edges=True,
         default_mesh_color=None,
         default_edge_color=None,
@@ -158,6 +81,7 @@ class CadqueryView(object):
         self.width = width
         self.height = height
         self.quality = quality
+        self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
         self.info = info
@@ -234,6 +158,7 @@ class CadqueryView(object):
         edge_lines = None
         points = None
         shape_mesh = None
+
         start_render_time = self._start_timer()
         if shape is not None:
             if mesh_color is None:
@@ -243,49 +168,23 @@ class CadqueryView(object):
             if vertex_color is None:
                 vertex_color = self.default_edge_color  # same as edge_color
 
-            # BEGIN copy
-            # The next lines are copied with light modifications from
-            # https://github.com/tpaviot/pythonocc-core/blob/master/src/Display/WebGl/jupyter_renderer.py
-
-            # first, compute the tesselation
+            # Compute the tesselation
             start_tesselation_time = self._start_timer()
-            tess = Tesselator(shape)
-            tess.Compute(
-                uv_coords=False,
-                compute_edges=render_edges,
-                mesh_quality=self.quality,
-                parallel=True,
+
+            np_vertices, np_triangles, np_normals = tessellate(
+                shape, self.quality, self.angular_tolerance
             )
-            self._stop_timer("tesselation time", start_tesselation_time)
-            # get vertices and normals
-            vertices_position = tess.GetVerticesPositionAsTuple()
 
-            number_of_triangles = tess.ObjGetTriangleCount()
-            number_of_vertices = len(vertices_position)
-
-            # number of vertices should be a multiple of 3
-            if number_of_vertices % 3 != 0:
-                raise AssertionError("Wrong number of vertices")
-            if number_of_triangles * 9 != number_of_vertices:
-                raise AssertionError("Wrong number of triangles")
-
-            # then we build the vertex and faces collections as numpy ndarrays
-            np_vertices = np.array(vertices_position, dtype="float32").reshape(
-                int(number_of_vertices / 3), 3
-            )
-            # Note: np_faces is just [0, 1, 2, 3, 4, 5, ...], thus arange is used
-            np_faces = np.arange(np_vertices.shape[0], dtype="uint32")
-
-            # compute normals
-            np_normals = np.array(tess.GetNormalsAsTuple(), dtype="float32").reshape(-1, 3)
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
+
+            self._stop_timer("tesselation time", start_tesselation_time)
 
             # build a BufferGeometry instance
             shape_geometry = BufferGeometry(
                 attributes={
                     "position": BufferAttribute(np_vertices),
-                    "index": BufferAttribute(np_faces),
+                    "index": BufferAttribute(np_triangles.ravel()),
                     "normal": BufferAttribute(np_normals),
                 }
             )
@@ -297,23 +196,12 @@ class CadqueryView(object):
             )
 
             if render_edges:
-                edge_list = list(
-                    map(
-                        lambda i_edge: [
-                            tess.GetEdgeVertex(i_edge, i_vert)
-                            for i_vert in range(tess.ObjEdgeGetVertexCount(i_edge))
-                        ],
-                        range(tess.ObjGetEdgeCount()),
-                    )
-                )
-
-            # END copy
+                edges = get_edges(shape)
 
         if vertices is not None:
             vertices_list = []
             for vertex in vertices:
-                p = BRep_Tool.Pnt(vertex)
-                vertices_list.append((p.X(), p.Y(), p.Z()))
+                vertices_list.append(get_point(vertex))
             vertices_list = np.array(vertices_list, dtype=np.float32)
 
             attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
@@ -328,7 +216,7 @@ class CadqueryView(object):
             self._stop_timer("discretize time", start_discretize_time)
 
         if edge_list is not None:
-            edge_list = _flatten(list(map(_explode, edge_list)))
+            edge_list = flatten(list(map(explode, edge_list)))
             lines = LineSegmentsGeometry(positions=edge_list)
             mat = LineMaterial(linewidth=edge_width, color=edge_color)
             edge_lines = LineSegments2(lines, mat, name="edges_%d" % shape_index)
@@ -438,7 +326,7 @@ class CadqueryView(object):
             if isinstance(obj, LineSegments2):
                 _, ind = obj.name.split("_")
                 ind = int(ind)
-                if isinstance(self.shapes[ind]["shape"][0], TopoDS_Compound):
+                if is_compound(self.shapes[ind]["shape"][0]):
                     obj.material.color = "#000" if value else self.default_edge_color
 
     def set_visibility(self, ind, i, state):
@@ -451,7 +339,7 @@ class CadqueryView(object):
         def f(states):
             diffs = state_diff(states.get("old"), states.get("new"))
             for diff in diffs:
-                obj, val = _decomp(diff)
+                [[obj, val]] = diff.items()
                 self.set_visibility(mapping[obj], val["icon"], val["new"])
 
         return f
@@ -540,9 +428,9 @@ class CadqueryView(object):
         self.camera = CombinedCamera(
             position=camera_position,
             width=self.width,
-            height=self.height
-            #            far=10 * orbit_radius,
-            #            orthoFar=10 * orbit_radius
+            height=self.height,
+            far=10 * orbit_radius,
+            orthoFar=10 * orbit_radius,
         )
         self.camera.up = camera_up
 
