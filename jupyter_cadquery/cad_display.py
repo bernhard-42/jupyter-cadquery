@@ -18,7 +18,20 @@ import platform
 from os.path import join, dirname
 import numpy as np
 
-from ipywidgets import ToggleButton, Label, Checkbox, Layout, HBox, VBox, Output, Box, FloatSlider, Tab, HTML, Box
+from ipywidgets import (
+    ToggleButton,
+    Label,
+    Checkbox,
+    Layout,
+    HBox,
+    VBox,
+    Output,
+    Box,
+    FloatSlider,
+    Tab,
+    HTML,
+    Box,
+)
 from IPython.display import display
 
 from .widgets import ImageButton, TreeView, state_diff, UNSELECTED, SELECTED, MIXED, EMPTY
@@ -28,11 +41,16 @@ SIDECAR = None
 
 
 class Info(object):
-
     def __init__(self, width=230, height=300):
         self.html = HTML(
             value="",
-            layout=Layout(width=("%dpx" % width), height=("%dpx" % height), border="solid 1px #ddd", overflow="scroll"))
+            layout=Layout(
+                width=("%dpx" % width),
+                height=("%dpx" % height),
+                border="solid 1px #ddd",
+                overflow="scroll",
+            ),
+        )
         self.width = width
         self.height = height
         self.number = 0
@@ -52,14 +70,15 @@ class Info(object):
         for n, chunk in self.chunks:
             html += '<tr style="vertical-align: text-top;">'
             html += '<td><pre style="color: #aaa; white-space: nowrap">[%2d]</pre></td>' % n
-            html += '<td>%s</td>' % chunk
+            html += "<td>%s</td>" % chunk
             html += "</tr>"
         html += "</table>"
 
         self.html.value = html
 
     def ready_msg(self, tick_size):
-        html = """
+        html = (
+            """
         <b>Rendering done</b>
         <table>
             <tr class="small_table" >                      <td>Tick size</td>  <td>%s mm</td> </tr>
@@ -67,27 +86,36 @@ class Info(object):
             <tr class="small_table" style="color: green;"> <td>Y-Axis</td>     <td>Green</td>  </tr>
             <tr class="small_table" style="color: blue;">  <td>Z-Axis</td>     <td>Blue</td>   </tr>
         </table>
-        """ % tick_size
+        """
+            % tick_size
+        )
         self.add_html(html)
 
     def bb_info(self, name, bb):
-        html = """
+        html = (
+            """
         <b> Object: '%s':</b>
         <table>
-        """ % name
+        """
+            % name
+        )
         html += '<tr class="small_table"><th></th><th>min</th><th>max</th><th>center</th></tr>'
 
         for t, a, c in zip(("x", "y", "z"), bb[:3], bb[3]):
             html += """<tr class="small_table">
                 <th>%s</th><td>%5.2f</td><td>%5.2f</td><td>%5.2f</td>
             </tr>
-            """ % (t, a[0], a[1], c)
+            """ % (
+                t,
+                a[0],
+                a[1],
+                c,
+            )
         html += "</table>"
         self.add_html(html)
 
 
 class Clipping(object):
-
     def __init__(self, image_path, out, cq_view, width):
         self.image_path = image_path
         self.cq_view = cq_view
@@ -112,7 +140,8 @@ class Clipping(object):
             image_path="%s/plane.png" % (self.image_path),
             tooltip="Set clipping plane",
             type=str(ind),
-            layout=Layout(margin="0px 10px 0px 0px"))
+            layout=Layout(margin="0px 10px 0px 0px"),
+        )
         button.on_click(self.handler)
         button.add_class("view_button")
 
@@ -124,10 +153,11 @@ class Clipping(object):
             description="",
             disabled=False,
             continuous_update=False,
-            orientation='horizontal',
+            orientation="horizontal",
             readout=True,
-            readout_format='.2f',
-            layout=Layout(width="%dpx" % (self.width - 20)))
+            readout_format=".2f",
+            layout=Layout(width="%dpx" % (self.width - 20)),
+        )
 
         slider.observe(self.cq_view.clip(ind), "value")
         return [HBox([button, label]), slider]
@@ -150,14 +180,15 @@ class CadqueryDisplay(object):
         "rear": (0, -1, 0),
         "top": (0, 0, 1),
         "bottom": (0, 0, -1),
-        "isometric": (1, 1, 1)
+        "isometric": (1, 1, 1),
     }
     defaults = {
         "height": 600,
         "tree_width": 250,
         "cad_width": 800,
-        "quality": 0.5,
-        "edge_accuracy": 0.5,
+        "quality": 0.1,
+        "angular_tolerance": 0.1,
+        "edge_accuracy": 0.01,
         "axes": False,
         "axes0": False,
         "grid": False,
@@ -168,7 +199,7 @@ class CadqueryDisplay(object):
         "zoom": 2.5,
         "mac_scrollbar": True,
         "sidecar": None,
-        "timeit": False
+        "timeit": False,
     }
 
     def __init__(self, default_mesh_color=None, default_edge_color=None):
@@ -187,14 +218,15 @@ class CadqueryDisplay(object):
                 UNSELECTED: "%s/no_shape.png" % self.image_path,
                 SELECTED: "%s/shape.png" % self.image_path,
                 MIXED: "%s/mix_shape.png" % self.image_path,
-                EMPTY: "%s/empty_shape.png" % self.image_path
+                EMPTY: "%s/empty_shape.png" % self.image_path,
             },
             {
                 UNSELECTED: "%s/no_mesh.png" % self.image_path,
                 SELECTED: "%s/mesh.png" % self.image_path,
                 MIXED: "%s/mix_mesh.png" % self.image_path,
-                EMPTY: "%s/empty_mesh.png" % self.image_path
-            }]
+                EMPTY: "%s/empty_mesh.png" % self.image_path,
+            },
+        ]
 
     def create_button(self, image_name, handler, tooltip):
         button = ImageButton(
@@ -202,7 +234,8 @@ class CadqueryDisplay(object):
             height=28,
             image_path="%s/%s.png" % (self.image_path, image_name),
             tooltip="Change view to %s" % image_name,
-            type=image_name)
+            type=image_name,
+        )
         button.on_click(handler)
         button.add_class("view_button")
         return button
@@ -219,31 +252,34 @@ class CadqueryDisplay(object):
         except:
             print(msg)
 
-    def create(self,
-                states,
-                shapes,
-                mapping,
-                tree,
-                height=600,
-                tree_width=250,
-                cad_width=800,
-                quality=0.5,
-                edge_accuracy=0.5,
-                axes=True,
-                axes0=False,
-                grid=True,
-                ortho=True,
-                transparent=False,
-                position=None,
-                rotation=None,
-                zoom=2.5,
-                mac_scrollbar=True,
-                timeit=False):
+    def create(
+        self,
+        states,
+        shapes,
+        mapping,
+        tree,
+        height=600,
+        tree_width=250,
+        cad_width=800,
+        quality=0.1,
+        angular_tolerance=0.1,
+        edge_accuracy=0.01,
+        axes=True,
+        axes0=False,
+        grid=True,
+        ortho=True,
+        transparent=False,
+        position=None,
+        rotation=None,
+        zoom=2.5,
+        mac_scrollbar=True,
+        timeit=False,
+    ):
 
         if position is None:
             position = (1, 1, 1)
         if rotation is None:
-            rotation = (0, 0 ,0)
+            rotation = (0, 0, 0)
 
         if platform.system() != "Darwin":
             mac_scrollbar = False
@@ -258,7 +294,11 @@ class CadqueryDisplay(object):
 
         self.output = Box([self.info.html])
         self.output.layout = Layout(
-            height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll")
+            height="%dpx" % output_height,
+            width="%dpx" % tree_width,
+            overflow_y="scroll",
+            overflow_x="scroll",
+        )
 
         self.output.add_class("view_output")
 
@@ -268,10 +308,12 @@ class CadqueryDisplay(object):
             height=height,
             quality=quality,
             edge_accuracy=edge_accuracy,
+            angular_tolerance=angular_tolerance,
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             info=self.info,
-            timeit=timeit)
+            timeit=timeit,
+        )
 
         for shape in shapes:
             self.cq_view.add_shape(shape["name"], shape["shape"], shape["color"])
@@ -284,14 +326,13 @@ class CadqueryDisplay(object):
             clipping.add_slider(bb.max * 1.2, -bb.max * 1.3, bb.max * 1.2, 0.01, normal)
 
         # Tree widget to change visibility
-#       tree_height = height - output_height - 35
+        #       tree_height = height - output_height - 35
         tree_view = TreeView(
             image_paths=self.image_paths,
             tree=tree,
             state=states,
-            layout=Layout(
-                height="%dpx" % (height * 0.6 - 25),
-                width="%dpx" % (tree_width - 20)))
+            layout=Layout(height="%dpx" % (height * 0.6 - 25), width="%dpx" % (tree_width - 20)),
+        )
         tree_view.add_class("view_tree")
         tree_view.add_class("scroll-area")
         if mac_scrollbar:
@@ -299,8 +340,10 @@ class CadqueryDisplay(object):
 
         tree_view.observe(self.cq_view.change_visibility(mapping), "state")
 
-        tab_contents = ['Tree', 'Clipping']
-        tree_clipping = Tab(layout=Layout(height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width))
+        tab_contents = ["Tree", "Clipping"]
+        tree_clipping = Tab(
+            layout=Layout(height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width)
+        )
         tree_clipping.children = [tree_view, clipping.create()]
         for i in range(len(tab_contents)):
             tree_clipping.set_title(i, tab_contents[i])
@@ -312,8 +355,12 @@ class CadqueryDisplay(object):
             self.create_checkbox("grid", "Grid", grid, self.cq_view.toggle_grid),
             self.create_checkbox("zero", "@ 0", axes0, self.cq_view.toggle_center),
             self.create_checkbox("ortho", "Ortho", ortho, self.cq_view.toggle_ortho),
-            self.create_checkbox("transparent", "Transparency", transparent, self.cq_view.toggle_transparent),
-            self.create_checkbox("black_edges", "Black Edges", False, self.cq_view.toggle_black_edges),
+            self.create_checkbox(
+                "transparent", "Transparency", transparent, self.cq_view.toggle_transparent
+            ),
+            self.create_checkbox(
+                "black_edges", "Black Edges", False, self.cq_view.toggle_black_edges
+            ),
         ]
         self.check_controls[-2].add_class("indent")
 
@@ -337,21 +384,23 @@ class CadqueryDisplay(object):
                 tooltip = "Reset view"
             else:
                 tooltip = "Change view to %s" % typ
-            button = self.create_button(typ, self.cq_view.change_view(typ, CadqueryDisplay.directions), tooltip)
+            button = self.create_button(
+                typ, self.cq_view.change_view(typ, CadqueryDisplay.directions), tooltip
+            )
             self.view_controls.append(button)
 
-        return HBox([
-            VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
-            VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer])
-        ])
-
+        return HBox(
+            [
+                VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
+                VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer]),
+            ]
+        )
 
     def sidecar_display(self, widget, sidecar):
         sidecar.clear_output(True)
         with sidecar:
             display(widget)
         print("Done, using side car '%s'" % sidecar.title)
-
 
     def display(self, widget, sidecar=None):
         if sidecar is None:
@@ -370,6 +419,7 @@ def set_sidecar(title):
     global SIDECAR
     try:
         from sidecar import Sidecar
+
         SIDECAR = Sidecar(title=title)
     except:
         print("Warning: module sidecar not installed")

@@ -19,104 +19,69 @@ import itertools
 from functools import reduce
 
 import warnings
+
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from pythreejs import (CombinedCamera, BufferAttribute, BufferGeometry, Plane, Mesh, LineSegmentsGeometry,
-                           LineMaterial, LineSegments2, AmbientLight, DirectionalLight, Scene, OrbitControls, Renderer,
-                           Picker, Group, Points, PointsMaterial)
+    from pythreejs import (
+        CombinedCamera,
+        BufferAttribute,
+        BufferGeometry,
+        Plane,
+        Mesh,
+        LineSegmentsGeometry,
+        LineMaterial,
+        LineSegments2,
+        AmbientLight,
+        DirectionalLight,
+        Scene,
+        OrbitControls,
+        Renderer,
+        Picker,
+        Group,
+        Points,
+        PointsMaterial,
+    )
 import time
 
 import numpy as np
 
-from OCC.Core.Visualization import Tesselator
-from OCC.Extend.TopologyUtils import is_edge, is_vertex, discretize_edge
-from OCC.Core.TopoDS import TopoDS_Compound, TopoDS_Solid, TopoDS_Wire, TopoDS_Vertex
-from OCC.Core.Bnd import Bnd_Box
-from OCC.Core.BRep import BRep_Tool
-from OCC.Core.BRepBndLib import brepbndlib_Add
-from OCC.Core.gp import gp_Vec, gp_Pnt
-
 from .widgets import state_diff
-from .cad_helpers import Grid, Axes, CustomMaterial, rotate
-
-
-def _decomp(a):
-    [item] = a.items()
-    return item
-
-
-def _explode(edge_list):
-    return [[edge_list[i], edge_list[i + 1]] for i in range(len(edge_list) - 1)]
-
-
-def _flatten(nested_list):
-    return [y for x in nested_list for y in x]
-
-
-def distance(v1, v2):
-    return np.linalg.norm([x - y for x, y in zip(v1, v2)])
-
-
-class BoundingBox(object):
-
-    def __init__(self, objects, tol=1e-5):
-        self.tol = tol
-        bbox = reduce(self._opt, [self.bbox(obj) for obj in objects])
-        self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
-        self.xsize = self.xmax - self.xmin
-        self.ysize = self.ymax - self.ymin
-        self.zsize = self.zmax - self.zmin
-        self.center = (self.xmin + self.xsize / 2.0, self.ymin + self.ysize / 2.0, self.zmin + self.zsize / 2.0)
-        self.max = reduce(lambda a, b: max(abs(a), abs(b)), bbox)
-
-    def max_dist_from_center(self):
-        return max([
-            distance(self.center, v)
-            for v in itertools.product((self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax))
-        ])
-
-    def max_dist_from_origin(self):
-        return max([
-            np.linalg.norm(v)
-            for v in itertools.product((self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax))
-        ])
-
-    def _opt(self, b1, b2):
-        return (min(b1[0], b2[0]), max(b1[1], b2[1]), min(b1[2], b2[2]), max(b1[3], b2[3]), min(b1[4], b2[4]),
-                max(b1[5], b2[5]))
-
-    def _bounding_box(self, obj, tol=1e-5):
-        bbox = Bnd_Box()
-        bbox.SetGap(self.tol)
-        brepbndlib_Add(obj, bbox, True)
-        values = bbox.Get()
-        return (values[0], values[3], values[1], values[4], values[2], values[5])
-
-    def bbox(self, objects):
-        bb = reduce(self._opt, [self._bounding_box(obj) for obj in objects])
-        return bb
-
-    def __repr__(self):
-        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % \
-               (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)
+from .cad_helpers import Grid, Axes, CustomMaterial
+from .utils import (
+    is_vertex,
+    is_edge,
+    is_compound,
+    discretize_edge,
+    get_faces,
+    get_edges,
+    get_point,
+    tessellate,
+    explode,
+    flatten,
+    rotate,
+    BoundingBox,
+)
 
 
 class CadqueryView(object):
-
-    def __init__(self,
-                 width=600,
-                 height=400,
-                 quality=0.5,
-                 edge_accuracy=0.5,
-                 render_edges=True,
-                 default_mesh_color=None,
-                 default_edge_color=None,
-                 info=None,
-                 timeit=False):
+    def __init__(
+        self,
+        width=600,
+        height=400,
+        quality=0.1,
+        angular_tolerance=0.1,
+        edge_accuracy=0.01,
+        render_edges=True,
+        default_mesh_color=None,
+        default_edge_color=None,
+        info=None,
+        timeit=False,
+    ):
 
         self.width = width
         self.height = height
         self.quality = quality
+        self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
         self.info = info
@@ -149,7 +114,7 @@ class CadqueryView(object):
         self.savestate = None
 
     def _format_color(self, r, g, b):
-        return '#%02x%02x%02x' % (r, g, b)
+        return "#%02x%02x%02x" % (r, g, b)
 
     def _start_timer(self):
         return time.time() if self.timeit else None
@@ -173,24 +138,27 @@ class CadqueryView(object):
         material.update("roughness", 0.8)
         return material
 
-    def _render_shape(self,
-                      shape_index,
-                      shape=None,
-                      edges=None,
-                      vertices=None,
-                      mesh_color=None,
-                      edge_color=None,
-                      vertex_color=None,
-                      render_edges=False,
-                      edge_width=1,
-                      vertex_width=5,
-                      transparent=False,
-                      opacity=1.0):
+    def _render_shape(
+        self,
+        shape_index,
+        shape=None,
+        edges=None,
+        vertices=None,
+        mesh_color=None,
+        edge_color=None,
+        vertex_color=None,
+        render_edges=False,
+        edge_width=1,
+        vertex_width=5,
+        transparent=False,
+        opacity=1.0,
+    ):
 
         edge_list = None
         edge_lines = None
         points = None
         shape_mesh = None
+
         start_render_time = self._start_timer()
         if shape is not None:
             if mesh_color is None:
@@ -200,64 +168,40 @@ class CadqueryView(object):
             if vertex_color is None:
                 vertex_color = self.default_edge_color  # same as edge_color
 
-            # BEGIN copy
-            # The next lines are copied with light modifications from
-            # https://github.com/tpaviot/pythonocc-core/blob/master/src/Display/WebGl/jupyter_renderer.py
-
-            # first, compute the tesselation
+            # Compute the tesselation
             start_tesselation_time = self._start_timer()
-            tess = Tesselator(shape)
-            tess.Compute(uv_coords=False, compute_edges=render_edges, mesh_quality=self.quality, parallel=True)
-            self._stop_timer("tesselation time", start_tesselation_time)
-            # get vertices and normals
-            vertices_position = tess.GetVerticesPositionAsTuple()
 
-            number_of_triangles = tess.ObjGetTriangleCount()
-            number_of_vertices = len(vertices_position)
+            np_vertices, np_triangles, np_normals = tessellate(
+                shape, self.quality, self.angular_tolerance
+            )
 
-            # number of vertices should be a multiple of 3
-            if number_of_vertices % 3 != 0:
-                raise AssertionError("Wrong number of vertices")
-            if number_of_triangles * 9 != number_of_vertices:
-                raise AssertionError("Wrong number of triangles")
-
-            # then we build the vertex and faces collections as numpy ndarrays
-            np_vertices = np.array(vertices_position, dtype='float32')\
-                            .reshape(int(number_of_vertices / 3), 3)
-            # Note: np_faces is just [0, 1, 2, 3, 4, 5, ...], thus arange is used
-            np_faces = np.arange(np_vertices.shape[0], dtype='uint32')
-
-            # compute normals
-            np_normals = np.array(tess.GetNormalsAsTuple(), dtype='float32').reshape(-1, 3)
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
+
+            self._stop_timer("tesselation time", start_tesselation_time)
 
             # build a BufferGeometry instance
             shape_geometry = BufferGeometry(
                 attributes={
-                    'position': BufferAttribute(np_vertices),
-                    'index': BufferAttribute(np_faces),
-                    'normal': BufferAttribute(np_normals)
-                })
+                    "position": BufferAttribute(np_vertices),
+                    "index": BufferAttribute(np_triangles.ravel()),
+                    "normal": BufferAttribute(np_normals),
+                }
+            )
 
             shp_material = self._material(mesh_color, transparent=True, opacity=opacity)
 
-            shape_mesh = Mesh(geometry=shape_geometry, material=shp_material, name="mesh_%d" % shape_index)
+            shape_mesh = Mesh(
+                geometry=shape_geometry, material=shp_material, name="mesh_%d" % shape_index
+            )
 
             if render_edges:
-                edge_list = list(
-                    map(
-                        lambda i_edge:
-                        [tess.GetEdgeVertex(i_edge, i_vert) for i_vert in range(tess.ObjEdgeGetVertexCount(i_edge))],
-                        range(tess.ObjGetEdgeCount())))
-
-            # END copy
+                edges = get_edges(shape)
 
         if vertices is not None:
             vertices_list = []
             for vertex in vertices:
-                p = BRep_Tool.Pnt(vertex)
-                vertices_list.append((p.X(), p.Y(), p.Z()))
+                vertices_list.append(get_point(vertex))
             vertices_list = np.array(vertices_list, dtype=np.float32)
 
             attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
@@ -269,10 +213,10 @@ class CadqueryView(object):
         if edges is not None:
             start_discretize_time = self._start_timer()
             edge_list = [discretize_edge(edge, self.edge_accuracy) for edge in edges]
-            self._stop_timer("discretize time",start_discretize_time)
+            self._stop_timer("discretize time", start_discretize_time)
 
         if edge_list is not None:
-            edge_list = _flatten(list(map(_explode, edge_list)))
+            edge_list = flatten(list(map(explode, edge_list)))
             lines = LineSegmentsGeometry(positions=edge_list)
             mat = LineMaterial(linewidth=edge_width, color=edge_color)
             edge_lines = LineSegments2(lines, mat, name="edges_%d" % shape_index)
@@ -325,7 +269,7 @@ class CadqueryView(object):
         plane.normal = self._minus(self.direction())
 
     def _update(self):
-        self.controller.exec_three_obj_method('update')
+        self.controller.exec_three_obj_method("update")
         pass
 
     def _reset(self):
@@ -337,7 +281,6 @@ class CadqueryView(object):
     # UI Handler
 
     def change_view(self, typ, directions):
-
         def reset(b):
             self._reset()
 
@@ -370,7 +313,7 @@ class CadqueryView(object):
         self.axes.set_center(self.bool_or_new(change))
 
     def toggle_ortho(self, change):
-        self.camera.mode = 'orthographic' if self.bool_or_new(change) else 'perspective'
+        self.camera.mode = "orthographic" if self.bool_or_new(change) else "perspective"
 
     def toggle_transparent(self, change):
         value = self.bool_or_new(change)
@@ -383,21 +326,20 @@ class CadqueryView(object):
             if isinstance(obj, LineSegments2):
                 _, ind = obj.name.split("_")
                 ind = int(ind)
-                if isinstance(self.shapes[ind]["shape"][0], TopoDS_Compound):
+                if is_compound(self.shapes[ind]["shape"][0]):
                     obj.material.color = "#000" if value else self.default_edge_color
 
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
         group_index = self.pick_mapping[ind][feature]
         if group_index is not None:
-            self.pickable_objects.children[group_index].visible = (state == 1)
+            self.pickable_objects.children[group_index].visible = state == 1
 
     def change_visibility(self, mapping):
-
         def f(states):
             diffs = state_diff(states.get("old"), states.get("new"))
             for diff in diffs:
-                obj, val = _decomp(diff)
+                [[obj, val]] = diff.items()
                 self.set_visibility(mapping[obj], val["icon"], val["new"])
 
         return f
@@ -416,14 +358,20 @@ class CadqueryView(object):
                 shape = self.shapes[int(ind)]
                 bbox = BoundingBox([shape["shape"]])
 
-                self.info.bb_info(shape["name"], ((bbox.xmin, bbox.xmax), (bbox.ymin, bbox.ymax),
-                                                  (bbox.zmin, bbox.zmax), bbox.center))
+                self.info.bb_info(
+                    shape["name"],
+                    (
+                        (bbox.xmin, bbox.xmax),
+                        (bbox.ymin, bbox.ymax),
+                        (bbox.zmin, bbox.zmax),
+                        bbox.center,
+                    ),
+                )
                 self.pick_last_mesh = value.owner.object
                 self.pick_last_mesh_color = self.pick_last_mesh.material.color
                 self.pick_last_mesh.material.color = self.pick_color
 
     def clip(self, index):
-
         def f(change):
             self.renderer.clippingPlanes[index].constant = change["new"]
 
@@ -435,7 +383,7 @@ class CadqueryView(object):
         self.shapes.append({"name": name, "shape": shape, "color": color})
 
     def is_ortho(self):
-        return (self.camera.mode == "orthographic")
+        return self.camera.mode == "orthographic"
 
     def is_transparent(self):
         return self.pickable_objects.children[0].material.transparent
@@ -449,9 +397,13 @@ class CadqueryView(object):
             s = shape["shape"]
             # Assume that all are edges when first element is an edge
             if is_edge(s[0]):
-                self._render_shape(i, edges=s, render_edges=True, edge_color=shape["color"], edge_width=3)
+                self._render_shape(
+                    i, edges=s, render_edges=True, edge_color=shape["color"], edge_width=3
+                )
             elif is_vertex(s[0]):
-                self._render_shape(i, vertices=s, render_edges=False, vertex_color=shape["color"], vertex_width=6)
+                self._render_shape(
+                    i, vertices=s, render_edges=False, vertex_color=shape["color"], vertex_width=6
+                )
             else:
                 # shape has only 1 object, hence first=True
                 self._render_shape(i, shape=s[0], render_edges=True, mesh_color=shape["color"])
@@ -469,44 +421,50 @@ class CadqueryView(object):
         if rotation != (0, 0, 0):
             position = rotate(position, *rotation)
 
-        camera_position = self._add(self.bb.center,
-                                    self._scale([1, 1, 1] if position is None else self._scale(position)))
+        camera_position = self._add(
+            self.bb.center, self._scale([1, 1, 1] if position is None else self._scale(position))
+        )
 
         self.camera = CombinedCamera(
             position=camera_position,
             width=self.width,
-            height=self.height
-            #            far=10 * orbit_radius,
-            #            orthoFar=10 * orbit_radius
+            height=self.height,
+            far=10 * orbit_radius,
+            orthoFar=10 * orbit_radius,
         )
         self.camera.up = camera_up
 
-        self.camera.mode = 'orthographic'
+        self.camera.mode = "orthographic"
         self.camera.position = camera_position
 
         # Set up lights in every of the 8 corners of the global bounding box
         positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
         key_lights = [
-            DirectionalLight(color='white', position=position, intensity=0.12) for position in positions
+            DirectionalLight(color="white", position=position, intensity=0.12)
+            for position in positions
         ]
         ambient_light = AmbientLight(intensity=1.0)
 
         # Set up Helpers
         self.axes = Axes(bb_center=self.bb.center, length=bb_max * 1.1)
-        self.grid = Grid(bb_center=self.bb.center, maximum=bb_max, colorCenterLine='#aaa', colorGrid='#ddd')
+        self.grid = Grid(
+            bb_center=self.bb.center, maximum=bb_max, colorCenterLine="#aaa", colorGrid="#ddd"
+        )
 
         # Set up scene
         environment = self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
         self.scene = Scene(children=environment + [self.pickable_objects])
 
         # Set up Controllers
-        self.controller = OrbitControls(controlling=self.camera, target=camera_target, target0=camera_target)
+        self.controller = OrbitControls(
+            controlling=self.camera, target=camera_target, target0=camera_target
+        )
 
         # Update controller to instantiate camera position
         self.camera.zoom = zoom
         self._update()
 
-        self.picker = Picker(controlling=self.pickable_objects, event='dblclick')
+        self.picker = Picker(controlling=self.pickable_objects, event="dblclick")
         self.picker.observe(self.pick)
 
         # Create Renderer instance
@@ -516,13 +474,14 @@ class CadqueryView(object):
             controls=[self.controller, self.picker],
             antialias=True,
             width=self.width,
-            height=self.height)
+            height=self.height,
+        )
 
         self.renderer.localClippingEnabled = True
         self.renderer.clippingPlanes = [
             Plane((1, 0, 0), self.grid.size / 2),
             Plane((0, 1, 0), self.grid.size / 2),
-            Plane((0, 0, 1), self.grid.size / 2)
+            Plane((0, 0, 1), self.grid.size / 2),
         ]
 
         # needs to be done after setup of camera

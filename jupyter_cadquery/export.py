@@ -16,20 +16,21 @@
 
 import cadquery as cq
 from .cad_objects import _Assembly, _Part
-from OCC.Extend.DataExchange import write_stl_file
-from OCC.Core.TopoDS import TopoDS_Compound
+from .utils import write_stl_file, is_compound
 
 
-def exportSTL(cadObj, filename, linear_deflection=0.01, angular_deflection=0.5):
+def exportSTL(cadObj, filename, tolerance=1e-3, angular_tolerance=0.1):
     compound = None
     if isinstance(cadObj, (_Assembly, _Part)):
         compound = cadObj.compound()
-    elif isinstance(cadObj, TopoDS_Compound):
+    elif is_compound(cadObj):
         compound = cadObj
     elif isinstance(cadObj, (cq.Shape, cq.Workplane)):
-        compound = Part(cadObj).compound()
+        compound = _Part(cadObj).compound()
     else:
         print("Unsupported CAD object %s, convert to Assembly or Part" % type(cadObj))
 
     if compound is not None:
-        write_stl_file(compound, filename, linear_deflection=linear_deflection, angular_deflection=angular_deflection)
+        write_stl_file(
+            compound, filename, tolerance=tolerance, angular_tolerance=angular_tolerance,
+        )

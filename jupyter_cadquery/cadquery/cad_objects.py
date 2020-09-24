@@ -15,7 +15,6 @@
 #
 
 from cadquery.occ_impl.shapes import Face, Edge, Wire
-from OCC.Core.gp import gp_Vec
 from cadquery import Workplane, Shape, Vector, Vertex
 
 from jupyter_cadquery.cad_objects import _Assembly, _Part, _Edges, _Faces, _Vertices, _show
@@ -24,7 +23,6 @@ from .cqparts import is_cqparts, convert_cqparts
 
 
 class Part(_Part):
-
     def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
@@ -36,7 +34,6 @@ class Part(_Part):
 
 
 class Faces(_Faces):
-
     def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
         super().__init__(_to_occ(faces.combine()), name, color, show_faces, show_edges)
 
@@ -48,7 +45,6 @@ class Faces(_Faces):
 
 
 class Edges(_Edges):
-
     def __init__(self, edges, name="Edges", color=None):
         super().__init__(_to_occ(edges), name, color)
 
@@ -60,7 +56,6 @@ class Edges(_Edges):
 
 
 class Vertices(_Vertices):
-
     def __init__(self, vertices, name="Vertices", color=None):
         super().__init__(_to_occ(vertices), name, color)
 
@@ -72,7 +67,6 @@ class Vertices(_Vertices):
 
 
 class Assembly(_Assembly):
-
     def to_assembly(self):
         return self
 
@@ -103,20 +97,28 @@ def _to_occ(cad_obj):
     else:
         raise NotImplementedError(type(cad_obj))
 
+
 def _parent(cad_obj, obj_id):
     if cad_obj.parent is not None:
         if isinstance(cad_obj.parent.val(), Vector):
-            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
+            return _from_vectorlist(
+                cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False
+            )
         elif isinstance(cad_obj.parent.val(), Vertex):
-            return _from_vertexlist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
+            return _from_vertexlist(
+                cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False
+            )
         elif isinstance(cad_obj.parent.val(), Edge):
-            return _from_edgelist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False)
+            return _from_edgelist(
+                cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8), show_parents=False
+            )
         elif isinstance(cad_obj.parent.val(), Wire):
             return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=(0.8, 0.8, 0.8))]
         else:
             return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False)]
     else:
         return []
+
 
 def _from_facelist(cad_obj, obj_id, name="Faces", show_parents=True):
     result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=(0.8, 0, 0.8))]
@@ -178,8 +180,9 @@ def show(*cad_objs, **kwargs):
     - height:        Height of the CAD view (default=600)
     - tree_width:    Width of navigation tree part of the view (default=250)
     - cad_width:     Width of CAD view part of the view (default=800)
-    - quality:       Mesh quality for tesselation (default=0.5)
-    - edge_accuracy: Presicion of edge discretisation (default=0.5)
+    - quality:           Tolerance for tessellation (default=0.1)
+    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
+    - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
     - axes:          Show axes (default=False)
     - axes0:         Show axes at (0,0,0) (default=False)
     - grid:          Show grid (default=False)
@@ -238,6 +241,7 @@ def auto_show():
     print("Overwriting auto display for cadquery Workplane and Shape")
 
     import cadquery as cq
+
     try:
         del cq.Workplane._repr_html_
         del cq.Shape._repr_html_

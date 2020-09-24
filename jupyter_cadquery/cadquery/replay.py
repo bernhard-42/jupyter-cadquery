@@ -36,7 +36,6 @@ from jupyter_cadquery.cadquery.cqparts import is_cqparts_part, convert_cqparts
 
 
 def attributes(names):
-
     def wrapper(cls):
         for name in names:
 
@@ -58,7 +57,6 @@ def attributes(names):
 
 @attributes(("func", "args", "kwargs", "obj", "children"))
 class Context(object):
-
     def __init__(self):
         self.stack = []
         self.new()
@@ -110,8 +108,14 @@ class Context(object):
         else:
             result = ""
             for i, e in enumerate(self.stack):
-                result += "  >> %d: %s(%s, %s); %s / %s\n" % (i, e["func"], e["args"], e["kwargs"], e["obj"],
-                                                              e["children"])
+                result += "  >> %d: %s(%s, %s); %s / %s\n" % (
+                    i,
+                    e["func"],
+                    e["args"],
+                    e["kwargs"],
+                    e["obj"],
+                    e["children"],
+                )
         return result
 
 
@@ -125,17 +129,26 @@ def _trace(*objs):
 
 
 def _add_context(self, name):
-
     def _blacklist(name):
-        return name.startswith("_") or \
-               name in ("Workplane", "val", "vals", "all", "size", "add", "toOCC",
-                        "findSolid", "findFace", "toSvg", "exportSvg", "largestDimension")
+        return name.startswith("_") or name in (
+            "Workplane",
+            "val",
+            "vals",
+            "all",
+            "size",
+            "add",
+            "toOCC",
+            "findSolid",
+            "findFace",
+            "toSvg",
+            "exportSvg",
+            "largestDimension",
+        )
 
     def _is_recursive(func):
         return func in ["union", "cut", "intersect"]
 
     def intercept(parent, func):
-
         def f(*args, **kwargs):
             _trace("1  calling", func.__name__, args, kwargs)
             _trace(_CTX)
@@ -204,7 +217,6 @@ class Step:
 
 
 class Replay(object):
-
     def __init__(self, debug, cad_width, height):
         self.debug_output = Output()
         self.debug = debug
@@ -213,9 +225,7 @@ class Replay(object):
         self.view = None
 
     def format_steps(self, raw_steps):
-
         def to_code(step, results):
-
             def to_name(obj):
                 if isinstance(obj, cq.Workplane):
                     name = results.get(obj, None)
@@ -225,7 +235,7 @@ class Replay(object):
 
             if step.func != "":
                 if step.func == "newObject":
-                    args = ("...", )
+                    args = ("...",)
                 else:
                     args = tuple([to_name(arg) for arg in step.args])
                 code = "%s%s%s" % ("| " * step.level, step.func, args)
@@ -236,11 +246,11 @@ class Replay(object):
                     code += ", ".join(["%s=%s" % (k, v) for k, v in step.kwargs.items()])
                 code += ")"
                 if step.result_name != "":
-                    code += (" => %s" % step.result_name)
+                    code += " => %s" % step.result_name
             elif step.var != "":
                 code = "%s%s" % ("| " * step.level, step.var)
             else:
-                code = ("ERROR")
+                code = "ERROR"
             return code
 
         steps = []
@@ -280,7 +290,6 @@ class Replay(object):
         return entries
 
     def to_array(self, workplane, level=0, result_name=""):
-
         def walk(caller, level=0, result_name=""):
             stack = [
                 Step(
@@ -289,7 +298,8 @@ class Replay(object):
                     args=caller["args"],
                     kwargs=caller["kwargs"],
                     result_name=result_name,
-                    result_obj=caller["obj"])
+                    result_obj=caller["obj"],
+                )
             ]
             for child in reversed(caller["children"]):
                 stack = walk(child, level + 1) + stack
@@ -335,16 +345,29 @@ class Replay(object):
                 position = self.view.cq_view._sub(position, self.view.cq_view.bb.center)
             if rotation is not None and len(rotation) == 4:
                 rotation = rotation[:3]
-                
+
             # Show new view
-            self.view = self.show(cad_objs, position, rotation, zoom, axes, grid, axes0, ortho, transparent)
+            self.view = self.show(
+                cad_objs, position, rotation, zoom, axes, grid, axes0, ortho, transparent
+            )
 
     def select_handler(self, change):
         with self.debug_output:
             if change["name"] == "index":
                 self.select(change["new"])
 
-    def show(self, cad_objs, position, rotation, zoom, axes=True, grid=True, axes0=True, ortho=True, transparent=True):
+    def show(
+        self,
+        cad_objs,
+        position,
+        rotation,
+        zoom,
+        axes=True,
+        grid=True,
+        axes0=True,
+        ortho=True,
+        transparent=True,
+    ):
 
         self.debug_output.clear_output()
 
@@ -367,12 +390,13 @@ class Replay(object):
                 # show_parents=(len(cad_objs) == 1),
                 position=position,
                 rotation=rotation,
-                zoom=zoom)
+                zoom=zoom
+            )
 
 
 def replay(cad_obj, index=0, debug=False, cad_width=600, height=600):
     r = Replay(debug, cad_width, height)
-    
+
     if isinstance(cad_obj, cq.Workplane):
         workplane = cad_obj
     elif is_cqparts_part(cad_obj):
@@ -388,9 +412,10 @@ def replay(cad_obj, index=0, debug=False, cad_width=600, height=600):
         options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(r.stack)],
         index=r.indexes,
         rows=len(r.stack),
-        description='',
+        description="",
         disabled=False,
-        layout=Layout(width="600px"))
+        layout=Layout(width="600px"),
+    )
     r.select_box.add_class("monospace")
     r.select_box.observe(r.select_handler)
     display(HBox([r.select_box, r.debug_output]))
@@ -405,14 +430,15 @@ def replay(cad_obj, index=0, debug=False, cad_width=600, height=600):
 
 
 def reset_replay():
-
     def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
-        return '%s: %s' % (category.__name__, message)
+        return "%s: %s" % (category.__name__, message)
 
     warn_format = warnings.formatwarning
     warnings.formatwarning = warning_on_one_line
-    warnings.simplefilter('always', RuntimeWarning)
-    warnings.warn('jupyter_cadquery replay is enabled, turn off with disable_replay()', RuntimeWarning)
+    warnings.simplefilter("always", RuntimeWarning)
+    warnings.warn(
+        "jupyter_cadquery replay is enabled, turn off with disable_replay()", RuntimeWarning
+    )
     warnings.formatwarning = warn_format
 
     _CTX.clear()
@@ -427,8 +453,8 @@ def enable_replay(debug=False):
     cq.Workplane.__getattribute__ = _add_context
 
     ip = get_ipython()
-    if not 'reset_replay' in [f.__name__ for f in ip.events.callbacks['pre_run_cell']]:
-        ip.events.register('pre_run_cell', reset_replay)
+    if not "reset_replay" in [f.__name__ for f in ip.events.callbacks["pre_run_cell"]]:
+        ip.events.register("pre_run_cell", reset_replay)
 
 
 def disable_replay():
@@ -436,5 +462,6 @@ def disable_replay():
     cq.Workplane.__getattribute__ = object.__getattribute__
 
     ip = get_ipython()
-    if 'reset_replay' in [f.__name__ for f in ip.events.callbacks['pre_run_cell']]:
-        ip.events.unregister('pre_run_cell', reset_replay)
+    if "reset_replay" in [f.__name__ for f in ip.events.callbacks["pre_run_cell"]]:
+        ip.events.unregister("pre_run_cell", reset_replay)
+

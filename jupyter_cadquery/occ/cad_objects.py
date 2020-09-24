@@ -18,7 +18,6 @@ from jupyter_cadquery.cad_objects import _Assembly, _Part, _show
 
 
 class Part(_Part):
-
     def __init__(self, shape, name="part", color=None, show_faces=True, show_edges=True):
         super().__init__([shape], name, color, show_faces, show_edges)
 
@@ -30,7 +29,6 @@ class Part(_Part):
 
 
 class Assembly(_Assembly):
-
     def to_assembly(self):
         return self
 
@@ -38,26 +36,27 @@ class Assembly(_Assembly):
         return show(self, grid=grid, axes=axes)
 
 
-def show(cad_obj,**kwargs):
+def show(cad_obj, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:
-    - height:        Height of the CAD view (default=600)
-    - tree_width:    Width of navigation tree part of the view (default=250)
-    - cad_width:     Width of CAD view part of the view (default=800)
-    - quality:       Mesh quality for tesselation (default=0.5)
-    - edge_accuracy: Presicion of edge discretizaion (default=0.5)
-    - axes:          Show axes (default=False)
-    - axes0:         Show axes at (0,0,0) (default=False)
-    - grid:          Show grid (default=False)
-    - ortho:         Use orthographic projections (default=True)
-    - transparent:   Show objects transparent (default=False)
-    - position:      Relative camera position that will be scaled (default=(1, 1, 1))
-    - rotation:      z, y and y rotation angles of position (default=(0, 0, 0))
-    - zoom:          Zoom factor of view (default=2.5)
-    - mac_scrollbar: Prettify scrollbasrs on Macs (default=True)
-    - sidecar:       Use provided sidecar (default=None)
-    - timeit:        Show rendering times (default=False)
+    - height:            Height of the CAD view (default=600)
+    - tree_width:        Width of navigation tree part of the view (default=250)
+    - cad_width:         Width of CAD view part of the view (default=800)
+    - quality:           Tolerance for tessellation (default=0.1)
+    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
+    - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
+    - axes:              Show axes (default=False)
+    - axes0:             Show axes at (0,0,0) (default=False)
+    - grid:              Show grid (default=False)
+    - ortho:             Use orthographic projections (default=True)
+    - transparent:       Show objects transparent (default=False)
+    - position:          Relative camera position that will be scaled (default=(1, 1, 1))
+    - rotation:          z, y and y rotation angles of position (default=(0, 0, 0))
+    - zoom:              Zoom factor of view (default=2.5)
+    - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
+    - sidecar:           Use provided sidecar (default=None)
+    - timeit:            Show rendering times (default=False)
     """
     assembly = None
     if isinstance(cad_obj, (Assembly, Part)):
