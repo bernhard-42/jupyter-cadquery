@@ -262,3 +262,33 @@ Notes:
 
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
+
+## Development setup
+
+To work with the latest master of `caduery` and `jupyter-cadquery`, clone both repos and use:
+
+```bash
+# install jupyter-cadquery
+cd jupyter-cadquery
+conda env create -f ./environment.yml -n cq-ocp
+pip install jupyterlab==2.2.8
+jupyter-labextension install --no-build $(cat labextensions.txt)
+jupyter lab build --dev-build=True --minimize=False
+
+# uninstall pythonocc
+conda uninstall pythonocc-core oce
+
+# install cadquery qith OCP from master
+conda install -c conda-forge -c cadquery cadquery=master
+
+# optional: install necessary cadquery branch
+cd cadquery
+git checkout -b assembly
+git pull origin assembly #  or git pull upstream assembly
+pip install .
+pip install nptyping numpy scipy
+
+# install latest jupyter cadquery
+cd jupyter-cadquery
+pip install .
+```
