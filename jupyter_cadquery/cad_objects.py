@@ -59,12 +59,26 @@ class _CADObject(object):
         if isinstance(self.color, str):
             if self.color[0] == "#":
                 return self.color
-        else:
-            # Note: (1,1,1) will be interpreted as (1,1,1). Use (255,255,255) if needed
-            if any((c < 1) for c in self.color):
-                return "rgb(%d, %d, %d)" % tuple([c * 255 for c in self.color])
+        elif isinstance(self.color, (list, tuple)) and len(self.color) > 0:
+            single_color = isinstance(self.color[0], (int, float))
+            colors = [self.color] if single_color else self.color
+
+            result = []
+            for color in colors:
+                if isinstance(color, str):
+                    result.append(color)
+                elif all((c <= 1) for c in color):
+                    # Note: (1,1,1) will be interpreted as (1.0,1.0,1.0) == (255,255,255). 
+                    # Use (1/255,1/255,1/255) if needed
+                    result.append("#%02x%02x%02x" % tuple([int(c * 255) for c in color]))
+                else:
+                    result.append("#%02x%02x%02x" % color)
+            if single_color:
+                return result[0]
             else:
-                return "rgb(%d, %d, %d)" % self.color
+                return result
+        return None
+ 
 
 
 class _Part(_CADObject):

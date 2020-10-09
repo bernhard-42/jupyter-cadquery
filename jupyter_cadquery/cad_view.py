@@ -17,6 +17,7 @@
 import math
 import itertools
 from functools import reduce
+import numpy as np
 
 import warnings
 
@@ -217,9 +218,26 @@ class CadqueryView(object):
 
         if edge_list is not None:
             edge_list = flatten(list(map(explode, edge_list)))
-            lines = LineSegmentsGeometry(positions=edge_list)
-            mat = LineMaterial(linewidth=edge_width, color=edge_color)
-            edge_lines = LineSegments2(lines, mat, name="edges_%d" % shape_index)
+            if isinstance(edge_color, (list, tuple)):
+                if len(edge_list) != len(edge_color):
+                    print("color list and edge list have different length, using first color for all edges")
+                    edge_color = edge_color[0]
+
+            if isinstance(edge_color, (list, tuple)):
+                def to_array(color):
+                    col = color[1:]
+                    if len(col) == 6:
+                        return [int(col[i:i+2], 16) for i in range(0, len(col), 2)]
+                    else:
+                        return [int(c+c, 16) for c in col]
+
+                lines = LineSegmentsGeometry(positions=edge_list, colors=[[to_array(color)]*2 for color in edge_color])
+                mat = LineMaterial(linewidth=edge_width, vertexColors='VertexColors')
+                edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
+            else:
+                lines = LineSegmentsGeometry(positions=edge_list)
+                mat = LineMaterial(linewidth=edge_width, color=edge_color)
+                edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
 
         if shape_mesh is not None or edge_lines is not None or points is not None:
             index_mapping = {"mesh": None, "edges": None, "shape": shape_index}
