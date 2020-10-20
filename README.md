@@ -269,26 +269,20 @@ To work with the latest master of `caduery` and `jupyter-cadquery`, clone both r
 
 ```bash
 # install jupyter-cadquery
+git clone https://github.com/bernhard-42/jupyter-cadquery.git
 cd jupyter-cadquery
 conda env create -f ./environment.yml -n cq-ocp
+conda activate cq-ocp
 pip install jupyterlab==2.2.8
 jupyter-labextension install --no-build $(cat labextensions.txt)
 jupyter lab build --dev-build=True --minimize=False
 
-# uninstall pythonocc
+# Uninstall pythonocc
 conda uninstall pythonocc-core oce
 
-# install cadquery qith OCP from master
+# Install cadquery with OCP from master
 conda install -c conda-forge -c cadquery cadquery=master
 
-# optional: install necessary cadquery branch
-cd cadquery
-git checkout -b assembly
-git pull origin assembly #  or git pull upstream assembly
-pip install .
-pip install nptyping numpy scipy
-
-# install latest jupyter cadquery
-cd jupyter-cadquery
+# Install latest jupyter cadquery
 pip install .
 ```
