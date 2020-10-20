@@ -265,7 +265,7 @@ Notes:
 
 ## Development setup
 
-To work with the latest master of `caduery` and `jupyter-cadquery`, clone both repos and use:
+To work with the latest master of `caduery` and `jupyter-cadquery`, use:
 
 ```bash
 # install jupyter-cadquery
