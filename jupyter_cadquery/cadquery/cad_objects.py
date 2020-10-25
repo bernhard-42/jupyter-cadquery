@@ -156,7 +156,7 @@ def _parent(cad_obj, obj_id):
 
 
 def _from_facelist(cad_obj, obj_id, name="Faces", show_parents=True):
-    result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=Color((0.8, 0, 0.8)))]
+    result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=Color((0.8, 0.0, 0.8)))]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
