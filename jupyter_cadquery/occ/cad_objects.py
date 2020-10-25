@@ -18,7 +18,9 @@ from jupyter_cadquery.cad_objects import _Assembly, _Part, _show
 
 
 class Part(_Part):
-    def __init__(self, shape, name="part", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, shape, name="part", color=None, show_faces=True, show_edges=True
+    ):
         super().__init__([shape], name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -55,7 +57,7 @@ def show(cad_obj, **kwargs):
     - rotation:          z, y and y rotation angles of position (default=(0, 0, 0))
     - zoom:              Zoom factor of view (default=2.5)
     - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
-    - sidecar:           Use provided sidecar (default=None)
+    - display:           Select display: "sidecar", "cell", "html"
     - timeit:            Show rendering times (default=False)
     """
     assembly = None

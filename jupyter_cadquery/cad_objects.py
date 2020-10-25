@@ -26,6 +26,8 @@ from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
 from jupyter_cadquery.utils import Color
 
 PART_ID = 0
+SIDECAR = None
+
 
 #
 # Simple Part and Assembly classes
@@ -230,7 +232,7 @@ def set_defaults(
     rotation=(0, 0, 0),
     zoom=2.5,
     mac_scrollbar=True,
-    sidecar=None,
+    display="cell",
     timeit=False,
 ):
     """Set defaults for CAD viewer
@@ -250,7 +252,7 @@ def set_defaults(
     - rotation:      z, y and y rotation angles of position
     - zoom:          Zoom factor of view
     - mac_scrollbar: Prettify scrollbasrs on Macs
-    - sidecar:       Use provided sidecar
+    - display:       Select display: "sidecar", "cell", "html"
     - timeit:        Show rendering times
 
     For example isometric projection can be achieved in two ways:
@@ -269,12 +271,11 @@ def set_defaults(
     CadqueryDisplay.defaults["transparent"] = transparent
     CadqueryDisplay.defaults["position"] = position
     CadqueryDisplay.defaults["rotation"] = rotation
-    # for zoom == 1 viewing has a bug, so slightly increase it
     if zoom == 1:
-        zoom = 1 + 1e-6
+        zoom = 1 + 1e-6  # for zoom == 1 viewing has a bug, so slightly increase it
     CadqueryDisplay.defaults["zoom"] = zoom
     CadqueryDisplay.defaults["mac_scrollbar"] = mac_scrollbar
-    CadqueryDisplay.defaults["sidecar"] = sidecar
+    CadqueryDisplay.defaults["display"] = display
     CadqueryDisplay.defaults["timeit"] = timeit
 
 
@@ -299,9 +300,20 @@ def reset_defaults():
         "rotation": (0, 0, 0),
         "zoom": 2.5,
         "mac_scrollbar": True,
-        "sidecar": None,
+        "display": "cell",
         "timeit": False,
     }
+
+
+def set_sidecar(title):
+    global SIDECAR
+    try:
+        from sidecar import Sidecar
+
+        SIDECAR = Sidecar(title=title)
+        set_defaults(display="sidecar")
+    except:
+        print("Warning: module sidecar not installed")
 
 
 def _show(assembly, **kwargs):
@@ -339,6 +351,9 @@ def _show(assembly, **kwargs):
 
     d.info.ready_msg(d.cq_view.grid.step)
 
-    d.display(widget, params["sidecar"])
+    if params["display"] == "sidecar":
+        d.display(widget, SIDECAR)
+    else:
+        d.display(widget)
 
     return d

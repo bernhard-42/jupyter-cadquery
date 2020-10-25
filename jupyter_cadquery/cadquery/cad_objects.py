@@ -222,23 +222,23 @@ def show(*cad_objs, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:
-    - height:        Height of the CAD view (default=600)
-    - tree_width:    Width of navigation tree part of the view (default=250)
-    - cad_width:     Width of CAD view part of the view (default=800)
+    - height:            Height of the CAD view (default=600)
+    - tree_width:        Width of navigation tree part of the view (default=250)
+    - cad_width:         Width of CAD view part of the view (default=800)
     - quality:           Tolerance for tessellation (default=0.1)
     - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
     - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
-    - axes:          Show axes (default=False)
-    - axes0:         Show axes at (0,0,0) (default=False)
-    - grid:          Show grid (default=False)
-    - ortho:         Use orthographic projections (default=True)
-    - transparent:   Show objects transparent (default=False)
-    - position:      Relative camera position that will be scaled (default=(1, 1, 1))
-    - rotation:      z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
-    - zoom:          Zoom factor of view (default=2.5)
-    - mac_scrollbar: Prettify scrollbasrs on Macs (default=True)
-    - sidecar:       Use provided sidecar (default=None)
-    - timeit:        Show rendering times (default=False)
+    - axes:              Show axes (default=False)
+    - axes0:             Show axes at (0,0,0) (default=False)
+    - grid:              Show grid (default=False)
+    - ortho:             Use orthographic projections (default=True)
+    - transparent:       Show objects transparent (default=False)
+    - position:          Relative camera position that will be scaled (default=(1, 1, 1))
+    - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
+    - zoom:              Zoom factor of view (default=2.5)
+    - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
+    - display:           Select display: "sidecar", "cell", "html"
+    - timeit:            Show rendering times (default=False)
     """
     assembly = Assembly([], "Assembly")
     obj_id = 0
