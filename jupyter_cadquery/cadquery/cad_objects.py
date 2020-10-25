@@ -246,6 +246,18 @@ def show(*cad_objs, **kwargs):
         if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Vertices)):
             assembly.add(cad_obj)
 
+        elif isinstance(cad_obj, Edge):
+            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id))
+
+        elif isinstance(cad_obj, Face):
+            assembly.add_list(_from_facelist(Workplane(cad_obj), obj_id))
+
+        elif isinstance(cad_obj, Wire):
+            assembly.add(_from_wirelist(Workplane(cad_obj), obj_id))
+
+        elif isinstance(cad_obj, Vertex):
+            assembly.add_list(_from_vertexlist(Workplane(cad_obj), obj_id))
+
         elif is_cqparts(cad_obj):
             assembly = convert_cqparts(cad_obj)
 
