@@ -146,6 +146,13 @@ class BoundingBox(object):
         bb = reduce(self._opt, [self._bounding_box(obj) for obj in objects])
         return bb
 
+    def is_empty(self, eps=0.01):
+        return (
+            (abs(self.xmax - self.xmin) < 0.01)
+            and (abs(self.ymax - self.ymin) < 0.01)
+            and (abs(self.zmax - self.zmin) < 0.01)
+        )
+
     def __repr__(self):
         return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % (
             self.xmin,
