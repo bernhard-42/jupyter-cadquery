@@ -16,6 +16,7 @@
 
 import math
 import itertools
+from cadquery.occ_impl.shapes import Vertex
 import numpy as np
 
 import warnings
@@ -456,6 +457,18 @@ class CadqueryView(object):
 
         # Get the overall bounding box
         self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
+        if self.bb.is_empty():
+            # add origin to increase bounding box to also show origin
+            self.bb = BoundingBox(
+                [[Vertex.makeVertex(0, 0, 0).wrapped]]
+                + [shape["shape"] for shape in self.shapes]
+            )
+            if self.bb.is_empty():
+                # looks like only one vertex in origin is to be shown
+                self.bb = BoundingBox(
+                    [[Vertex.makeVertex(0.1, 0.1, 0.1).wrapped]]
+                    + [shape["shape"] for shape in self.shapes]
+                )
 
         bb_max = self.bb.max
         orbit_radius = 2 * self.bb.max_dist_from_center()
