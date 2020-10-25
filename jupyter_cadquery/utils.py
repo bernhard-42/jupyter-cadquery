@@ -19,7 +19,13 @@ from OCP.GCPnts import (
     GCPnts_UniformDeflection,
 )
 
-from OCP.TopAbs import TopAbs_ShapeEnum, TopAbs_Orientation, TopAbs_VERTEX, TopAbs_EDGE, TopAbs_FACE
+from OCP.TopAbs import (
+    TopAbs_ShapeEnum,
+    TopAbs_Orientation,
+    TopAbs_VERTEX,
+    TopAbs_EDGE,
+    TopAbs_FACE,
+)
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS, TopoDS_Shape, TopoDS_Compound
 from OCP.TopAbs import TopAbs_FACE
@@ -56,7 +62,9 @@ class BoundingBox(object):
             [
                 distance(self.center, v)
                 for v in itertools.product(
-                    (self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax)
+                    (self.xmin, self.xmax),
+                    (self.ymin, self.ymax),
+                    (self.zmin, self.zmax),
                 )
             ]
         )
@@ -66,7 +74,9 @@ class BoundingBox(object):
             [
                 np.linalg.norm(v)
                 for v in itertools.product(
-                    (self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax)
+                    (self.xmin, self.xmax),
+                    (self.ymin, self.ymax),
+                    (self.zmin, self.zmax),
                 )
             ]
         )
@@ -133,7 +143,9 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
         internal = face.Orientation() == TopAbs_Orientation.TopAbs_INTERNAL
 
         # add vertices
-        vertices += [(v.X(), v.Y(), v.Z()) for v in (v.Transformed(Trsf) for v in poly.Nodes())]
+        vertices += [
+            (v.X(), v.Y(), v.Z()) for v in (v.Transformed(Trsf) for v in poly.Nodes())
+        ]
 
         # add triangles
         triangles += [
@@ -176,15 +188,19 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
 
 # Source pythonocc-core: Extend/TopologyUtils.py
 def discretize_edge(a_topods_edge, deflection=0.1, algorithm="QuasiUniformDeflection"):
-    """ Take a TopoDS_Edge and returns a list of points
+    """Take a TopoDS_Edge and returns a list of points
     The more deflection is small, the more the discretization is precise,
     i.e. the more points you get in the returned points
     algorithm: to choose in ["UniformAbscissa", "QuasiUniformDeflection"]
     """
     if not is_edge(a_topods_edge):
-        raise AssertionError("You must provide a TopoDS_Edge to the discretize_edge function.")
+        raise AssertionError(
+            "You must provide a TopoDS_Edge to the discretize_edge function."
+        )
     if a_topods_edge.IsNull():
-        print("Warning : TopoDS_Edge is null. discretize_edge will return an empty list of points.")
+        print(
+            "Warning : TopoDS_Edge is null. discretize_edge will return an empty list of points."
+        )
         return []
     curve_adaptator = BRepAdaptor_Curve(a_topods_edge)
     first = curve_adaptator.FirstParameter()
@@ -301,7 +317,11 @@ def rad(deg):
 def rotate_x(vector, angle):
     angle = rad(angle)
     mat = np.array(
-        [[1, 0, 0], [0, math.cos(angle), -math.sin(angle)], [0, math.sin(angle), math.cos(angle)]]
+        [
+            [1, 0, 0],
+            [0, math.cos(angle), -math.sin(angle)],
+            [0, math.sin(angle), math.cos(angle)],
+        ]
     )
     return tuple(np.matmul(mat, vector))
 
@@ -309,7 +329,11 @@ def rotate_x(vector, angle):
 def rotate_y(vector, angle):
     angle = rad(angle)
     mat = np.array(
-        [[math.cos(angle), 0, math.sin(angle)], [0, 1, 0], [-math.sin(angle), 0, math.cos(angle)]]
+        [
+            [math.cos(angle), 0, math.sin(angle)],
+            [0, 1, 0],
+            [-math.sin(angle), 0, math.cos(angle)],
+        ]
     )
     return tuple(np.matmul(mat, vector))
 
@@ -317,7 +341,11 @@ def rotate_y(vector, angle):
 def rotate_z(vector, angle):
     angle = rad(angle)
     mat = np.array(
-        [[math.cos(angle), -math.sin(angle), 0], [math.sin(angle), math.cos(angle), 0], [0, 0, 1]]
+        [
+            [math.cos(angle), -math.sin(angle), 0],
+            [math.sin(angle), math.cos(angle), 0],
+            [0, 0, 1],
+        ]
     )
     return tuple(np.matmul(mat, vector))
 
@@ -331,3 +359,17 @@ def rotate(vector, angle_x=0, angle_y=0, angle_z=0):
     if angle_x != 0:
         v = rotate_x(v, angle_x)
     return v
+
+
+def pp_vec(v):
+    return "(" + ", ".join([f"{o:10.5f}" for o in v]) + ")"
+
+
+def pp_loc(loc, format=True):
+    T = loc.wrapped.Transformation()
+    t = T.Transforms()
+    q = T.GetRotation()
+    if format:
+        return pp_vec(t) + ", " + pp_vec((q.X(), q.Y(), q.Z(), q.W()))
+    else:
+        return (t, (q.X(), q.Y(), q.Z(), q.W()))
