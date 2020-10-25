@@ -58,16 +58,17 @@ class Color:
             self.g = c.green
             self.b = c.blue
         elif isinstance(color, (tuple, list)) and len(color) == 3:
-            if all(isinstance(c, float) for c in color) and all(
-                (c <= 1.0) for c in color
-            ):
+            if all((isinstance(c, float) and (c <= 1.0) and (c >= 0.0)) for c in color):
                 self.r, self.g, self.b = (int(c * 255) for c in color)
-            elif all((c <= 255 for c in color)) and all((c >= 0 for c in color)):
+            elif all((isinstance(c, int) and (c <= 255) and (c >= 0)) for c in color):
                 self.r, self.g, self.b = color
             else:
                 self._invalid(color)
         else:
             self._invalid(color)
+
+    def __str__(self):
+        return f"Color({self.r}, {self.g}, {self.b})"
 
     def _invalid(self, color):
         print(f"warning: {color} is an invalid color, using grey (#aaa)")
