@@ -123,7 +123,6 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
     triangulated = BRepTools.Triangulation_s(shape, tolerance)
     if not triangulated:
         # this will add mesh data to the shape and prevent calculating an exact bounding box after this call
-        cleanup = True
         BRepMesh_IncrementalMesh(shape, tolerance, True, angularTolerance)
 
     vertices = []
@@ -131,8 +130,6 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
     normals = []
 
     offset = 0
-
-    explorer = TopExp_Explorer(shape, TopAbs_FACE)
 
     for face in get_faces(shape):
         loc = TopLoc_Location()
@@ -177,7 +174,7 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
 
     if not triangulated:
         # Remove the mesh data again
-        BRepTools.Clean_s(face)
+        BRepTools.Clean_s(shape)
 
     return (
         np.asarray(vertices, dtype=np.float32),
