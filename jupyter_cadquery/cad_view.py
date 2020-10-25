@@ -59,6 +59,7 @@ from .utils import (
     flatten,
     rotate,
     BoundingBox,
+    Color,
 )
 
 
@@ -93,13 +94,9 @@ class CadqueryView(object):
 
         self.bb = None
 
-        self.default_mesh_color = default_mesh_color or self._format_color(
-            166, 166, 166
-        )
-        self.default_edge_color = default_edge_color or self._format_color(
-            128, 128, 128
-        )
-        self.pick_color = self._format_color(232, 176, 36)
+        self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
+        self.default_edge_color = Color(default_edge_color or (128, 128, 128))
+        self.pick_color = Color((232, 176, 36))
 
         self.shapes = []
         self.pickable_objects = Group()
@@ -116,9 +113,6 @@ class CadqueryView(object):
 
         self.savestate = None
         self.tesselated_shapes = {}
-
-    def _format_color(self, r, g, b):
-        return "#%02x%02x%02x" % (r, g, b)
 
     def _start_timer(self):
         return time.time() if self.timeit else None
@@ -193,7 +187,7 @@ class CadqueryView(object):
                 }
             )
             shp_material = self._material(
-                mesh_color, transparent=transparent, opacity=opacity
+                mesh_color.web_color, transparent=transparent, opacity=opacity
             )
 
             shape_mesh = Mesh(
@@ -214,7 +208,7 @@ class CadqueryView(object):
             attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
 
             mat = PointsMaterial(
-                color=vertex_color, sizeAttenuation=False, size=vertex_width
+                color=vertex_color.web_color, sizeAttenuation=False, size=vertex_width
             )
             geom = BufferGeometry(attributes=attributes)
             points = Points(geometry=geom, material=mat)
@@ -229,28 +223,21 @@ class CadqueryView(object):
             if isinstance(edge_color, (list, tuple)):
                 if len(edge_list) != len(edge_color):
                     print(
-                        "color list and edge list have different length, using first color for all edges"
+                        "warning: color list and edge list have different length, using first color for all edges"
                     )
                     edge_color = edge_color[0]
 
             if isinstance(edge_color, (list, tuple)):
 
-                def to_array(color):
-                    col = color[1:]
-                    if len(col) == 6:
-                        return [int(col[i : i + 2], 16) for i in range(0, len(col), 2)]
-                    else:
-                        return [int(c + c, 16) for c in col]
-
                 lines = LineSegmentsGeometry(
                     positions=edge_list,
-                    colors=[[to_array(color)] * 2 for color in edge_color],
+                    colors=[[color.percentage] * 2 for color in edge_color],
                 )
                 mat = LineMaterial(linewidth=edge_width, vertexColors="VertexColors")
                 edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
             else:
                 lines = LineSegmentsGeometry(positions=edge_list)
-                mat = LineMaterial(linewidth=edge_width, color=edge_color)
+                mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
                 edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
 
         self._stop_timer("shape render time", start_render_time)
@@ -349,7 +336,9 @@ class CadqueryView(object):
                 _, ind = obj.name.split("_")
                 ind = int(ind)
                 if is_compound(self.shapes[ind]["shape"][0]):
-                    obj.material.color = "#000" if value else self.default_edge_color
+                    obj.material.color = (
+                        "#000" if value else self.default_edge_color.web_color
+                    )
 
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
@@ -370,7 +359,7 @@ class CadqueryView(object):
         if self.pick_last_mesh != value.owner.object:
             # Reset
             if value.owner.object is None or self.pick_last_mesh is not None:
-                self.pick_last_mesh.material.color = self.pick_last_mesh_color
+                self.pick_last_mesh.material.color = self.pick_last_mesh_color.web_color
                 self.pick_last_mesh = None
                 self.pick_last_mesh_color = None
 
@@ -390,8 +379,8 @@ class CadqueryView(object):
                     ),
                 )
                 self.pick_last_mesh = value.owner.object
-                self.pick_last_mesh_color = self.pick_last_mesh.material.color
-                self.pick_last_mesh.material.color = self.pick_color
+                self.pick_last_mesh_color = self.pick_last_mesh.material.color.web_color
+                self.pick_last_mesh.material.color = self.pick_color.web_color
 
     def clip(self, index):
         def f(change):
@@ -401,7 +390,7 @@ class CadqueryView(object):
 
     # public methods to add shapes and render the view
 
-    def add_shape(self, name, shape, color="#ff0000"):
+    def add_shape(self, name, shape, color):
         self.shapes.append({"name": name, "shape": shape, "color": color})
 
     def is_ortho(self):

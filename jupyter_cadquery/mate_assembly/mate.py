@@ -47,16 +47,6 @@ class Mate:
             + axis * axis.dot(v) * (1 - cos(angle))
         )
 
-    def moved(self, loc: Location) -> "Mate":
-        def move(pnt: Vector, vec: Vector, loc: Location) -> Tuple[Vector, Vector]:
-            reloc = cast(Edge, Edge.makeLine(pnt, pnt + vec).moved(loc))
-            v1, v2 = reloc.startPoint(), reloc.endPoint()
-            return v1, v2 - v1
-
-        pnt, x_dir = move(self.pnt, self.x_dir, loc)
-        _, z_dir = move(self.pnt, self.z_dir, loc)
-        return Mate(pnt, z_dir, x_dir)
-
     def xr(self, angle: float) -> "Mate":
         a = angle / 180 * pi
         self.y_dir = Mate._rotate(self.y_dir, self.x_dir, a)
@@ -75,25 +65,27 @@ class Mate:
         self.y_dir = Mate._rotate(self.y_dir, self.z_dir, a)
         return self
 
-    def _translate(self, axis: Vector, dist: float):
+    def translate(self, axis: Vector, dist: float):
         self.pnt = self.pnt + axis * dist
 
     def xt(self, dist: float) -> "Mate":
-        self._translate(self.x_dir, dist)
+        self.translate(self.x_dir, dist)
         return self
 
     def yt(self, dist: float) -> "Mate":
-        self._translate(self.y_dir, dist)
+        self.translate(self.y_dir, dist)
         return self
 
     def zt(self, dist: float) -> "Mate":
-        self._translate(self.z_dir, dist)
+        self.translate(self.z_dir, dist)
         return self
 
-    def to_edge(self, loc=None, scale=4) -> Workplane:
-        mate = Workplane()
-        for d in (self.x_dir, self.y_dir, self.z_dir):
-            edge = Edge.makeLine(self.pnt, self.pnt + d * scale)
-            mate.objects.append(edge if loc is None else edge.moved(loc))
+    def moved(self, loc: Location) -> "Mate":
+        def move(pnt: Vector, vec: Vector, loc: Location) -> Tuple[Vector, Vector]:
+            reloc = cast(Edge, Edge.makeLine(pnt, pnt + vec).moved(loc))
+            v1, v2 = reloc.startPoint(), reloc.endPoint()
+            return v1, v2 - v1
 
-        return mate
+        pnt, x_dir = move(self.pnt, self.x_dir, loc)
+        _, z_dir = move(self.pnt, self.z_dir, loc)
+        return Mate(pnt, z_dir, x_dir)

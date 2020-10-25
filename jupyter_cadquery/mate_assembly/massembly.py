@@ -1,10 +1,8 @@
-from typing import Optional, Union, List, Tuple, cast
+from typing import Optional, Union, Tuple, cast
 
 from cadquery import Shape, Workplane, Location, NearestToPointSelector, Assembly
-from jupyter_cadquery.cadquery import show, Assembly as Parts, Part
 from .mate import Mate
-
-MATE_COLOR = ((255, 0, 0), (0, 255, 0), (0, 0, 255))
+from ..utils import Color
 
 Selector = Tuple[str, Union[str, Tuple[float, float]]]
 
@@ -27,6 +25,14 @@ class MAssembly(Assembly):
             return result
 
         return to_string(self, "")
+
+    @property
+    def web_color(self) -> str:
+        b = lambda x: int(255 * x)
+        if self.color is None:
+            return "#aaa"
+        rgb = self.color.wrapped.GetRGB()
+        return "#%02x%02x%02x" % (b(rgb.Red()), b(rgb.Green()), b(rgb.Blue()))
 
     def add(self, arg, **kwargs) -> "MAssembly":  # type: ignore[override]
         if isinstance(arg, MAssembly):
@@ -69,7 +75,7 @@ class MAssembly(Assembly):
     def find(self, selector: str, *obj_selectors: Selector) -> Optional[Shape]:
         assembly = self.find_assembly(selector)
         if assembly is None:
-            print()
+            print(f"No assembly for '{selector}' found")
             return None
         else:
             return self.find_obj(assembly, obj_selectors)
@@ -94,7 +100,7 @@ class MAssembly(Assembly):
 
     def relocate(self):
         if self.relocated:
-            print("already relocated")
+            print("Already relocated")
         else:
             self.set_origin()
             for _, v in self.mates.items():
@@ -106,64 +112,8 @@ class MAssembly(Assembly):
     def assemble(self, mate_obj: str, mate_target: str):
         m_obj = self.mates[mate_obj]["mate"]
         assy = self.find_assembly(self.mates[mate_obj]["assembly"])
-        if assy is None:
-            print(f"No assembly for '{mate_obj}'")
-        else:
+        if assy is not None:
             m_target = self.mates[mate_target]["mate"]
             assy.loc = m_target.loc * m_obj.loc.inverse
 
         return self
-
-
-def rgb(assy) -> str:
-    b = lambda x: int(255 * x)
-    if assy.color is None:
-        return "#aaa"
-    rgb = assy.color.wrapped.GetRGB()
-    return "#%02x%02x%02x" % (b(rgb.Red()), b(rgb.Green()), b(rgb.Blue()))
-
-
-def _convert(assy, top: "MAssembly", loc: Location = None, mates: bool = False):
-    loc = assy.loc if loc is None else loc * assy.loc
-    color = rgb(assy)
-
-    parent: List[Union[Part, Parts]] = [
-        Part(Workplane(shape.moved(loc)), "%s_%d" % (assy.name, i), color=color)
-        for i, shape in enumerate(assy.shapes)
-    ]
-
-    if mates:
-        if assy.matelist:
-            parent.append(
-                Parts(
-                    [
-                        Part(
-                            top.mates[mate]["mate"].moved(loc).to_edge(),
-                            name=mate,
-                            color=MATE_COLOR,
-                        )
-                        for mate in assy.matelist
-                    ],
-                    name="mates",
-                )
-            )
-
-    children = [_convert(cast("MAssembly", c), top, loc, mates) for c in assy.children]
-    return Parts(parent + children, assy.name)
-
-
-def jc_show(assy, loc=None, mates=False):
-    return show(_convert(assy, assy, mates=mates), axes=True, axes0=True)
-
-
-def jc_show_part(assy: MAssembly, top: MAssembly, loc: Location = None):
-    if loc is None:
-        obj = assy.obj
-        ms = [top.mates[mate]["mate"] for mate in assy.matelist]
-    else:
-        obj = Workplane(assy.obj.val().moved(loc))  # type: ignore
-        ms = [top.mates[mate]["mate"].moved(loc) for mate in assy.matelist]
-    show(
-        Part(obj, name=assy.name),
-        *[Part(m.to_edge(), color=MATE_COLOR) for m in ms],
-    )

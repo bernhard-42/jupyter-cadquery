@@ -23,6 +23,7 @@ from cadquery import Compound
 
 from jupyter_cadquery.cad_display import CadqueryDisplay
 from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
+from jupyter_cadquery.utils import Color
 
 PART_ID = 0
 
@@ -33,7 +34,7 @@ PART_ID = 0
 
 class _CADObject(object):
     def __init__(self):
-        self.color = (232, 176, 36)
+        self.color = Color((232, 176, 36))
 
     def next_id(self):
         global PART_ID
@@ -55,39 +56,22 @@ class _CADObject(object):
     def show(self, grid=False, axes=False):
         raise NotImplementedError("not implemented yet")
 
-    def web_color(self):
-        if isinstance(self.color, str):
-            if self.color[0] == "#":
-                return self.color
-        elif isinstance(self.color, (list, tuple)) and len(self.color) > 0:
-            single_color = isinstance(self.color[0], (int, float))
-            colors = [self.color] if single_color else self.color
-
-            result = []
-            for color in colors:
-                if isinstance(color, str):
-                    result.append(color)
-                elif all((c <= 1) for c in color):
-                    # Note: (1,1,1) will be interpreted as (1.0,1.0,1.0) == (255,255,255). 
-                    # Use (1/255,1/255,1/255) if needed
-                    result.append("#%02x%02x%02x" % tuple([int(c * 255) for c in color]))
-                else:
-                    result.append("#%02x%02x%02x" % color)
-            if single_color:
-                return result[0]
-            else:
-                return result
-        return None
- 
-
 
 class _Part(_CADObject):
-    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, shape, name="Part", color=None, show_faces=True, show_edges=True
+    ):
         super().__init__()
         self.name = name
         self.id = self.next_id()
+
         if color is not None:
-            self.color = color
+            if isinstance(color, (list, tuple)) and isinstance(color[0], Color):
+                self.color = color
+            elif isinstance(color, Color):
+                self.color = color
+            else:
+                self.color = Color(color)
         self.shape = shape
         self.set_states(show_faces, show_edges)
 
@@ -96,13 +80,22 @@ class _Part(_CADObject):
         self.state_edges = SELECTED if show_edges else UNSELECTED
 
     def to_nav_dict(self):
-        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
+        if isinstance(self.color, (tuple, list)):
+            color = (c.web_color for c in self.color)
+        else:
+            color = self.color.web_color
+        return {
+            "type": "leaf",
+            "name": self.name,
+            "id": self.id,
+            "color": color,
+        }
 
     def to_state(self):
         return {str(self.id): [self.state_faces, self.state_edges]}
 
     def collect_shapes(self):
-        return [{"name": self.name, "shape": self.shape, "color": self.web_color()}]
+        return [{"name": self.name, "shape": self.shape, "color": self.color}]
 
     def compound(self):
         return self.shape[0]
@@ -112,9 +105,11 @@ class _Part(_CADObject):
 
 
 class _Faces(_Part):
-    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, faces, name="Faces", color=None, show_faces=True, show_edges=True
+    ):
         super().__init__(faces, name, color, show_faces, show_edges)
-        self.color = (1, 0, 1) if color is None else color
+        self.color = Color(color or (255, 0, 255))
 
 
 class _Edges(_CADObject):
@@ -123,17 +118,26 @@ class _Edges(_CADObject):
         self.shape = edges
         self.name = name
         self.id = self.next_id()
-        self.color = (1, 0, 1) if color is None else color
+        self.color = Color(color or (255, 0, 255))
 
     def to_nav_dict(self):
-        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
+        return {
+            "type": "leaf",
+            "name": self.name,
+            "id": self.id,
+            "color": self.color.web_color,
+        }
 
     def to_state(self):
         return {str(self.id): [EMPTY, SELECTED]}
 
     def collect_shapes(self):
         return [
-            {"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}
+            {
+                "name": self.name,
+                "shape": [edge for edge in self.shape],
+                "color": self.color,
+            }
         ]
 
 
@@ -143,17 +147,26 @@ class _Vertices(_CADObject):
         self.shape = vertices
         self.name = name
         self.id = self.next_id()
-        self.color = (1, 0, 1) if color is None else color
+        self.color = Color(color or (255, 0, 255))
 
     def to_nav_dict(self):
-        return {"type": "leaf", "name": self.name, "id": self.id, "color": self.web_color()}
+        return {
+            "type": "leaf",
+            "name": self.name,
+            "id": self.id,
+            "color": self.color.web_color,
+        }
 
     def to_state(self):
         return {str(self.id): [SELECTED, EMPTY]}
 
     def collect_shapes(self):
         return [
-            {"name": self.name, "shape": [edge for edge in self.shape], "color": self.web_color()}
+            {
+                "name": self.name,
+                "shape": [edge for edge in self.shape],
+                "color": self.color,
+            }
         ]
 
 
@@ -242,7 +255,7 @@ def set_defaults(
 
     For example isometric projection can be achieved in two ways:
     - position = (1, 1, 1)
-    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0) 
+    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
     CadqueryDisplay.defaults["height"] = height
     CadqueryDisplay.defaults["tree_width"] = tree_width

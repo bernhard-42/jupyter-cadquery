@@ -1,7 +1,8 @@
 import itertools
 import numpy as np
+from typing import Union, List, cast
 
-import cadquery as cq
+from cadquery import Workplane, Location, Edge
 from pythreejs import (
     Group,
     CombinedCamera,
@@ -17,23 +18,66 @@ from pythreejs import (
 from jupyter_cadquery.cad_helpers import CustomMaterial
 from jupyter_cadquery.utils import BoundingBox, flatten
 from jupyter_cadquery.cad_view import tessellate
-from .massembly import rgb
+from jupyter_cadquery.cadquery import show, Assembly as Parts, Part
+from .massembly import MAssembly
+from ..utils import Color
 
-MATE_COLOR = ((255, 0, 0), (0, 255, 0), (0, 0, 255))
-
-
-def pp_vec(v):
-    return "(" + ", ".join([f"{o:10.5f}" for o in v]) + ")"
+MATE_COLOR = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
 
 
-def pp_loc(loc, format=True):
-    T = loc.wrapped.Transformation()
-    t = T.Transforms()
-    q = T.GetRotation()
-    if format:
-        return pp_vec(t) + ", " + pp_vec((q.X(), q.Y(), q.Z(), q.W()))
+def to_edge(mate, loc=None, scale=4) -> Workplane:
+    w = Workplane()
+    for d in (mate.x_dir, mate.y_dir, mate.z_dir):
+        edge = Edge.makeLine(mate.pnt, mate.pnt + d * scale)
+        w.objects.append(edge if loc is None else edge.moved(loc))
+
+    return w
+
+
+def _convert(assy, top: MAssembly, loc: Location = None, mates: bool = False):
+    loc = assy.loc if loc is None else loc * assy.loc
+    color = Color(assy.web_color)
+
+    parent: List[Union[Part, Parts]] = [
+        Part(Workplane(shape.moved(loc)), "%s_%d" % (assy.name, i), color=color)
+        for i, shape in enumerate(assy.shapes)
+    ]
+
+    if mates:
+        if assy.matelist:
+            parent.append(
+                Parts(
+                    [
+                        Part(
+                            to_edge(top.mates[mate]["mate"].moved(loc)),
+                            name=mate,
+                            color=MATE_COLOR,
+                        )
+                        for mate in assy.matelist
+                    ],
+                    name="mates",
+                )
+            )
+
+    children = [_convert(cast("MAssembly", c), top, loc, mates) for c in assy.children]
+    return Parts(parent + children, assy.name)
+
+
+def jc_show(assy, loc=None, mates=False):
+    return show(_convert(assy, assy, mates=mates), axes=True, axes0=True)
+
+
+def jc_show_part(assy: MAssembly, top: MAssembly, loc: Location = None):
+    if loc is None:
+        obj = assy.obj
+        ms = [top.mates[mate]["mate"] for mate in assy.matelist]
     else:
-        return (t, (q.X(), q.Y(), q.Z(), q.W()))
+        obj = Workplane(assy.obj.val().moved(loc))  # type: ignore
+        ms = [top.mates[mate]["mate"].moved(loc) for mate in assy.matelist]
+    show(
+        Part(obj, name=assy.name),
+        *[Part(to_edge(m), color=MATE_COLOR) for m in ms],
+    )
 
 
 def material(color, transparent=False, opacity=1.0):
@@ -71,9 +115,7 @@ class MAssemblyRenderer:
 
     def _get_shapes(self, assy, loc=None):
         loc = assy.loc if loc is None else loc * assy.loc
-        parent = [
-            cq.Workplane(shape.located(loc)).val().wrapped for shape in assy.shapes
-        ]
+        parent = [Workplane(shape.located(loc)).val().wrapped for shape in assy.shapes]
         children = [self._get_shapes(c, loc) for c in assy.children]
         return parent + flatten(children)
 
@@ -166,7 +208,7 @@ class MAssemblyRenderer:
                     "normal": BufferAttribute(np_normals),
                 }
             )
-            shape_material = material(rgb(assy))
+            shape_material = material(assy.web_color)
             shape_mesh = Mesh(
                 geometry=shape_geometry, material=shape_material, name=assy.name
             )
