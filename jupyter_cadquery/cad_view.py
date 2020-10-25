@@ -16,7 +16,6 @@
 
 import math
 import itertools
-from functools import reduce
 import numpy as np
 
 import warnings
@@ -53,7 +52,6 @@ from .utils import (
     is_edge,
     is_compound,
     discretize_edge,
-    get_faces,
     get_edges,
     get_point,
     tessellate,
@@ -95,8 +93,12 @@ class CadqueryView(object):
 
         self.bb = None
 
-        self.default_mesh_color = default_mesh_color or self._format_color(166, 166, 166)
-        self.default_edge_color = default_edge_color or self._format_color(128, 128, 128)
+        self.default_mesh_color = default_mesh_color or self._format_color(
+            166, 166, 166
+        )
+        self.default_edge_color = default_edge_color or self._format_color(
+            128, 128, 128
+        )
         self.pick_color = self._format_color(232, 176, 36)
 
         self.shapes = []
@@ -113,6 +115,7 @@ class CadqueryView(object):
         self.renderer = None
 
         self.savestate = None
+        self.tesselated_shapes = {}
 
     def _format_color(self, r, g, b):
         return "#%02x%02x%02x" % (r, g, b)
@@ -189,11 +192,14 @@ class CadqueryView(object):
                     "normal": BufferAttribute(np_normals),
                 }
             )
-
-            shp_material = self._material(mesh_color, transparent=True, opacity=opacity)
+            shp_material = self._material(
+                mesh_color, transparent=transparent, opacity=opacity
+            )
 
             shape_mesh = Mesh(
-                geometry=shape_geometry, material=shp_material, name="mesh_%d" % shape_index
+                geometry=shape_geometry,
+                material=shp_material,
+                name="mesh_%d" % shape_index,
             )
 
             if render_edges:
@@ -207,7 +213,9 @@ class CadqueryView(object):
 
             attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
 
-            mat = PointsMaterial(color=vertex_color, sizeAttenuation=False, size=vertex_width)
+            mat = PointsMaterial(
+                color=vertex_color, sizeAttenuation=False, size=vertex_width
+            )
             geom = BufferGeometry(attributes=attributes)
             points = Points(geometry=geom, material=mat)
 
@@ -220,41 +228,34 @@ class CadqueryView(object):
             edge_list = flatten(list(map(explode, edge_list)))
             if isinstance(edge_color, (list, tuple)):
                 if len(edge_list) != len(edge_color):
-                    print("color list and edge list have different length, using first color for all edges")
+                    print(
+                        "color list and edge list have different length, using first color for all edges"
+                    )
                     edge_color = edge_color[0]
 
             if isinstance(edge_color, (list, tuple)):
+
                 def to_array(color):
                     col = color[1:]
                     if len(col) == 6:
-                        return [int(col[i:i+2], 16) for i in range(0, len(col), 2)]
+                        return [int(col[i : i + 2], 16) for i in range(0, len(col), 2)]
                     else:
-                        return [int(c+c, 16) for c in col]
+                        return [int(c + c, 16) for c in col]
 
-                lines = LineSegmentsGeometry(positions=edge_list, colors=[[to_array(color)]*2 for color in edge_color])
-                mat = LineMaterial(linewidth=edge_width, vertexColors='VertexColors')
+                lines = LineSegmentsGeometry(
+                    positions=edge_list,
+                    colors=[[to_array(color)] * 2 for color in edge_color],
+                )
+                mat = LineMaterial(linewidth=edge_width, vertexColors="VertexColors")
                 edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
             else:
                 lines = LineSegmentsGeometry(positions=edge_list)
                 mat = LineMaterial(linewidth=edge_width, color=edge_color)
                 edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
 
-        if shape_mesh is not None or edge_lines is not None or points is not None:
-            index_mapping = {"mesh": None, "edges": None, "shape": shape_index}
-            if shape_mesh is not None:
-                ind = len(self.pickable_objects.children)
-                self.pickable_objects.add(shape_mesh)
-                index_mapping["mesh"] = ind
-            if edge_lines is not None:
-                ind = len(self.pickable_objects.children)
-                self.pickable_objects.add(edge_lines)
-                index_mapping["edges"] = ind
-            if points is not None:
-                ind = len(self.pickable_objects.children)
-                self.pickable_objects.add(points)
-                index_mapping["mesh"] = ind
-            self.pick_mapping.append(index_mapping)
         self._stop_timer("shape render time", start_render_time)
+
+        return shape_mesh, edge_lines, points
 
     def get_transparent(self):
         # if one object is transparent, all are
@@ -307,7 +308,9 @@ class CadqueryView(object):
             self._update()
 
         def change(b):
-            self.camera.position = self._add(self.bb.center, self._scale(directions[typ]))
+            self.camera.position = self._add(
+                self.bb.center, self._scale(directions[typ])
+            )
             self._update()
 
         if typ == "fit":
@@ -335,8 +338,9 @@ class CadqueryView(object):
 
     def toggle_transparent(self, change):
         value = self.bool_or_new(change)
-        for i in range(0, len(self.pickable_objects.children), 2):
-            self.pickable_objects.children[i].material.transparent = value
+        for obj in self.pickable_objects.children:
+            if isinstance(obj, Mesh):
+                obj.material.transparent = value
 
     def toggle_black_edges(self, change):
         value = self.bool_or_new(change)
@@ -407,24 +411,59 @@ class CadqueryView(object):
         return self.pickable_objects.children[0].material.transparent
 
     def render(self, position=None, rotation=None, zoom=2.5):
+        def _render(i, shape):
+            # Assume that all are edges when first element is an edge
+            if is_edge(shape["shape"][0]):
+                shape_mesh, edge_lines, points = self._render_shape(
+                    i,
+                    edges=shape["shape"],
+                    render_edges=True,
+                    edge_color=shape["color"],
+                    edge_width=3,
+                )
+            elif is_vertex(shape["shape"][0]):
+                shape_mesh, edge_lines, points = self._render_shape(
+                    i,
+                    vertices=shape["shape"],
+                    render_edges=False,
+                    vertex_color=shape["color"],
+                    vertex_width=6,
+                )
+            else:
+                # shape has only 1 object, hence first=True
+                shape_mesh, edge_lines, points = self._render_shape(
+                    i,
+                    shape=shape["shape"][0],
+                    render_edges=True,
+                    mesh_color=shape["color"],
+                )
+            results[i] = (shape_mesh, edge_lines, points)
+
         self.camera_initial_zoom = zoom
+        results = {}
 
         start_render_time = self._start_timer()
         # Render all shapes
         for i, shape in enumerate(self.shapes):
-            s = shape["shape"]
-            # Assume that all are edges when first element is an edge
-            if is_edge(s[0]):
-                self._render_shape(
-                    i, edges=s, render_edges=True, edge_color=shape["color"], edge_width=3
-                )
-            elif is_vertex(s[0]):
-                self._render_shape(
-                    i, vertices=s, render_edges=False, vertex_color=shape["color"], vertex_width=6
-                )
-            else:
-                # shape has only 1 object, hence first=True
-                self._render_shape(i, shape=s[0], render_edges=True, mesh_color=shape["color"])
+            _render(i, shape)
+
+        for i, objects in results.items():
+            (shape_mesh, edge_lines, points) = objects
+            if shape_mesh is not None or edge_lines is not None or points is not None:
+                index_mapping = {"mesh": None, "edges": None, "shape": i}
+                if shape_mesh is not None:
+                    ind = len(self.pickable_objects.children)
+                    self.pickable_objects.add(shape_mesh)
+                    index_mapping["mesh"] = ind
+                if edge_lines is not None:
+                    ind = len(self.pickable_objects.children)
+                    self.pickable_objects.add(edge_lines)
+                    index_mapping["edges"] = ind
+                if points is not None:
+                    ind = len(self.pickable_objects.children)
+                    self.pickable_objects.add(points)
+                    index_mapping["mesh"] = ind
+                self.pick_mapping.append(index_mapping)
 
         # Get the overall bounding box
         self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
@@ -440,7 +479,8 @@ class CadqueryView(object):
             position = rotate(position, *rotation)
 
         camera_position = self._add(
-            self.bb.center, self._scale([1, 1, 1] if position is None else self._scale(position))
+            self.bb.center,
+            self._scale([1, 1, 1] if position is None else self._scale(position)),
         )
 
         self.camera = CombinedCamera(
@@ -466,11 +506,16 @@ class CadqueryView(object):
         # Set up Helpers
         self.axes = Axes(bb_center=self.bb.center, length=bb_max * 1.1)
         self.grid = Grid(
-            bb_center=self.bb.center, maximum=bb_max, colorCenterLine="#aaa", colorGrid="#ddd"
+            bb_center=self.bb.center,
+            maximum=bb_max,
+            colorCenterLine="#aaa",
+            colorGrid="#ddd",
         )
 
         # Set up scene
-        environment = self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
+        environment = (
+            self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
+        )
         self.scene = Scene(children=environment + [self.pickable_objects])
 
         # Set up Controllers
