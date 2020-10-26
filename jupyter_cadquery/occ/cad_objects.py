@@ -45,6 +45,8 @@ def show(cad_obj, **kwargs):
     - height:            Height of the CAD view (default=600)
     - tree_width:        Width of navigation tree part of the view (default=250)
     - cad_width:         Width of CAD view part of the view (default=800)
+    - render_shapes:     Render shapes  (default=True)
+    - render_edges:      Render edges  (default=True)
     - quality:           Tolerance for tessellation (default=0.1)
     - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
     - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
@@ -54,11 +56,16 @@ def show(cad_obj, **kwargs):
     - ortho:             Use orthographic projections (default=True)
     - transparent:       Show objects transparent (default=False)
     - position:          Relative camera position that will be scaled (default=(1, 1, 1))
-    - rotation:          z, y and y rotation angles of position (default=(0, 0, 0))
+    - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
     - zoom:              Zoom factor of view (default=2.5)
     - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
     - display:           Select display: "sidecar", "cell", "html"
+    - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times (default=False)
+
+    For example isometric projection can be achieved in two ways:
+    - position = (1, 1, 1)
+    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
     assembly = None
     if isinstance(cad_obj, (Assembly, Part)):

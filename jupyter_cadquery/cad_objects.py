@@ -21,12 +21,11 @@ from IPython.display import display
 
 from cadquery import Compound
 
-from jupyter_cadquery.cad_display import CadqueryDisplay
+from jupyter_cadquery.cad_display import CadqueryDisplay, get_default
 from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
 from jupyter_cadquery.utils import Color
 
 PART_ID = 0
-SIDECAR = None
 
 
 #
@@ -217,143 +216,22 @@ class _Assembly(_CADObject):
         return Compound._makeCompound(self.compounds())
 
 
-def set_defaults(
-    height=600,
-    tree_width=250,
-    cad_width=800,
-    quality=0.5,
-    edge_accuracy=0.5,
-    axes=False,
-    axes0=False,
-    grid=False,
-    ortho=True,
-    transparent=False,
-    position=(1, 1, 1),
-    rotation=(0, 0, 0),
-    zoom=2.5,
-    mac_scrollbar=True,
-    display="cell",
-    timeit=False,
-):
-    """Set defaults for CAD viewer
-
-    Valid keywords:
-    - height:        Height of the CAD view
-    - tree_width:    Width of navigation tree part of the view
-    - cad_width:     Width of CAD view part of the view
-    - quality:       Mesh quality for tesselation
-    - edge_accuracy: Presicion of edge discretizaion
-    - axes:          Show axes
-    - axes0:         Show axes at (0,0,0)
-    - grid:          Show grid
-    - ortho:         Use orthographic projections
-    - transparent:   Show objects transparent
-    - position:      Relative camera position that will be scaled
-    - rotation:      z, y and y rotation angles of position
-    - zoom:          Zoom factor of view
-    - mac_scrollbar: Prettify scrollbasrs on Macs
-    - display:       Select display: "sidecar", "cell", "html"
-    - timeit:        Show rendering times
-
-    For example isometric projection can be achieved in two ways:
-    - position = (1, 1, 1)
-    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
-    """
-    CadqueryDisplay.defaults["height"] = height
-    CadqueryDisplay.defaults["tree_width"] = tree_width
-    CadqueryDisplay.defaults["cad_width"] = cad_width
-    CadqueryDisplay.defaults["quality"] = quality
-    CadqueryDisplay.defaults["edge_accuracy"] = edge_accuracy
-    CadqueryDisplay.defaults["axes"] = axes
-    CadqueryDisplay.defaults["axes0"] = axes0
-    CadqueryDisplay.defaults["grid"] = grid
-    CadqueryDisplay.defaults["ortho"] = ortho
-    CadqueryDisplay.defaults["transparent"] = transparent
-    CadqueryDisplay.defaults["position"] = position
-    CadqueryDisplay.defaults["rotation"] = rotation
-    if zoom == 1:
-        zoom = 1 + 1e-6  # for zoom == 1 viewing has a bug, so slightly increase it
-    CadqueryDisplay.defaults["zoom"] = zoom
-    CadqueryDisplay.defaults["mac_scrollbar"] = mac_scrollbar
-    CadqueryDisplay.defaults["display"] = display
-    CadqueryDisplay.defaults["timeit"] = timeit
-
-
-def get_defaults():
-    return CadqueryDisplay.defaults
-
-
-def reset_defaults():
-    CadqueryDisplay.defaults = {
-        "height": 600,
-        "tree_width": 250,
-        "cad_width": 800,
-        "quality": 0.1,
-        "angular_tolerance": 0.1,
-        "edge_accuracy": 0.01,
-        "axes": False,
-        "axes0": False,
-        "grid": False,
-        "ortho": True,
-        "transparent": False,
-        "position": (1, 1, 1),
-        "rotation": (0, 0, 0),
-        "zoom": 2.5,
-        "mac_scrollbar": True,
-        "display": "cell",
-        "timeit": False,
-    }
-
-
-def set_sidecar(title):
-    global SIDECAR
-    try:
-        from sidecar import Sidecar
-
-        SIDECAR = Sidecar(title=title)
-        set_defaults(display="sidecar")
-    except:
-        print("Warning: module sidecar not installed")
-
-
 def _show(assembly, **kwargs):
+    for k in kwargs:
+        if get_default(k) is None:
+            raise KeyError("Paramater %s is not a valid argument for show()" % k)
 
     d = CadqueryDisplay()
-    params = d.defaults.copy()
-    for k, v in kwargs.items():
-        if params.get(k, None) is None:
-            raise KeyError("Paramater %s is not a valid argument for show()" % k)
-        else:
-            params[k] = v
-
     widget = d.create(
         states=assembly.to_state(),
         shapes=assembly.collect_shapes(),
         mapping=assembly.obj_mapping(),
         tree=assembly.to_nav_dict(),
-        height=params["height"],
-        tree_width=params["tree_width"],
-        cad_width=params["cad_width"],
-        quality=params["quality"],
-        angular_tolerance=params["angular_tolerance"],
-        edge_accuracy=params["edge_accuracy"],
-        axes=params["axes"],
-        axes0=params["axes0"],
-        grid=params["grid"],
-        ortho=params["ortho"],
-        transparent=params["transparent"],
-        position=params["position"],
-        rotation=params["rotation"],
-        zoom=params["zoom"],
-        mac_scrollbar=params["mac_scrollbar"],
-        timeit=params["timeit"],
+        **kwargs,
     )
 
     d.info.ready_msg(d.cq_view.grid.step)
 
-    if params["display"] == "sidecar":
-        d.display(widget, SIDECAR)
-    else:
-        d.display(widget)
+    d.display(widget)
 
     return d

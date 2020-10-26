@@ -63,8 +63,8 @@ def _convert(assy, top: MAssembly, loc: Location = None, mates: bool = False):
     return Parts(parent + children, assy.name)
 
 
-def jc_show(assy, loc=None, mates=False):
-    return show(_convert(assy, assy, mates=mates), axes=True, axes0=True)
+def jc_show(assy, mates=False, **kwargs):
+    return show(_convert(assy, assy, mates=mates), **kwargs)
 
 
 def jc_show_part(assy: MAssembly, top: MAssembly, loc: Location = None):

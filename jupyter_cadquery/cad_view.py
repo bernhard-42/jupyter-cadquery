@@ -73,6 +73,7 @@ class CadqueryView(object):
         angular_tolerance=0.1,
         edge_accuracy=0.01,
         render_edges=True,
+        render_shapes=True,
         default_mesh_color=None,
         default_edge_color=None,
         info=None,
@@ -85,6 +86,7 @@ class CadqueryView(object):
         self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
+        self.render_shapes = render_shapes
         self.info = info
         self.timeit = timeit
 
@@ -146,7 +148,8 @@ class CadqueryView(object):
         mesh_color=None,
         edge_color=None,
         vertex_color=None,
-        render_edges=False,
+        render_edges=True,
+        render_shapes=True,
         edge_width=1,
         vertex_width=5,
         transparent=False,
@@ -199,6 +202,10 @@ class CadqueryView(object):
 
             if render_edges:
                 edges = get_edges(shape)
+
+            # unset shape_mesh again
+            if not render_shapes:
+                shape_mesh = None
 
         if vertices is not None:
             vertices_list = []
@@ -424,7 +431,8 @@ class CadqueryView(object):
                 shape_mesh, edge_lines, points = self._render_shape(
                     i,
                     shape=shape["shape"][0],
-                    render_edges=True,
+                    render_shapes=self.render_shapes,
+                    render_edges=self.render_edges,
                     mesh_color=shape["color"],
                 )
             results[i] = (shape_mesh, edge_lines, points)

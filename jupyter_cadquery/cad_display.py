@@ -42,6 +42,19 @@ from .widgets import (
 )
 from .cad_view import CadqueryView
 
+SIDECAR = None
+
+
+def set_sidecar(title):
+    global SIDECAR
+    try:
+        from sidecar import Sidecar
+
+        SIDECAR = Sidecar(title=title)
+        set_defaults(display="sidecar")
+    except:
+        print("Warning: module sidecar not installed")
+
 
 class Info(object):
     def __init__(self, width=230, height=300):
@@ -181,6 +194,138 @@ class Clipping(object):
         return VBox(self.sliders)
 
 
+DEFAULTS = {
+    "height": 600,
+    "tree_width": 250,
+    "cad_width": 800,
+    "quality": 0.1,
+    "angular_tolerance": 0.1,
+    "edge_accuracy": 0.01,
+    "axes": False,
+    "axes0": False,
+    "grid": False,
+    "ortho": True,
+    "transparent": False,
+    "position": (1, 1, 1),
+    "rotation": (0, 0, 0),
+    "zoom": 2.5,
+    "mac_scrollbar": True,
+    "display": "cell",
+    "tools": True,
+    "timeit": False,
+}
+
+
+def get_defaults():
+    return DEFAULTS
+
+
+def get_default(key):
+    return DEFAULTS.get(key)
+
+
+def set_defaults(
+    height=600,
+    tree_width=250,
+    cad_width=800,
+    render_shapes=True,
+    render_edges=True,
+    quality=0.5,
+    edge_accuracy=0.5,
+    angular_tolerance=0.1,
+    axes=False,
+    axes0=False,
+    grid=False,
+    ortho=True,
+    transparent=False,
+    position=(1, 1, 1),
+    rotation=(0, 0, 0),
+    zoom=2.5,
+    mac_scrollbar=True,
+    display="cell",
+    tools=True,
+    timeit=False,
+):
+    """Set defaults for CAD viewer
+
+    Valid keywords:
+    - height:            Height of the CAD view (default=600)
+    - tree_width:        Width of navigation tree part of the view (default=250)
+    - cad_width:         Width of CAD view part of the view (default=800)
+    - render_shapes:     Render shapes  (default=True)
+    - render_edges:      Render edges  (default=True)
+    - quality:           Tolerance for tessellation (default=0.1)
+    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
+    - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
+    - axes:              Show axes (default=False)
+    - axes0:             Show axes at (0,0,0) (default=False)
+    - grid:              Show grid (default=False)
+    - ortho:             Use orthographic projections (default=True)
+    - transparent:       Show objects transparent (default=False)
+    - position:          Relative camera position that will be scaled (default=(1, 1, 1))
+    - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
+    - zoom:              Zoom factor of view (default=2.5)
+    - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
+    - display:           Select display: "sidecar", "cell", "html"
+    - tools:             Show the viewer tools like the object tree
+    - timeit:            Show rendering times (default=False)
+
+    For example isometric projection can be achieved in two ways:
+    - position = (1, 1, 1)
+    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
+    """
+    global DEFAULTS
+
+    DEFAULTS["height"] = height
+    DEFAULTS["tree_width"] = tree_width
+    DEFAULTS["cad_width"] = cad_width
+    DEFAULTS["render_shapes"] = render_shapes
+    DEFAULTS["render_edges"] = render_edges
+    DEFAULTS["quality"] = quality
+    DEFAULTS["edge_accuracy"] = edge_accuracy
+    DEFAULTS["angular_tolerance"] = angular_tolerance
+    DEFAULTS["axes"] = axes
+    DEFAULTS["axes0"] = axes0
+    DEFAULTS["grid"] = grid
+    DEFAULTS["ortho"] = ortho
+    DEFAULTS["transparent"] = transparent
+    DEFAULTS["position"] = position
+    DEFAULTS["rotation"] = rotation
+    if zoom == 1:
+        zoom = 1 + 1e-6  # for zoom == 1 viewing has a bug, so slightly increase it
+    DEFAULTS["zoom"] = zoom
+    DEFAULTS["mac_scrollbar"] = mac_scrollbar
+    DEFAULTS["display"] = display
+    DEFAULTS["tools"] = tools
+    DEFAULTS["timeit"] = timeit
+
+
+def reset_defaults():
+    global DEFAULTS
+    DEFAULTS = {
+        "height": 600,
+        "tree_width": 250,
+        "cad_width": 800,
+        "render_shapes": True,
+        "render_edges": True,
+        "quality": 0.1,
+        "edge_accuracy": 0.01,
+        "angular_tolerance": 0.1,
+        "axes": False,
+        "axes0": False,
+        "grid": False,
+        "ortho": True,
+        "transparent": False,
+        "position": (1, 1, 1),
+        "rotation": (0, 0, 0),
+        "zoom": 2.5,
+        "mac_scrollbar": True,
+        "display": "cell",
+        "tools": True,
+        "timeit": False,
+    }
+
+
 class CadqueryDisplay(object):
 
     types = [
@@ -202,25 +347,6 @@ class CadqueryDisplay(object):
         "top": (0, 0, 1),
         "bottom": (0, 0, -1),
         "isometric": (1, 1, 1),
-    }
-    defaults = {
-        "height": 600,
-        "tree_width": 250,
-        "cad_width": 800,
-        "quality": 0.1,
-        "angular_tolerance": 0.1,
-        "edge_accuracy": 0.01,
-        "axes": False,
-        "axes0": False,
-        "grid": False,
-        "ortho": True,
-        "transparent": False,
-        "position": (1, 1, 1),
-        "rotation": (0, 0, 0),
-        "zoom": 2.5,
-        "mac_scrollbar": True,
-        "sidecar": None,
-        "timeit": False,
     }
 
     def __init__(self, default_mesh_color=None, default_edge_color=None):
@@ -248,6 +374,9 @@ class CadqueryDisplay(object):
                 EMPTY: "%s/empty_mesh.png" % self.image_path,
             },
         ]
+
+        self._display = "cell"
+        self._tools = True
 
     def create_button(self, image_name, handler, tooltip):
         button = ImageButton(
@@ -279,30 +408,58 @@ class CadqueryDisplay(object):
         shapes,
         mapping,
         tree,
-        height=600,
-        tree_width=250,
-        cad_width=800,
-        quality=0.1,
-        angular_tolerance=0.1,
-        edge_accuracy=0.01,
-        axes=True,
-        axes0=False,
-        grid=True,
-        ortho=True,
-        transparent=False,
+        render_shapes=None,
+        render_edges=None,
+        height=None,
+        tree_width=None,
+        cad_width=None,
+        quality=None,
+        angular_tolerance=None,
+        edge_accuracy=None,
+        axes=None,
+        axes0=None,
+        grid=None,
+        ortho=None,
+        transparent=None,
         position=None,
         rotation=None,
-        zoom=2.5,
-        mac_scrollbar=True,
-        timeit=False,
+        zoom=None,
+        mac_scrollbar=None,
+        display=None,
+        tools=None,
+        timeit=None,
     ):
+        preset = lambda key, value: DEFAULTS[key] if value is None else value
+
+        height = preset("height", height)
+        tree_width = preset("tree_width", tree_width)
+        cad_width = preset("cad_width", cad_width)
+        render_shapes = preset("render_shapes", render_shapes)
+        render_edges = preset("render_edges", render_edges)
+        quality = preset("quality", quality)
+        angular_tolerance = preset("angular_tolerance", angular_tolerance)
+        edge_accuracy = preset("edge_accuracy", edge_accuracy)
+        axes = preset("axes", axes)
+        axes0 = preset("axes0", axes0)
+        grid = preset("grid", grid)
+        ortho = preset("ortho", ortho)
+        transparent = preset("transparent", transparent)
+        position = preset("position", position)
+        rotation = preset("rotation", rotation)
+        zoom = preset("zoom", zoom)
+        if platform.system() != "Darwin":
+            mac_scrollbar = False
+        else:
+            mac_scrollbar = preset("mac_scrollbar", mac_scrollbar)
+        timeit = preset("timeit", timeit)
+
+        self._display = preset("display", display)
+        self._tools = preset("tools", tools)
+
         if position is None:
             position = (1, 1, 1)
         if rotation is None:
             rotation = (0, 0, 0)
-
-        if platform.system() != "Darwin":
-            mac_scrollbar = False
 
         # Output widget
         output_height = height * 0.4 - 20 + 2
@@ -312,21 +469,13 @@ class CadqueryDisplay(object):
         if mac_scrollbar:
             self.info.html.add_class("mac-scrollbar")
 
-        self.output = Box([self.info.html])
-        self.output.layout = Layout(
-            height="%dpx" % output_height,
-            width="%dpx" % tree_width,
-            overflow_y="scroll",
-            overflow_x="scroll",
-        )
-
-        self.output.add_class("view_output")
-
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(
             width=cad_width,
             height=height,
             quality=quality,
+            render_shapes=render_shapes,
+            render_edges=render_edges,
             edge_accuracy=edge_accuracy,
             angular_tolerance=angular_tolerance,
             default_mesh_color=self.default_mesh_color,
@@ -339,6 +488,18 @@ class CadqueryDisplay(object):
             self.cq_view.add_shape(shape["name"], shape["shape"], shape["color"])
         renderer = self.cq_view.render(position, rotation, zoom)
         renderer.add_class("view_renderer")
+
+        # Prepare the CAD view tools
+
+        self.output = Box([self.info.html])
+        self.output.layout = Layout(
+            height="%dpx" % output_height,
+            width="%dpx" % tree_width,
+            overflow_y="scroll",
+            overflow_x="scroll",
+        )
+
+        self.output.add_class("view_output")
 
         bb = self.cq_view.bb
         clipping = Clipping(self.image_path, self.output, self.cq_view, tree_width)
@@ -416,18 +577,24 @@ class CadqueryDisplay(object):
             )
             self.view_controls.append(button)
 
-        return HBox(
-            [
-                VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
-                VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer]),
-            ]
-        )
+        # only show pure renderer
+        if self._tools == False:
+            return renderer
+        else:
+            return HBox(
+                [
+                    VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
+                    VBox(
+                        [HBox(self.view_controls + self.check_controls[-2:]), renderer]
+                    ),
+                ]
+            )
 
-    def display(self, widget, sidecar=None):
-        if sidecar is None:
+    def display(self, widget):
+        if self._display == "cell" or SIDECAR is None:
             ipy_display(widget)
         else:
-            sidecar.clear_output(True)
-            with sidecar:
+            SIDECAR.clear_output(True)
+            with SIDECAR:
                 ipy_display(widget)
-            print("Done, using side car '%s'" % sidecar.title)
+            print("Done, using side car '%s'" % SIDECAR.title)
