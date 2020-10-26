@@ -198,6 +198,8 @@ DEFAULTS = {
     "height": 600,
     "tree_width": 250,
     "cad_width": 800,
+    "render_shapes": True,
+    "render_edges": True,
     "quality": 0.1,
     "angular_tolerance": 0.1,
     "edge_accuracy": 0.01,
@@ -224,28 +226,7 @@ def get_default(key):
     return DEFAULTS.get(key)
 
 
-def set_defaults(
-    height=600,
-    tree_width=250,
-    cad_width=800,
-    render_shapes=True,
-    render_edges=True,
-    quality=0.5,
-    edge_accuracy=0.5,
-    angular_tolerance=0.1,
-    axes=False,
-    axes0=False,
-    grid=False,
-    ortho=True,
-    transparent=False,
-    position=(1, 1, 1),
-    rotation=(0, 0, 0),
-    zoom=2.5,
-    mac_scrollbar=True,
-    display="cell",
-    tools=True,
-    timeit=False,
-):
+def set_defaults(**kwargs):
     """Set defaults for CAD viewer
 
     Valid keywords:
@@ -276,28 +257,13 @@ def set_defaults(
     """
     global DEFAULTS
 
-    DEFAULTS["height"] = height
-    DEFAULTS["tree_width"] = tree_width
-    DEFAULTS["cad_width"] = cad_width
-    DEFAULTS["render_shapes"] = render_shapes
-    DEFAULTS["render_edges"] = render_edges
-    DEFAULTS["quality"] = quality
-    DEFAULTS["edge_accuracy"] = edge_accuracy
-    DEFAULTS["angular_tolerance"] = angular_tolerance
-    DEFAULTS["axes"] = axes
-    DEFAULTS["axes0"] = axes0
-    DEFAULTS["grid"] = grid
-    DEFAULTS["ortho"] = ortho
-    DEFAULTS["transparent"] = transparent
-    DEFAULTS["position"] = position
-    DEFAULTS["rotation"] = rotation
-    if zoom == 1:
-        zoom = 1 + 1e-6  # for zoom == 1 viewing has a bug, so slightly increase it
-    DEFAULTS["zoom"] = zoom
-    DEFAULTS["mac_scrollbar"] = mac_scrollbar
-    DEFAULTS["display"] = display
-    DEFAULTS["tools"] = tools
-    DEFAULTS["timeit"] = timeit
+    for k, v in kwargs.items():
+        if get_default(k) is None:
+            print("Paramater %s is not a valid argument for show()" % k)
+        else:
+            if k == "zoom" and v == 1.0:
+                v = 1 + 1e-6  # for zoom == 1 viewing has a bug, so slightly increase it
+            DEFAULTS[k] = v
 
 
 def reset_defaults():
