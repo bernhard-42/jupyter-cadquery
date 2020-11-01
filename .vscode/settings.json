@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/opt/miniconda/envs/cq2-dev/bin/python"
+    "python.pythonPath": "/opt/miniconda/envs/cq-ocp/bin/python",
+    "python.formatting.provider": "black"
 }

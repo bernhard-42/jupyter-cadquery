@@ -59,9 +59,7 @@ class _CADObject(object):
 
 
 class _Part(_CADObject):
-    def __init__(
-        self, shape, name="Part", color=None, show_faces=True, show_edges=True
-    ):
+    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
         super().__init__()
         self.name = name
         self.id = self.next_id()
@@ -96,7 +94,11 @@ class _Part(_CADObject):
         return {str(self.id): [self.state_faces, self.state_edges]}
 
     def collect_shapes(self):
-        return [{"name": self.name, "shape": self.shape, "color": self.color}]
+        return {
+            "name": self.name,
+            "shape": self.shape,
+            "color": self.color,
+        }
 
     def compound(self):
         return self.shape[0]
@@ -106,9 +108,7 @@ class _Part(_CADObject):
 
 
 class _Faces(_Part):
-    def __init__(
-        self, faces, name="Faces", color=None, show_faces=True, show_edges=True
-    ):
+    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
         super().__init__(faces, name, color, show_faces, show_edges)
         self.color = Color(color or (255, 0, 255))
 
@@ -133,13 +133,11 @@ class _Edges(_CADObject):
         return {str(self.id): [EMPTY, SELECTED]}
 
     def collect_shapes(self):
-        return [
-            {
-                "name": self.name,
-                "shape": [edge for edge in self.shape],
-                "color": self.color,
-            }
-        ]
+        return {
+            "name": self.name,
+            "shape": [edge for edge in self.shape],
+            "color": self.color,
+        }
 
 
 class _Vertices(_CADObject):
@@ -162,13 +160,11 @@ class _Vertices(_CADObject):
         return {str(self.id): [SELECTED, EMPTY]}
 
     def collect_shapes(self):
-        return [
-            {
-                "name": self.name,
-                "shape": [edge for edge in self.shape],
-                "color": self.color,
-            }
-        ]
+        return {
+            "name": self.name,
+            "shape": [edge for edge in self.shape],
+            "color": self.color,
+        }
 
 
 class _Assembly(_CADObject):
@@ -195,14 +191,22 @@ class _Assembly(_CADObject):
     def collect_shapes(self):
         result = []
         for obj in self.objects:
-            result += obj.collect_shapes()
+            result.append(obj.collect_shapes())
         return result
 
-    def obj_mapping(self):
-        return {v: k for k, v in enumerate(self.to_state().keys())}
+    def obj_mapping(self, parents=None):
+        parents = parents or ()
+        result = {}
+        for i, obj in enumerate(self.objects):
+            if isinstance(obj, _Assembly):
+                for k, v in obj.obj_mapping((*parents, i)).items():
+                    result[k] = v
+            else:
+                result[str(obj.id)] = (*parents, i)
+        return result
 
-    @classmethod
-    def reset_id(cls):
+    @staticmethod
+    def reset_id():
         global PART_ID
         PART_ID = 0
 

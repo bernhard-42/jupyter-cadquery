@@ -17,6 +17,7 @@
 import platform
 from os.path import join, dirname
 import numpy as np
+from uuid import uuid4
 from IPython.display import display as ipy_display
 
 from ipywidgets import (
@@ -315,10 +316,7 @@ class CadqueryDisplay(object):
         "isometric": (1, 1, 1),
     }
 
-    def __init__(self, default_mesh_color=None, default_edge_color=None):
-        self.default_mesh_color = default_mesh_color
-        self.default_edge_color = default_edge_color
-
+    def __init__(self):
         super().__init__()
         self.info = None
         self.cq_view = None
@@ -343,13 +341,14 @@ class CadqueryDisplay(object):
 
         self._display = "cell"
         self._tools = True
+        self.id = uuid4().hex[:10]
 
     def create_button(self, image_name, handler, tooltip):
         button = ImageButton(
             width=36,
             height=28,
             image_path="%s/%s.png" % (self.image_path, image_name),
-            tooltip="Change view to %s" % image_name,
+            tooltip=tooltip,
             type=image_name,
         )
         button.on_click(handler)
@@ -437,23 +436,21 @@ class CadqueryDisplay(object):
 
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(
+            shapes,
             width=cad_width,
             height=height,
             quality=quality,
-            render_shapes=render_shapes,
-            render_edges=render_edges,
             edge_accuracy=edge_accuracy,
             angular_tolerance=angular_tolerance,
-            default_mesh_color=self.default_mesh_color,
-            default_edge_color=self.default_edge_color,
+            render_shapes=render_shapes,
+            render_edges=render_edges,
             info=self.info,
             timeit=timeit,
         )
 
-        for shape in shapes:
-            self.cq_view.add_shape(shape["name"], shape["shape"], shape["color"])
         renderer = self.cq_view.render(position, rotation, zoom)
         renderer.add_class("view_renderer")
+        renderer.add_class(f"view_renderer_{self.id}")
 
         # Prepare the CAD view tools
 

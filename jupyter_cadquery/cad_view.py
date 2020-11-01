@@ -25,12 +25,8 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import (
         CombinedCamera,
-        BufferAttribute,
-        BufferGeometry,
         Plane,
         Mesh,
-        LineSegmentsGeometry,
-        LineMaterial,
         LineSegments2,
         AmbientLight,
         DirectionalLight,
@@ -39,34 +35,24 @@ with warnings.catch_warnings():
         Renderer,
         Picker,
         Group,
-        Points,
-        PointsMaterial,
     )
-import time
 
 import numpy as np
 
 from .widgets import state_diff
-from .cad_helpers import Grid, Axes, CustomMaterial
+from .cad_helpers import Grid, Axes
 from .utils import (
-    is_vertex,
-    is_edge,
-    is_compound,
-    discretize_edge,
-    get_edges,
-    get_point,
-    tessellate,
-    explode,
-    flatten,
     rotate,
     BoundingBox,
     Color,
 )
+from .cad_renderer import CadqueryRenderer
 
 
 class CadqueryView(object):
     def __init__(
         self,
+        shapes,
         width=600,
         height=400,
         quality=0.1,
@@ -74,12 +60,11 @@ class CadqueryView(object):
         edge_accuracy=0.01,
         render_edges=True,
         render_shapes=True,
-        default_mesh_color=None,
-        default_edge_color=None,
         info=None,
         timeit=False,
     ):
 
+        self.shapes = shapes
         self.width = width
         self.height = height
         self.quality = quality
@@ -90,6 +75,10 @@ class CadqueryView(object):
         self.info = info
         self.timeit = timeit
 
+        self.pick_color = Color("LightGreen")
+        self.default_mesh_color = Color((232, 176, 36))
+        self.default_edge_color = Color((128, 128, 128))
+
         self.camera_distance_factor = 6
         self.camera_initial_zoom = 2.5
 
@@ -97,15 +86,10 @@ class CadqueryView(object):
 
         self.bb = None
 
-        self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
-        self.default_edge_color = Color(default_edge_color or (128, 128, 128))
-        self.pick_color = Color((232, 176, 36))
-
-        self.shapes = []
-        self.pickable_objects = Group()
+        self.pickable_objects = None
         self.pick_last_mesh = None
         self.pick_last_mesh_color = None
-        self.pick_mapping = []
+        self.pick_mapping = {}
 
         self.camera = None
         self.axes = None
@@ -115,142 +99,6 @@ class CadqueryView(object):
         self.renderer = None
 
         self.savestate = None
-        self.tesselated_shapes = {}
-
-    def _start_timer(self):
-        return time.time() if self.timeit else None
-
-    def _stop_timer(self, msg, start):
-        if self.timeit:
-            print("%20s: %7.2f sec" % (msg, time.time() - start))
-
-    def _material(self, color, transparent=False, opacity=1.0):
-        material = CustomMaterial("standard")
-        material.color = color
-        material.clipping = True
-        material.side = "DoubleSide"
-        material.alpha = 0.7
-        material.polygonOffset = True
-        material.polygonOffsetFactor = 1
-        material.polygonOffsetUnits = 1
-        material.transparent = transparent
-        material.opacity = opacity
-        material.update("metalness", 0.3)
-        material.update("roughness", 0.8)
-        return material
-
-    def _render_shape(
-        self,
-        shape_index,
-        shape=None,
-        edges=None,
-        vertices=None,
-        mesh_color=None,
-        edge_color=None,
-        vertex_color=None,
-        render_edges=True,
-        render_shapes=True,
-        edge_width=1,
-        vertex_width=5,
-        transparent=False,
-        opacity=1.0,
-    ):
-
-        edge_list = None
-        edge_lines = None
-        points = None
-        shape_mesh = None
-
-        start_render_time = self._start_timer()
-        if shape is not None:
-            if mesh_color is None:
-                mesh_color = self.default_mesh_color
-            if edge_color is None:
-                edge_color = self.default_edge_color
-            if vertex_color is None:
-                vertex_color = self.default_edge_color  # same as edge_color
-
-            # Compute the tesselation
-            start_tesselation_time = self._start_timer()
-
-            np_vertices, np_triangles, np_normals = tessellate(
-                shape, self.quality, self.angular_tolerance
-            )
-
-            if np_normals.shape != np_vertices.shape:
-                raise AssertionError("Wrong number of normals/shapes")
-
-            self._stop_timer("tesselation time", start_tesselation_time)
-
-            # build a BufferGeometry instance
-            shape_geometry = BufferGeometry(
-                attributes={
-                    "position": BufferAttribute(np_vertices),
-                    "index": BufferAttribute(np_triangles.ravel()),
-                    "normal": BufferAttribute(np_normals),
-                }
-            )
-            shp_material = self._material(
-                mesh_color.web_color, transparent=transparent, opacity=opacity
-            )
-
-            shape_mesh = Mesh(
-                geometry=shape_geometry,
-                material=shp_material,
-                name="mesh_%d" % shape_index,
-            )
-
-            if render_edges:
-                edges = get_edges(shape)
-
-            # unset shape_mesh again
-            if not render_shapes:
-                shape_mesh = None
-
-        if vertices is not None:
-            vertices_list = []
-            for vertex in vertices:
-                vertices_list.append(get_point(vertex))
-            vertices_list = np.array(vertices_list, dtype=np.float32)
-
-            attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
-
-            mat = PointsMaterial(
-                color=vertex_color.web_color, sizeAttenuation=False, size=vertex_width
-            )
-            geom = BufferGeometry(attributes=attributes)
-            points = Points(geometry=geom, material=mat)
-
-        if edges is not None:
-            start_discretize_time = self._start_timer()
-            edge_list = [discretize_edge(edge, self.edge_accuracy) for edge in edges]
-            self._stop_timer("discretize time", start_discretize_time)
-
-        if edge_list is not None:
-            edge_list = flatten(list(map(explode, edge_list)))
-            if isinstance(edge_color, (list, tuple)):
-                if len(edge_list) != len(edge_color):
-                    print(
-                        "warning: color list and edge list have different length, using first color for all edges"
-                    )
-                    edge_color = edge_color[0]
-
-            if isinstance(edge_color, (list, tuple)):
-
-                lines = LineSegmentsGeometry(
-                    positions=edge_list,
-                    colors=[[color.percentage] * 2 for color in edge_color],
-                )
-                mat = LineMaterial(linewidth=edge_width, vertexColors="VertexColors")
-                edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
-            else:
-                lines = LineSegmentsGeometry(positions=edge_list)
-                mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
-                edge_lines = [LineSegments2(lines, mat, name="edges_%d" % shape_index)]
-
-        self._stop_timer("shape render time", start_render_time)
-
-        return shape_mesh, edge_lines, points
 
     def get_transparent(self):
         # if one object is transparent, all are
@@ -332,27 +180,47 @@ class CadqueryView(object):
         self.camera.mode = "orthographic" if self.bool_or_new(change) else "perspective"
 
     def toggle_transparent(self, change):
+        def toggle(group, value):
+            for obj in group.children:
+                if isinstance(obj, Group):
+                    toggle(obj, value)
+                else:
+                    if isinstance(obj, Mesh):
+                        obj.material.transparent = value
+
         value = self.bool_or_new(change)
-        for obj in self.pickable_objects.children:
-            if isinstance(obj, Mesh):
-                obj.material.transparent = value
+        toggle(self.pickable_objects, value)
 
     def toggle_black_edges(self, change):
+        def toggle(group, value):
+            for obj in group.children:
+                if isinstance(obj, Group):
+                    toggle(obj, value)
+                else:
+                    if isinstance(obj, LineSegments2):
+                        if obj.material.linewidth == 1:
+                            obj.material.color = (
+                                "#000" if value else self.default_edge_color.web_color
+                            )
+
         value = self.bool_or_new(change)
-        for obj in self.pickable_objects.children:
-            if isinstance(obj, LineSegments2):
-                _, ind = obj.name.split("_")
-                ind = int(ind)
-                if is_compound(self.shapes[ind]["shape"][0]):
-                    obj.material.color = (
-                        "#000" if value else self.default_edge_color.web_color
-                    )
+        toggle(self.pickable_objects, value)
+
+    def _get_group(self, group_index):
+        try:
+            group = self.pickable_objects
+            for j in group_index:
+                group = group.children[j]
+            return group
+        except:
+            return None
 
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
         group_index = self.pick_mapping[ind][feature]
-        if group_index is not None:
-            self.pickable_objects.children[group_index].visible = state == 1
+        group = self._get_group(group_index)
+        if group is not None:
+            group.visible = state == 1
 
     def change_visibility(self, mapping):
         def f(states):
@@ -363,18 +231,29 @@ class CadqueryView(object):
 
         return f
 
+    def _get_shape(self, shape_index):
+        try:
+            shape = self.shapes
+            for j in shape_index:
+                shape = shape[j]
+            return shape
+        except:
+            return None
+
     def pick(self, value):
         if self.pick_last_mesh != value.owner.object:
             # Reset
             if value.owner.object is None or self.pick_last_mesh is not None:
-                self.pick_last_mesh.material.color = self.pick_last_mesh_color.web_color
+                self.pick_last_mesh.material.color = self.pick_last_mesh_color
                 self.pick_last_mesh = None
                 self.pick_last_mesh_color = None
 
             # Change highlighted mesh
             if isinstance(value.owner.object, Mesh):
+                self.pick_last_mesh = value.owner.object
                 _, ind = value.owner.object.name.split("_")
-                shape = self.shapes[int(ind)]
+                shape_index = tuple([int(i) for i in ind.split(".")])
+                shape = self._get_shape(shape_index)
                 bbox = BoundingBox([shape["shape"]])
 
                 self.info.bb_info(
@@ -386,8 +265,7 @@ class CadqueryView(object):
                         bbox.center,
                     ),
                 )
-                self.pick_last_mesh = value.owner.object
-                self.pick_last_mesh_color = self.pick_last_mesh.material.color.web_color
+                self.pick_last_mesh_color = self.pick_last_mesh.material.color
                 self.pick_last_mesh.material.color = self.pick_color.web_color
 
     def clip(self, index):
@@ -396,10 +274,7 @@ class CadqueryView(object):
 
         return f
 
-    # public methods to add shapes and render the view
-
-    def add_shape(self, name, shape, color):
-        self.shapes.append({"name": name, "shape": shape, "color": color})
+    # public methods to render the view
 
     def is_ortho(self):
         return self.camera.mode == "orthographic"
@@ -408,63 +283,66 @@ class CadqueryView(object):
         return self.pickable_objects.children[0].material.transparent
 
     def render(self, position=None, rotation=None, zoom=2.5):
-        def _render(i, shape):
-            # Assume that all are edges when first element is an edge
-            if is_edge(shape["shape"][0]):
-                shape_mesh, edge_lines, points = self._render_shape(
-                    i,
-                    edges=shape["shape"],
-                    render_edges=True,
-                    edge_color=shape["color"],
-                    edge_width=3,
-                )
-            elif is_vertex(shape["shape"][0]):
-                shape_mesh, edge_lines, points = self._render_shape(
-                    i,
-                    vertices=shape["shape"],
-                    render_edges=False,
-                    vertex_color=shape["color"],
-                    vertex_width=6,
-                )
-            else:
-                # shape has only 1 object, hence first=True
-                shape_mesh, edge_lines, points = self._render_shape(
-                    i,
-                    shape=shape["shape"][0],
-                    render_shapes=self.render_shapes,
-                    render_edges=self.render_edges,
-                    mesh_color=shape["color"],
-                )
-            results[i] = (shape_mesh, edge_lines, points)
+        def all_shapes(shapes):
+            result = []
+            for shape in shapes:
+                if isinstance(shape, dict):
+                    result.append(shape["shape"])
+                else:
+                    result += all_shapes(shape)
+            return result
+
+        def collect(rendered_objects, current=None):
+            current = current or ()
+            group = Group()
+            for i, objects in rendered_objects.items():
+                if isinstance(objects, (list, tuple)):
+                    (shape_mesh, edge_lines, points) = objects
+                    index_mapping = {"mesh": None, "edges": None, "shape": i}
+
+                    if shape_mesh is not None:
+                        ind = len(group.children)
+                        index_mapping["mesh"] = (*current, ind)
+                        group.add(shape_mesh)
+
+                    if edge_lines is not None:
+                        ind = len(group.children)
+                        index_mapping["edges"] = (*current, ind)
+                        group.add(edge_lines)
+
+                    if points is not None:
+                        ind = len(group.children)
+                        index_mapping["mesh"] = (*current, ind)
+                        group.add(points)
+
+                    self.pick_mapping[i] = index_mapping
+                else:
+                    ind = len(group.children)
+                    group.add(collect(objects, (*current, ind)))
+            return group
+
+        position = position or (1, 1, 1)
+        rotation = rotation or (0, 0, 0)
 
         self.camera_initial_zoom = zoom
-        results = {}
 
-        start_render_time = self._start_timer()
-        # Render all shapes
-        for i, shape in enumerate(self.shapes):
-            _render(i, shape)
+        cq_renderer = CadqueryRenderer(
+            quality=self.quality,
+            angular_tolerance=self.angular_tolerance,
+            edge_accuracy=self.edge_accuracy,
+            render_edges=self.render_edges,
+            render_shapes=self.render_shapes,
+            default_mesh_color=self.default_mesh_color,
+            default_edge_color=self.default_edge_color,
+            timeit=self.timeit,
+        )
+        results = cq_renderer.render(self.shapes)
 
-        for i, objects in results.items():
-            (shape_mesh, edge_lines, points) = objects
-            if shape_mesh is not None or edge_lines is not None or points is not None:
-                index_mapping = {"mesh": None, "edges": None, "shape": i}
-                if shape_mesh is not None:
-                    ind = len(self.pickable_objects.children)
-                    self.pickable_objects.add(shape_mesh)
-                    index_mapping["mesh"] = ind
-                if edge_lines is not None:
-                    ind = len(self.pickable_objects.children)
-                    self.pickable_objects.add(edge_lines)
-                    index_mapping["edges"] = ind
-                if points is not None:
-                    ind = len(self.pickable_objects.children)
-                    self.pickable_objects.add(points)
-                    index_mapping["mesh"] = ind
-                self.pick_mapping.append(index_mapping)
+        self.pickable_objects = collect(results)
 
         # Get the overall bounding box
-        self.bb = BoundingBox([shape["shape"] for shape in self.shapes])
+
+        self.bb = BoundingBox(all_shapes(self.shapes))
         if self.bb.is_empty():
             # add origin to increase bounding box to also show origin
             self.bb = BoundingBox(
@@ -562,7 +440,5 @@ class CadqueryView(object):
         self.grid.set_position((0, 0, 0))
 
         self.savestate = (self.camera.rotation, self.controller.target)
-
-        self._stop_timer("overall render time", start_render_time)
 
         return self.renderer
