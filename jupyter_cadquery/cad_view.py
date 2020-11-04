@@ -16,7 +16,7 @@
 
 import math
 import itertools
-from cadquery.occ_impl.shapes import Vertex
+from cadquery.occ_impl.shapes import Vertex, Shape
 import numpy as np
 
 import warnings
@@ -47,6 +47,13 @@ from .utils import (
     Color,
 )
 from .cad_renderer import CadqueryRenderer
+
+
+def tq(loc):
+    T = loc.wrapped.Transformation()
+    t = T.Transforms()
+    q = T.GetRotation()
+    return (t, (q.X(), q.Y(), q.Z(), q.W()))
 
 
 class CadqueryView(object):
@@ -222,23 +229,23 @@ class CadqueryView(object):
         if group is not None:
             group.visible = state == 1
 
-    def change_visibility(self, mapping):
+    def change_visibility(self, paths):
         def f(states):
             diffs = state_diff(states.get("old"), states.get("new"))
             for diff in diffs:
                 [[obj, val]] = diff.items()
-                self.set_visibility(mapping[obj], val["icon"], val["new"])
+                self.set_visibility(paths[obj], val["icon"], val["new"])
 
         return f
 
     def _get_shape(self, shape_index):
+        shape = self.shapes
         try:
-            shape = self.shapes
             for j in shape_index:
-                shape = shape[j]
-            return shape
+                shape = shape["parts"][j]
         except:
             return None
+        return shape
 
     def pick(self, value):
         if self.pick_last_mesh != value.owner.object:
@@ -251,9 +258,7 @@ class CadqueryView(object):
             # Change highlighted mesh
             if isinstance(value.owner.object, Mesh):
                 self.pick_last_mesh = value.owner.object
-                _, ind = value.owner.object.name.split("_")
-                shape_index = tuple([int(i) for i in ind.split(".")])
-                shape = self._get_shape(shape_index)
+                shape = self._get_shape(value.owner.object.ind["shape"])
                 bbox = BoundingBox([shape["shape"]])
 
                 self.info.bb_info(
@@ -283,43 +288,21 @@ class CadqueryView(object):
         return self.pickable_objects.children[0].material.transparent
 
     def render(self, position=None, rotation=None, zoom=2.5):
-        def all_shapes(shapes):
+        def all_shapes(shapes, loc=None):
+            loc = shapes["loc"] if loc is None else loc * shapes["loc"]
             result = []
-            for shape in shapes:
-                if isinstance(shape, dict):
-                    result.append(shape["shape"])
+            for shape in shapes["parts"]:
+                if shape.get("parts") is None:
+                    if loc is None:
+                        result.append(shape["shape"])
+                    else:
+                        reloc_shape = [
+                            Shape(s).located(loc).wrapped for s in shape["shape"]
+                        ]
+                        result.append(reloc_shape)
                 else:
-                    result += all_shapes(shape)
+                    result += all_shapes(shape, loc)
             return result
-
-        def collect(rendered_objects, current=None):
-            current = current or ()
-            group = Group()
-            for i, objects in rendered_objects.items():
-                if isinstance(objects, (list, tuple)):
-                    (shape_mesh, edge_lines, points) = objects
-                    index_mapping = {"mesh": None, "edges": None, "shape": i}
-
-                    if shape_mesh is not None:
-                        ind = len(group.children)
-                        index_mapping["mesh"] = (*current, ind)
-                        group.add(shape_mesh)
-
-                    if edge_lines is not None:
-                        ind = len(group.children)
-                        index_mapping["edges"] = (*current, ind)
-                        group.add(edge_lines)
-
-                    if points is not None:
-                        ind = len(group.children)
-                        index_mapping["mesh"] = (*current, ind)
-                        group.add(points)
-
-                    self.pick_mapping[i] = index_mapping
-                else:
-                    ind = len(group.children)
-                    group.add(collect(objects, (*current, ind)))
-            return group
 
         position = position or (1, 1, 1)
         rotation = rotation or (0, 0, 0)
@@ -336,9 +319,7 @@ class CadqueryView(object):
             default_edge_color=self.default_edge_color,
             timeit=self.timeit,
         )
-        results = cq_renderer.render(self.shapes)
-
-        self.pickable_objects = collect(results)
+        self.pickable_objects, self.pick_mapping = cq_renderer.render(self.shapes)
 
         # Get the overall bounding box
 
@@ -442,3 +423,6 @@ class CadqueryView(object):
         self.savestate = (self.camera.rotation, self.controller.target)
 
         return self.renderer
+
+    def find_group(self, selector):
+        return self.pickable_objects.find_group(selector)

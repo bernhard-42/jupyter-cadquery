@@ -29,7 +29,10 @@ with warnings.catch_warnings():
         LineSegments2,
         Points,
         PointsMaterial,
+        Group,
     )
+
+
 import time
 
 import numpy as np
@@ -64,6 +67,60 @@ def material(color, transparent=False, opacity=1.0):
     return material
 
 
+def tq(loc):
+    T = loc.wrapped.Transformation()
+    t = T.Transforms()
+    q = T.GetRotation()
+    return (t, (q.X(), q.Y(), q.Z(), q.W()))
+
+class IndexedGroup(Group):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ind = None
+
+    def dump(self, ind=""):
+        print(ind, self.name, self.ind)
+        for c in self.children:
+            if isinstance(c, IndexedGroup):
+                c.dump(ind + "    ")
+            else:
+                print(ind + "  ", c)
+
+    def find_group(self, selector):
+        if selector == "":
+            return self
+
+        selectors = selector.split(">")
+        for g in [self] + list(self.children):
+            if g.name == selectors[0]:
+                return g.find_group(">".join(selectors[1:]))
+
+        return None
+
+class IndexedMesh(Mesh):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ind = None
+
+    def __repr__(self):
+        return f"IndexedMesh(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
+
+class IndexedPoints(Points):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ind = None
+
+    def __repr__(self):
+        return f"IndexedPoints(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
+
+class IndexedLineSegments2(LineSegments2):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ind = None
+
+    def __repr__(self):
+        return f"IndexedLineSegments2(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
+
 class CadqueryRenderer(object):
     def __init__(
         self,
@@ -96,7 +153,6 @@ class CadqueryRenderer(object):
 
     def render_shape(
         self,
-        shape_index,
         shape=None,
         edges=None,
         vertices=None,
@@ -115,8 +171,6 @@ class CadqueryRenderer(object):
         edge_lines = None
         points = None
         shape_mesh = None
-
-        index_str = ".".join([str(x) for x in shape_index])
 
         start_render_time = self._start_timer()
         if shape is not None:
@@ -151,11 +205,7 @@ class CadqueryRenderer(object):
                 mesh_color.web_color, transparent=transparent, opacity=opacity
             )
 
-            shape_mesh = Mesh(
-                geometry=shape_geometry,
-                material=shp_material,
-                name="mesh_" + index_str,
-            )
+            shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
             if render_edges:
                 edges = get_edges(shape)
@@ -176,7 +226,7 @@ class CadqueryRenderer(object):
                 color=vertex_color.web_color, sizeAttenuation=False, size=vertex_width
             )
             geom = BufferGeometry(attributes=attributes)
-            points = Points(geometry=geom, material=mat)
+            points = IndexedPoints(geometry=geom, material=mat)
 
         if edges is not None:
             start_discretize_time = self._start_timer()
@@ -193,64 +243,97 @@ class CadqueryRenderer(object):
                     edge_color = edge_color[0]
 
             if isinstance(edge_color, (list, tuple)):
-
                 lines = LineSegmentsGeometry(
                     positions=edge_list,
                     colors=[[color.percentage] * 2 for color in edge_color],
                 )
                 mat = LineMaterial(linewidth=edge_width, vertexColors="VertexColors")
-                edge_lines = [LineSegments2(lines, mat, name="edges_" + index_str)]
+                edge_lines = [IndexedLineSegments2(lines, mat)]
             else:
                 lines = LineSegmentsGeometry(positions=edge_list)
                 mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
-                edge_lines = [LineSegments2(lines, mat, name="edges_" + index_str)]
+                edge_lines = [IndexedLineSegments2(lines, mat)]
 
         self._stop_timer("shape render time", start_render_time)
 
         return shape_mesh, edge_lines, points
 
     def _render(self, shapes, current):
-        results = {}
+
+        group = IndexedGroup()
+        group.name = shapes["name"]
+        group.ind = current
+
+        if shapes["loc"] is not None:
+            group.position, group.quaternion = tq(shapes["loc"])
+
         # Render all shapes
-        for i, shape in enumerate(shapes):
-            index = (*current, i)  # use hashable tuple
-            if len(shape) == 0:
-                continue
-            elif not isinstance(shape, (list, tuple)):
+        for shape in shapes["parts"]:
+            if shape.get("parts") is None:
+                self._mapping[shape["ind"]] = {"mesh": None, "edges": None}
+
                 # Assume that all are edges when first element is an edge
                 if is_edge(shape["shape"][0]):
-                    shape_mesh, edge_lines, points = self.render_shape(
-                        index,
+                    options = dict(
                         edges=shape["shape"],
-                        render_edges=True,
                         edge_color=shape["color"],
                         edge_width=3,
+                        render_edges=True,
                     )
                 elif is_vertex(shape["shape"][0]):
-                    shape_mesh, edge_lines, points = self.render_shape(
-                        index,
+                    options = dict(
                         vertices=shape["shape"],
-                        render_edges=False,
                         vertex_color=shape["color"],
                         vertex_width=6,
+                        render_edges=False,
                     )
                 else:
                     # shape has only 1 object
-                    shape_mesh, edge_lines, points = self.render_shape(
-                        index,
+                    options = dict(
                         shape=shape["shape"][0],
+                        mesh_color=shape["color"],
                         render_shapes=self.render_shapes,
                         render_edges=self.render_edges,
-                        mesh_color=shape["color"],
                     )
-                results[index] = (shape_mesh, edge_lines, points)
-            else:
-                results[index] = self._render(shape, index)
 
-        return results
+                shape_mesh, edge_lines, points = self.render_shape(**options)
+
+                ind = len(group.children)
+                if shape_mesh is not None:
+                    shape_mesh.name = shape["name"]
+                    shape_mesh.ind = {"group":(*current, ind), "shape":shape["ind"]}
+                    group.add(shape_mesh)
+                    self._mapping[shape["ind"]]["mesh"] = (*current, ind)
+                    ind += 1
+
+                if edge_lines is not None:
+                    edge_group = IndexedGroup()
+                    edge_group.name = "edges"
+                    edge_group.ind = (*current, ind)
+                    for j, edge in enumerate(edge_lines):
+                        edge.name = shape["name"]
+                        edge.ind = {"group":(*current, ind, j), "shape":shape["ind"]}
+                        edge_group.add(edge)
+                    group.add(edge_group)
+                    self._mapping[shape["ind"]]["edges"] = (*current, ind)
+                    ind += 1
+
+                if points is not None:
+                    points.name = shape["name"]
+                    points.ind = {"group":(*current, ind), "shape":shape["ind"]}
+                    group.add(points)
+                    self._mapping[shape["ind"]]["mesh"] = (*current, ind)
+                    ind += 1
+
+            else:
+                ind = len(group.children)
+                group.add(self._render(shape, (*current, ind)))
+
+        return group
 
     def render(self, shapes):
         start_render_time = self._start_timer()
-        results = self._render(shapes, ())
+        self._mapping = {}
+        rendered_objects = self._render(shapes, ())
         self._stop_timer("overall render time", start_render_time)
-        return results
+        return rendered_objects, self._mapping

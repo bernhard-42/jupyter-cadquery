@@ -16,9 +16,8 @@ from pythreejs import (
     Renderer,
 )
 from jupyter_cadquery.cad_helpers import CustomMaterial
-from jupyter_cadquery.utils import BoundingBox, flatten
-from jupyter_cadquery.cad_view import tessellate
-from jupyter_cadquery.cadquery import show, Assembly as Parts, Part
+from jupyter_cadquery.utils import BoundingBox, flatten, tessellate
+from jupyter_cadquery.cadquery import show, Assembly, Part
 from .massembly import MAssembly
 from ..utils import Color
 
@@ -38,7 +37,7 @@ def _convert(assy, top: MAssembly, loc: Location = None, mates: bool = False):
     loc = assy.loc if loc is None else loc * assy.loc
     color = Color(assy.web_color)
 
-    parent: List[Union[Part, Parts]] = [
+    parent: List[Union[Part, Assembly]] = [
         Part(Workplane(shape.moved(loc)), "%s_%d" % (assy.name, i), color=color)
         for i, shape in enumerate(assy.shapes)
     ]
@@ -46,7 +45,7 @@ def _convert(assy, top: MAssembly, loc: Location = None, mates: bool = False):
     if mates:
         if assy.matelist:
             parent.append(
-                Parts(
+                Assembly(
                     [
                         Part(
                             to_edge(top.mates[mate]["mate"].moved(loc)),
@@ -60,7 +59,7 @@ def _convert(assy, top: MAssembly, loc: Location = None, mates: bool = False):
             )
 
     children = [_convert(cast("MAssembly", c), top, loc, mates) for c in assy.children]
-    return Parts(parent + children, assy.name)
+    return Assembly(parent + children, assy.name)
 
 
 def jc_show(assy, mates=False, **kwargs):

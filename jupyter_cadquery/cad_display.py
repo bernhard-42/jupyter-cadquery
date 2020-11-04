@@ -369,7 +369,6 @@ class CadqueryDisplay(object):
 
     def create(
         self,
-        states,
         shapes,
         mapping,
         tree,
@@ -425,6 +424,10 @@ class CadqueryDisplay(object):
             position = (1, 1, 1)
         if rotation is None:
             rotation = (0, 0, 0)
+
+        self.mapping = mapping
+        self.states = states = {k: v["state"] for k, v in mapping.items()}
+        self.paths = paths = {k: v["path"] for k, v in mapping.items()}
 
         # Output widget
         output_height = height * 0.4 - 20 + 2
@@ -484,7 +487,7 @@ class CadqueryDisplay(object):
         if mac_scrollbar:
             tree_view.add_class("mac-scrollbar")
 
-        tree_view.observe(self.cq_view.change_visibility(mapping), "state")
+        tree_view.observe(self.cq_view.change_visibility(paths), "state")
 
         tab_contents = ["Tree", "Clipping"]
         tree_clipping = Tab(
@@ -524,7 +527,7 @@ class CadqueryDisplay(object):
 
         for obj, vals in states.items():
             for i, val in enumerate(vals):
-                self.cq_view.set_visibility(mapping[obj], i, val)
+                self.cq_view.set_visibility(paths[obj], i, val)
 
         # Buttons to switch camera position
         self.view_controls = []
@@ -561,3 +564,7 @@ class CadqueryDisplay(object):
             with SIDECAR:
                 ipy_display(widget)
             print("Done, using side car '%s'" % SIDECAR.title)
+
+    def find_group(self, selector):
+        return self.cq_view.find_group(selector)
+        

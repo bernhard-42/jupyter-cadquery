@@ -14,11 +14,6 @@
 # limitations under the License.
 #
 
-import os
-import json
-
-from IPython.display import display
-
 from cadquery import Compound
 
 from jupyter_cadquery.cad_display import CadqueryDisplay, get_default
@@ -59,7 +54,9 @@ class _CADObject(object):
 
 
 class _Part(_CADObject):
-    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, shape, name="Part", color=None, show_faces=True, show_edges=True
+    ):
         super().__init__()
         self.name = name
         self.id = self.next_id()
@@ -91,10 +88,11 @@ class _Part(_CADObject):
         }
 
     def to_state(self):
-        return {str(self.id): [self.state_faces, self.state_edges]}
+        return [self.state_faces, self.state_edges]
 
     def collect_shapes(self):
         return {
+            "id": self.id,
             "name": self.name,
             "shape": self.shape,
             "color": self.color,
@@ -108,7 +106,9 @@ class _Part(_CADObject):
 
 
 class _Faces(_Part):
-    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, faces, name="Faces", color=None, show_faces=True, show_edges=True
+    ):
         super().__init__(faces, name, color, show_faces, show_edges)
         self.color = Color(color or (255, 0, 255))
 
@@ -130,10 +130,11 @@ class _Edges(_CADObject):
         }
 
     def to_state(self):
-        return {str(self.id): [EMPTY, SELECTED]}
+        return [EMPTY, SELECTED]
 
     def collect_shapes(self):
         return {
+            "id": self.id,
             "name": self.name,
             "shape": [edge for edge in self.shape],
             "color": self.color,
@@ -157,10 +158,11 @@ class _Vertices(_CADObject):
         }
 
     def to_state(self):
-        return {str(self.id): [SELECTED, EMPTY]}
+        return [SELECTED, EMPTY]
 
     def collect_shapes(self):
         return {
+            "id": self.id,
             "name": self.name,
             "shape": [edge for edge in self.shape],
             "color": self.color,
@@ -168,11 +170,12 @@ class _Vertices(_CADObject):
 
 
 class _Assembly(_CADObject):
-    def __init__(self, objects, name="Assembly"):
+    def __init__(self, objects, name="Assembly", loc=None):
         super().__init__()
-        self.name = name
-        self.id = self.next_id()
         self.objects = objects
+        self.name = name
+        self.loc = loc
+        self.id = self.next_id()
 
     def to_nav_dict(self):
         return {
@@ -182,27 +185,35 @@ class _Assembly(_CADObject):
             "children": [obj.to_nav_dict() for obj in self.objects],
         }
 
-    def to_state(self):
-        result = {}
-        for obj in self.objects:
-            result.update(obj.to_state())
-        return result
-
     def collect_shapes(self):
-        result = []
+        result = {"parts": [], "loc": None}
         for obj in self.objects:
-            result.append(obj.collect_shapes())
+            result["parts"].append(obj.collect_shapes())
+        result["loc"] = self.loc
+        result["name"] = self.name
         return result
 
-    def obj_mapping(self, parents=None):
+    def collect_mapped_shapes(self, mapping):
+        def set_paths(shapes, mapping):
+            for obj in shapes["parts"]:
+                if obj.get("parts") is None:
+                    obj["ind"] = mapping[str(obj["id"])]["path"]
+                else:
+                    set_paths(obj, mapping)
+
+        shapes = self.collect_shapes()
+        set_paths(shapes, mapping)
+        return shapes
+
+    def to_state(self, parents=None):
         parents = parents or ()
         result = {}
         for i, obj in enumerate(self.objects):
             if isinstance(obj, _Assembly):
-                for k, v in obj.obj_mapping((*parents, i)).items():
+                for k, v in obj.to_state((*parents, i)).items():
                     result[k] = v
             else:
-                result[str(obj.id)] = (*parents, i)
+                result[str(obj.id)] = {"path": (*parents, i), "state": obj.to_state()}
         return result
 
     @staticmethod
@@ -225,13 +236,12 @@ def _show(assembly, **kwargs):
         if get_default(k) is None:
             raise KeyError("Paramater %s is not a valid argument for show()" % k)
 
+    mapping = assembly.to_state()
+    shapes = assembly.collect_mapped_shapes(mapping)
+
     d = CadqueryDisplay()
     widget = d.create(
-        states=assembly.to_state(),
-        shapes=assembly.collect_shapes(),
-        mapping=assembly.obj_mapping(),
-        tree=assembly.to_nav_dict(),
-        **kwargs,
+        shapes=shapes, mapping=mapping, tree=assembly.to_nav_dict(), **kwargs
     )
 
     d.info.ready_msg(d.cq_view.grid.step)
