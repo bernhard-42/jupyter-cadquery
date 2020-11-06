@@ -15,7 +15,8 @@
 #
 
 import numpy as np
-
+import time
+from uuid import uuid4
 import warnings
 
 with warnings.catch_warnings():
@@ -32,11 +33,6 @@ with warnings.catch_warnings():
         Group,
     )
 
-
-import time
-
-import numpy as np
-
 from .cad_helpers import CustomMaterial
 from .utils import (
     is_vertex,
@@ -50,6 +46,47 @@ from .utils import (
     Color,
     tree_find,
 )
+
+HASH_CODE_MAX = 2147483647
+
+
+class RenderCache:
+    def __init__(self):
+        self.objects = {}
+
+    def reset_cache(self):
+        self.objects = {}
+
+    def tessellate(
+        self,
+        compound,
+        quality=0.1,
+        angular_tolerance=0.1,
+    ):
+
+        hash = compound.HashCode(HASH_CODE_MAX)
+        if self.objects.get(hash) is None:
+            np_vertices, np_triangles, np_normals = tessellate(
+                compound, quality, angular_tolerance
+            )
+
+            if np_normals.shape != np_vertices.shape:
+                raise AssertionError("Wrong number of normals/shapes")
+
+            shape_geometry = BufferGeometry(
+                attributes={
+                    "position": BufferAttribute(np_vertices),
+                    "index": BufferAttribute(np_triangles.ravel()),
+                    "normal": BufferAttribute(np_normals),
+                }
+            )
+
+            self.objects[hash] = shape_geometry
+        return self.objects[hash]
+
+
+RENDER_CACHE = RenderCache()
+reset_cache = RENDER_CACHE.reset_cache
 
 
 def material(color, transparent=False, opacity=1.0):
@@ -143,7 +180,8 @@ class CadqueryRenderer(object):
         self.timeit = timeit
 
     def _start_timer(self):
-        return time.time() if self.timeit else None
+        if self.timeit:
+            return time.time()
 
     def _stop_timer(self, msg, start):
         if self.timeit:
@@ -179,31 +217,21 @@ class CadqueryRenderer(object):
             if vertex_color is None:
                 vertex_color = self.default_edge_color  # same as edge_color
 
-            # Compute the tesselation
+            # Compute the tesselation and build mesh
             start_tesselation_time = self._start_timer()
-
-            np_vertices, np_triangles, np_normals = tessellate(
-                shape, self.quality, self.angular_tolerance
+            shape_geometry = RENDER_CACHE.tessellate(
+                shape,
+                self.quality,
+                self.angular_tolerance,
             )
 
-            if np_normals.shape != np_vertices.shape:
-                raise AssertionError("Wrong number of normals/shapes")
-
-            self._stop_timer("tesselation time", start_tesselation_time)
-
-            # build a BufferGeometry instance
-            shape_geometry = BufferGeometry(
-                attributes={
-                    "position": BufferAttribute(np_vertices),
-                    "index": BufferAttribute(np_triangles.ravel()),
-                    "normal": BufferAttribute(np_normals),
-                }
-            )
             shp_material = material(
                 mesh_color.web_color, transparent=transparent, opacity=opacity
             )
-
+            # Do not cache building the mesh. Might lead to unpredictable results
             shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
+
+            self._stop_timer("build mesh time", start_tesselation_time)
 
             if render_edges:
                 edges = get_edges(shape)
@@ -232,6 +260,7 @@ class CadqueryRenderer(object):
             self._stop_timer("discretize time", start_discretize_time)
 
         if edge_list is not None:
+            start_discretize_time = self._start_timer()
             edge_list = flatten(list(map(explode, edge_list)))
             if isinstance(edge_color, (list, tuple)):
                 if len(edge_list) != len(edge_color):
@@ -251,6 +280,7 @@ class CadqueryRenderer(object):
                 lines = LineSegmentsGeometry(positions=edge_list)
                 mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
                 edge_lines = [IndexedLineSegments2(lines, mat)]
+            self._stop_timer("edge list", start_discretize_time)
 
         self._stop_timer("shape render time", start_render_time)
 
