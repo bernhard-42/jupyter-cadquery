@@ -16,7 +16,6 @@
 
 import platform
 from os.path import join, dirname
-import numpy as np
 from uuid import uuid4
 from IPython.display import display as ipy_display
 
@@ -567,4 +566,3 @@ class CadqueryDisplay(object):
 
     def find_group(self, selector):
         return self.cq_view.find_group(selector)
-        

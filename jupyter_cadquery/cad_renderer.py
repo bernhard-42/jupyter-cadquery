@@ -34,13 +34,15 @@ with warnings.catch_warnings():
     )
 
 from .cad_helpers import CustomMaterial
-from .utils import (
+from .ocp_utils import (
     is_vertex,
     is_edge,
     discretize_edge,
     get_edges,
     get_point,
     tessellate,
+)
+from .utils import (
     explode,
     flatten,
     Color,

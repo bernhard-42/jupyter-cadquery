@@ -37,15 +37,11 @@ with warnings.catch_warnings():
         Group,
     )
 
-import numpy as np
 
 from .widgets import state_diff
 from .cad_helpers import Grid, Axes
-from .utils import (
-    rotate,
-    BoundingBox,
-    Color,
-)
+from .ocp_utils import BoundingBox
+from .utils import rotate, Color
 from .cad_renderer import CadqueryRenderer
 
 
