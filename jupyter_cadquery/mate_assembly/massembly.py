@@ -2,7 +2,7 @@ from typing import Optional, Union, Tuple, cast
 
 from cadquery import Shape, Workplane, Location, NearestToPointSelector, Assembly
 from .mate import Mate
-from ..utils import Color
+from ..utils import tree_find
 
 Selector = Tuple[str, Union[str, Tuple[float, float]]]
 
@@ -45,15 +45,7 @@ class MAssembly(Assembly):
         return self
 
     def find_assembly(self, selector: str) -> Optional["MAssembly"]:
-        if selector == "":
-            return self
-
-        selectors = selector.split(">")
-        for a in [self] + self.children:  # type: ignore
-            if a.name == selectors[0]:
-                return a.find_assembly(">".join(selectors[1:]))
-
-        return None
+        return tree_find(self, selector)
 
     def find_obj(
         self, assembly: "MAssembly", obj_selectors: Tuple[Selector, ...] = None

@@ -48,6 +48,7 @@ from .utils import (
     explode,
     flatten,
     Color,
+    tree_find,
 )
 
 
@@ -73,6 +74,7 @@ def tq(loc):
     q = T.GetRotation()
     return (t, (q.X(), q.Y(), q.Z(), q.W()))
 
+
 class IndexedGroup(Group):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -86,16 +88,9 @@ class IndexedGroup(Group):
             else:
                 print(ind + "  ", c)
 
-    def find_group(self, selector):
-        if selector == "":
-            return self
+    def find_group(self, query):
+        return tree_find(self, query)
 
-        selectors = selector.split(">")
-        for g in [self] + list(self.children):
-            if g.name == selectors[0]:
-                return g.find_group(">".join(selectors[1:]))
-
-        return None
 
 class IndexedMesh(Mesh):
     def __init__(self, *args, **kwargs):
@@ -105,6 +100,7 @@ class IndexedMesh(Mesh):
     def __repr__(self):
         return f"IndexedMesh(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
 
+
 class IndexedPoints(Points):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,6 +109,7 @@ class IndexedPoints(Points):
     def __repr__(self):
         return f"IndexedPoints(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
 
+
 class IndexedLineSegments2(LineSegments2):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -120,6 +117,7 @@ class IndexedLineSegments2(LineSegments2):
 
     def __repr__(self):
         return f"IndexedLineSegments2(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
+
 
 class CadqueryRenderer(object):
     def __init__(
@@ -301,7 +299,7 @@ class CadqueryRenderer(object):
                 ind = len(group.children)
                 if shape_mesh is not None:
                     shape_mesh.name = shape["name"]
-                    shape_mesh.ind = {"group":(*current, ind), "shape":shape["ind"]}
+                    shape_mesh.ind = {"group": (*current, ind), "shape": shape["ind"]}
                     group.add(shape_mesh)
                     self._mapping[shape["ind"]]["mesh"] = (*current, ind)
                     ind += 1
@@ -312,7 +310,7 @@ class CadqueryRenderer(object):
                     edge_group.ind = (*current, ind)
                     for j, edge in enumerate(edge_lines):
                         edge.name = shape["name"]
-                        edge.ind = {"group":(*current, ind, j), "shape":shape["ind"]}
+                        edge.ind = {"group": (*current, ind, j), "shape": shape["ind"]}
                         edge_group.add(edge)
                     group.add(edge_group)
                     self._mapping[shape["ind"]]["edges"] = (*current, ind)
@@ -320,7 +318,7 @@ class CadqueryRenderer(object):
 
                 if points is not None:
                     points.name = shape["name"]
-                    points.ind = {"group":(*current, ind), "shape":shape["ind"]}
+                    points.ind = {"group": (*current, ind), "shape": shape["ind"]}
                     group.add(points)
                     self._mapping[shape["ind"]]["mesh"] = (*current, ind)
                     ind += 1
