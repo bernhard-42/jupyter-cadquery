@@ -47,7 +47,7 @@ from .utils import (
     explode,
     flatten,
     Color,
-    tree_find,
+    tree_find_single_selector,
 )
 
 HASH_CODE_MAX = 2147483647
@@ -122,7 +122,7 @@ class IndexedGroup(Group):
                 print(ind + "  ", c)
 
     def find_group(self, query):
-        return tree_find(self, query)
+        return tree_find_single_selector(self, query)
 
 
 class IndexedMesh(Mesh):
@@ -282,10 +282,12 @@ class CadqueryRenderer(object):
 
         return shape_mesh, edge_lines, points
 
-    def _render(self, shapes, current):
+    def _render(self, shapes, current, prefix=""):
 
         group = IndexedGroup()
-        group.name = shapes["name"]
+        # we need to ensure unique names to enable Threejs animation later which currently doesn't
+        # support directory names
+        group.name = shapes["name"] if prefix == "" else f"{prefix}>{shapes['name']}"
         group.ind = current
 
         if shapes["loc"] is not None:
@@ -351,13 +353,13 @@ class CadqueryRenderer(object):
 
             else:
                 ind = len(group.children)
-                group.add(self._render(shape, (*current, ind)))
+                group.add(self._render(shape, (*current, ind), group.name))
 
         return group
 
     def render(self, shapes):
         start_render_time = self._start_timer()
         self._mapping = {}
-        rendered_objects = self._render(shapes, ())
+        rendered_objects = self._render(shapes, (), "")
         self._stop_timer("overall render time", start_render_time)
         return rendered_objects, self._mapping
