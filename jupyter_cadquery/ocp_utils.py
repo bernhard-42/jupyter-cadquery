@@ -296,3 +296,10 @@ def get_edges(shape):
 def get_point(vertex):
     p = BRep_Tool.Pnt_s(vertex)
     return (p.X(), p.Y(), p.Z())
+
+
+def tq(loc):
+    T = loc.wrapped.Transformation()
+    t = T.Transforms()
+    q = T.GetRotation()
+    return (t, (q.X(), q.Y(), q.Z(), q.W()))

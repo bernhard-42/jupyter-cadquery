@@ -41,6 +41,7 @@ from .ocp_utils import (
     get_edges,
     get_point,
     tessellate,
+    tq,
 )
 from .utils import (
     explode,
@@ -105,13 +106,6 @@ def material(color, transparent=False, opacity=1.0):
     material.update("metalness", 0.3)
     material.update("roughness", 0.8)
     return material
-
-
-def tq(loc):
-    T = loc.wrapped.Transformation()
-    t = T.Transforms()
-    q = T.GetRotation()
-    return (t, (q.X(), q.Y(), q.Z(), q.W()))
 
 
 class IndexedGroup(Group):

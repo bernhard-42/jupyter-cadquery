@@ -45,13 +45,6 @@ from .utils import rotate, Color
 from .cad_renderer import CadqueryRenderer
 
 
-def tq(loc):
-    T = loc.wrapped.Transformation()
-    t = T.Transforms()
-    q = T.GetRotation()
-    return (t, (q.X(), q.Y(), q.Z(), q.W()))
-
-
 class CadqueryView(object):
     def __init__(
         self,
