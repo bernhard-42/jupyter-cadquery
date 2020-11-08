@@ -31,7 +31,9 @@ from ..utils import Color
 
 
 class Part(_Part):
-    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, shape, name="Part", color=None, show_faces=True, show_edges=True
+    ):
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -42,7 +44,9 @@ class Part(_Part):
 
 
 class Faces(_Faces):
-    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, faces, name="Faces", color=None, show_faces=True, show_edges=True
+    ):
         super().__init__(_to_occ(faces.combine()), name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -134,10 +138,19 @@ def _parent(cad_obj, obj_id):
             )
         elif isinstance(cad_obj.parent.val(), Wire):
             return [
-                _from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)))
+                _from_wirelist(
+                    cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8))
+                )
             ]
         else:
-            return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False,)]
+            return [
+                Part(
+                    cad_obj.parent,
+                    "Parent_%d" % obj_id,
+                    show_edges=True,
+                    show_faces=False,
+                )
+            ]
     else:
         return []
 
@@ -150,7 +163,9 @@ def _from_facelist(cad_obj, obj_id, name="Faces", show_parents=True):
 
 
 def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parents=True):
-    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))]
+    result = [
+        Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))
+    ]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
@@ -158,21 +173,29 @@ def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parents=True)
 
 def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
     obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in cad_obj.vals()])
-    result = [Vertices(obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))]
+    result = [
+        Vertices(obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))
+    ]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
 def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
-    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))]
+    result = [
+        Vertices(
+            cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0))
+        )
+    ]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
 def _from_wirelist(cad_obj, obj_id, name="Edges", color=None):
-    return Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))
+    return Edges(
+        cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0))
+    )
 
 
 def to_edge(mate, loc=None, scale=4) -> Workplane:
@@ -191,7 +214,11 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False):
     color = Color(cad_obj.web_color)
 
     parent = [
-        Part(Workplane(shape), "%s_%d" % (cad_obj.name, i), color=color,)
+        Part(
+            Workplane(shape),
+            "%s_%d" % (cad_obj.name, i),
+            color=color,
+        )
         for i, shape in enumerate(cad_obj.shapes)
     ]
 
@@ -203,7 +230,11 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False):
                         Part(
                             to_edge(top.mates[mate]["mate"]),
                             name=mate,
-                            color=(Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)),),
+                            color=(
+                                Color((255, 0, 0)),
+                                Color((0, 128, 0)),
+                                Color((0, 0, 255)),
+                            ),
                         )
                         for mate in cad_obj.matelist
                     ],
@@ -273,7 +304,13 @@ def show(*cad_objs, render_mates=False, **kwargs):
             assembly.add(cad_obj)
 
         elif isinstance(cad_obj, CqAssembly):
-            assembly.add(from_assembly(cad_obj, cad_obj, render_mates=render_mates,))
+            assembly.add(
+                from_assembly(
+                    cad_obj,
+                    cad_obj,
+                    render_mates=render_mates,
+                )
+            )
 
         elif isinstance(cad_obj, Edge):
             assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id))
