@@ -154,9 +154,7 @@ class CadqueryView(object):
             self._update()
 
         def change(b):
-            self.camera.position = self._add(
-                self.bb.center, self._scale(directions[typ])
-            )
+            self.camera.position = self._add(self.bb.center, self._scale(directions[typ]))
             self._update()
 
         if typ == "fit":
@@ -292,9 +290,7 @@ class CadqueryView(object):
                     if loc is None:
                         result.append(shape["shape"])
                     else:
-                        reloc_shape = [
-                            Shape(s).located(loc).wrapped for s in shape["shape"]
-                        ]
+                        reloc_shape = [Shape(s).located(loc).wrapped for s in shape["shape"]]
                         result.append(reloc_shape)
                 else:
                     result += all_shapes(shape, loc)
@@ -323,8 +319,7 @@ class CadqueryView(object):
         if self.bb.is_empty():
             # add origin to increase bounding box to also show origin
             self.bb = BoundingBox(
-                [[Vertex.makeVertex(0, 0, 0).wrapped]]
-                + [shape["shape"] for shape in self.shapes]
+                [[Vertex.makeVertex(0, 0, 0).wrapped]] + [shape["shape"] for shape in self.shapes]
             )
             if self.bb.is_empty():
                 # looks like only one vertex in origin is to be shown
@@ -344,8 +339,7 @@ class CadqueryView(object):
             position = rotate(position, *rotation)
 
         camera_position = self._add(
-            self.bb.center,
-            self._scale([1, 1, 1] if position is None else self._scale(position)),
+            self.bb.center, self._scale([1, 1, 1] if position is None else self._scale(position)),
         )
 
         self.camera = CombinedCamera(
@@ -371,16 +365,11 @@ class CadqueryView(object):
         # Set up Helpers
         self.axes = Axes(bb_center=self.bb.center, length=bb_max * 1.1)
         self.grid = Grid(
-            bb_center=self.bb.center,
-            maximum=bb_max,
-            colorCenterLine="#aaa",
-            colorGrid="#ddd",
+            bb_center=self.bb.center, maximum=bb_max, colorCenterLine="#aaa", colorGrid="#ddd",
         )
 
         # Set up scene
-        environment = (
-            self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
-        )
+        environment = self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
         self.scene = Scene(children=environment + [self.pickable_objects])
 
         # Set up Controllers
@@ -420,5 +409,6 @@ class CadqueryView(object):
 
         return self.renderer
 
-    def find_group(self, selector):
-        return self.pickable_objects.find_group(selector)
+    @property
+    def root_group(self):
+        return self.pickable_objects

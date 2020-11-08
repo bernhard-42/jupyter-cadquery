@@ -81,15 +81,11 @@ class Info(object):
         self.render()
 
     def render(self):
-        html = (
-            '<table style="display: block; overflow-x: visible; white-space: nowrap;">'
-        )
+        html = '<table style="display: block; overflow-x: visible; white-space: nowrap;">'
 
         for n, chunk in self.chunks:
             html += '<tr style="vertical-align: text-top;">'
-            html += (
-                '<td><pre style="color: #aaa; white-space: nowrap">[%2d]</pre></td>' % n
-            )
+            html += '<td><pre style="color: #aaa; white-space: nowrap">[%2d]</pre></td>' % n
             html += "<td>%s</td>" % chunk
             html += "</tr>"
         html += "</table>"
@@ -148,9 +144,7 @@ class Clipping(object):
     def handler(self, b):
         i = int(b.type)
         self.cq_view.set_plane(i)
-        self.labels[i].value = "N=(%5.2f, %5.2f, %5.2f)" % tuple(
-            self.cq_view.direction()
-        )
+        self.labels[i].value = "N=(%5.2f, %5.2f, %5.2f)" % tuple(self.cq_view.direction())
 
     def slider(self, value, min, max, step, description):
         label = Label(description)
@@ -185,9 +179,7 @@ class Clipping(object):
         return [HBox([button, label]), slider]
 
     def add_slider(self, value, v_min, v_max, step, normal):
-        self.sliders += self.slider(
-            value, v_min, v_max, step, "N=(%5.2f, %5.2f, %5.2f)" % normal
-        )
+        self.sliders += self.slider(value, v_min, v_max, step, "N=(%5.2f, %5.2f, %5.2f)" % normal)
         self.normals.append(normal)
 
     def create(self):
@@ -477,9 +469,7 @@ class CadqueryDisplay(object):
             image_paths=self.image_paths,
             tree=tree,
             state=states,
-            layout=Layout(
-                height="%dpx" % (height * 0.6 - 25), width="%dpx" % (tree_width - 20)
-            ),
+            layout=Layout(height="%dpx" % (height * 0.6 - 25), width="%dpx" % (tree_width - 20)),
         )
         tree_view.add_class("view_tree")
         tree_view.add_class("scroll-area")
@@ -490,9 +480,7 @@ class CadqueryDisplay(object):
 
         tab_contents = ["Tree", "Clipping"]
         tree_clipping = Tab(
-            layout=Layout(
-                height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width
-            )
+            layout=Layout(height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width)
         )
         tree_clipping.children = [tree_view, clipping.create()]
         for i in range(len(tab_contents)):
@@ -506,10 +494,7 @@ class CadqueryDisplay(object):
             self.create_checkbox("zero", "@ 0", axes0, self.cq_view.toggle_center),
             self.create_checkbox("ortho", "Ortho", ortho, self.cq_view.toggle_ortho),
             self.create_checkbox(
-                "transparent",
-                "Transparency",
-                transparent,
-                self.cq_view.toggle_transparent,
+                "transparent", "Transparency", transparent, self.cq_view.toggle_transparent,
             ),
             self.create_checkbox(
                 "black_edges", "Black Edges", False, self.cq_view.toggle_black_edges
@@ -549,9 +534,7 @@ class CadqueryDisplay(object):
             return HBox(
                 [
                     VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
-                    VBox(
-                        [HBox(self.view_controls + self.check_controls[-2:]), renderer]
-                    ),
+                    VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer]),
                 ]
             )
 
@@ -564,5 +547,6 @@ class CadqueryDisplay(object):
                 ipy_display(widget)
             print("Done, using side car '%s'" % SIDECAR.title)
 
-    def find_group(self, selector):
-        return self.cq_view.find_group(selector)
+    @property
+    def root_group(self):
+        return self.cq_view.root_group
