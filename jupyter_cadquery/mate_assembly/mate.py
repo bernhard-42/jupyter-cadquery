@@ -47,19 +47,19 @@ class Mate:
             + axis * axis.dot(v) * (1 - cos(angle))
         )
 
-    def xr(self, angle: float) -> "Mate":
+    def rx(self, angle: float) -> "Mate":
         a = angle / 180 * pi
         self.y_dir = Mate._rotate(self.y_dir, self.x_dir, a)
         self.z_dir = Mate._rotate(self.z_dir, self.x_dir, a)
         return self
 
-    def yr(self, angle: float) -> "Mate":
+    def ry(self, angle: float) -> "Mate":
         a = angle / 180 * pi
         self.x_dir = Mate._rotate(self.x_dir, self.y_dir, a)
         self.z_dir = Mate._rotate(self.z_dir, self.y_dir, a)
         return self
 
-    def zr(self, angle: float) -> "Mate":
+    def rz(self, angle: float) -> "Mate":
         a = angle / 180 * pi
         self.x_dir = Mate._rotate(self.x_dir, self.z_dir, a)
         self.y_dir = Mate._rotate(self.y_dir, self.z_dir, a)
@@ -68,15 +68,15 @@ class Mate:
     def translate(self, axis: Vector, dist: float):
         self.pnt = self.pnt + axis * dist
 
-    def xt(self, dist: float) -> "Mate":
+    def tx(self, dist: float) -> "Mate":
         self.translate(self.x_dir, dist)
         return self
 
-    def yt(self, dist: float) -> "Mate":
+    def ty(self, dist: float) -> "Mate":
         self.translate(self.y_dir, dist)
         return self
 
-    def zt(self, dist: float) -> "Mate":
+    def tz(self, dist: float) -> "Mate":
         self.translate(self.z_dir, dist)
         return self
 
