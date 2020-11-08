@@ -8,8 +8,8 @@ class Mate:
     def __init__(
         self,
         pnt: Union[Vector, list, tuple] = None,
-        z_dir: Union[Vector, list, tuple] = None,
         x_dir: Union[Vector, list, tuple] = None,
+        z_dir: Union[Vector, list, tuple] = None,
     ):
         ...
 
@@ -88,4 +88,4 @@ class Mate:
 
         pnt, x_dir = move(self.pnt, self.x_dir, loc)
         _, z_dir = move(self.pnt, self.z_dir, loc)
-        return Mate(pnt, z_dir, x_dir)
+        return Mate(pnt, x_dir, z_dir)
