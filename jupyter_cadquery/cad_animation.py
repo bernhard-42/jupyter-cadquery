@@ -1,5 +1,6 @@
 from math import pi
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 from pythreejs import (
     NumberKeyframeTrack,
     AnimationAction,
@@ -21,71 +22,81 @@ class AnimationException(BaseException):
     ...
 
 
+valid_transforms = ["t", "tx", "ty", "tz", "q", "rx", "ry", "rz"]
+
+
 class Animation:
     def __init__(self, assembly):
         self.root = assembly
         self.tracks = []
 
-    def add_boolean_track(self, name, times, values):
-        self.tracks.append(BooleanKeyframeTrack(name=name, times=times, values=values))
-
-    def add_color_track(self, name, times, values):
-        self.tracks.append(ColorKeyframeTrack(name=name, times=times, values=values))
-
-    def add_number_track(self, name, times, values):
+    def add_number_track(self, selector, action, times, values):
         if len(times) != len(values):
             raise AnimationException(
                 "times and values arrays need have the same lenght"
             )
 
-        values = np.array(values).astype(np.float32)
-        times = np.array(times).astype(np.float32)
+        group = self.root.find_group(selector)
+        if group is None:
+            raise AnimationException(f"group '{selector}' not found")
 
-        group_name, action = name.split(".")
-        group = self.root.find_group(group_name)
+        if action.startswith("t"):
+            position = np.array(group.position).astype(np.float32)
+            if action == "t":
+                new_values = [position + v for v in values]
+            elif action == "tx":
+                new_values = [position + (v, 0, 0) for v in values]
+            elif action == "ty":
+                new_values = [position + (0, v, 0) for v in values]
+            elif action == "tz":
+                new_values = [position + (0, 0, v) for v in values]
+            else:
+                raise AnimationException(f"action {action} is not supported")
 
-        if group is not None:
-            if action.startswith("rotation"):
-                r_values = np.array([_d2r(v) for v in values]).astype(np.float32)
-                angle = 0
-                if action == "rotation":
-                    values = r_values + group.rotation
-                elif action == "rotation[x]":
-                    angle = group.rotation[0]
-                elif action == "rotation[y]":
-                    angle = group.rotation[1]
-                elif action == "rotation[z]":
-                    angle = group.rotation[2]
-                values = r_values + angle
-            elif action.startswith("position"):
-                position = np.array(group.position).astype(np.float32)
-                if action == "position":
-                    values += position
-                elif action == "position[x]":
-                    values += position[0]
-                elif action == "position[y]":
-                    values += position[1]
-                elif action == "position[z]":
-                    values += position[2]
+            self.tracks.append(
+                NumberKeyframeTrack(
+                    name=selector + ".position",
+                    times=np.array(times).astype(np.float32),
+                    values=new_values,
+                )
+            )
+
         else:
-            raise AnimationException(f"group {group_name} not found")
+            if action.startswith("r"):
+                r_values = np.array([_d2r(v) for v in values]).astype(np.float32)
 
-        self.tracks.append(NumberKeyframeTrack(name=name, times=times, values=values))
+                actual = R.from_quat(group.quaternion)
+                if action == "rx":
+                    rot_values = [R.from_rotvec((v, 0, 0)) for v in r_values]
+                elif action == "ry":
+                    rot_values = [R.from_rotvec((0, v, 0)) for v in r_values]
+                elif action == "rz":
+                    rot_values = [R.from_rotvec((0, 0, v)) for v in r_values]
+                else:
+                    raise AnimationException(f"action {action} not supported")
+                new_values = [(actual * rot).as_quat() for rot in rot_values]
 
-    def add_quaternion_track(self, name, times, values):
-        self.tracks.append(
-            QuaternionKeyframeTrack(name=name, times=times, values=values)
-        )
+            elif action == "q":
+                actual = R.from_quat(group.quaternion)
+                new_values = [
+                    tuple((actual * R.from_quat(q)).as_quat()) for q in values
+                ]
 
-    def add_string_track(self, name, times, values):
-        self.tracks.append(StringKeyframeTrack(name=name, times=times, values=values))
+            else:
+                raise AnimationException(f"action {action} is not supported")
 
-    def add_vector_track(self, name, times, values):
-        self.tracks.append(VectorKeyframeTrack(name=name, times=times, values=values))
+            self.tracks.append(
+                QuaternionKeyframeTrack(
+                    name=selector + ".quaternion",
+                    times=np.array(times).astype(np.float32),
+                    values=new_values,
+                )
+            )
 
     def animate(self, speed=1, autoplay=False):
-        for track in self.tracks:
-            track.times /= speed
+        if speed != 1:
+            for track in self.tracks:
+                track.times /= speed
         clip = AnimationClip(tracks=self.tracks)
         action = AnimationAction(AnimationMixer(self.root), clip, self.root)
         if autoplay:
