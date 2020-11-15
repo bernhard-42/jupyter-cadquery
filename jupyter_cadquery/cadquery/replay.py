@@ -249,9 +249,7 @@ class Replay(object):
                 if len(step.args) > 0 and len(step.kwargs) > 0:
                     code += ","
                 if step.kwargs != {}:
-                    code += ", ".join(
-                        ["%s=%s" % (k, v) for k, v in step.kwargs.items()]
-                    )
+                    code += ", ".join(["%s=%s" % (k, v) for k, v in step.kwargs.items()])
                 code += ")"
                 if step.result_name != "":
                     code += " => %s" % step.result_name
@@ -269,9 +267,7 @@ class Replay(object):
 
         for i in range(len(raw_steps)):
             step = raw_steps[i]
-            next_level = (
-                step.level if i == (len(raw_steps) - 1) else raw_steps[i + 1].level
-            )
+            next_level = step.level if i == (len(raw_steps) - 1) else raw_steps[i + 1].level
 
             # level change, so add/use the variable name
             if step.level > 0 and step.level != next_level and step.result_name == "":
@@ -316,10 +312,7 @@ class Replay(object):
                 for arg in child["args"]:
                     if isinstance(arg, cq.Workplane):
                         result_name = getattr(arg, "name", None)
-                        stack = (
-                            self.to_array(arg, level=level + 2, result_name=result_name)
-                            + stack
-                        )
+                        stack = self.to_array(arg, level=level + 2, result_name=result_name) + stack
             return stack
 
         stack = []
@@ -333,10 +326,7 @@ class Replay(object):
                 for arg in caller["args"]:
                     if isinstance(arg, cq.Workplane):
                         result_name = getattr(arg, "name", "")
-                        stack = (
-                            self.to_array(arg, level=level + 1, result_name=result_name)
-                            + stack
-                        )
+                        stack = self.to_array(arg, level=level + 1, result_name=result_name) + stack
             obj = obj.parent
 
         return stack
@@ -347,17 +337,11 @@ class Replay(object):
             cad_objs = [self.stack[i][1] for i in self.indexes]
 
             # Save state
-            axes = (
-                True if self.view is None else self.view.cq_view.axes.get_visibility()
-            )
-            grid = (
-                True if self.view is None else self.view.cq_view.grid.get_visibility()
-            )
+            axes = True if self.view is None else self.view.cq_view.axes.get_visibility()
+            grid = True if self.view is None else self.view.cq_view.grid.get_visibility()
             axes0 = True if self.view is None else self.view.cq_view.axes.is_center()
             ortho = True if self.view is None else self.view.cq_view.is_ortho()
-            transparent = (
-                False if self.view is None else self.view.cq_view.is_transparent()
-            )
+            transparent = False if self.view is None else self.view.cq_view.is_transparent()
             rotation = None if self.view is None else self.view.cq_view.camera.rotation
             zoom = 2.5 if self.view is None else self.view.cq_view.camera.zoom
             position = None if self.view is None else self.view.cq_view.camera.position
@@ -403,9 +387,7 @@ class Replay(object):
 
         # Add hidden result to start with final size and allow for comparison
         if not isinstance(self.stack[-1][1].val(), cq.Vector):
-            result = Part(
-                self.stack[-1][1], "Result", show_faces=False, show_edges=False
-            )
+            result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
             objs = [result] + cad_objs
         else:
             objs = cad_objs
@@ -437,9 +419,7 @@ def replay(cad_obj, index=0, debug=False, cad_width=600, height=600):
         print("Cannot replay", cad_obj)
         return None
 
-    r.stack = r.format_steps(
-        r.to_array(workplane, result_name=getattr(workplane, "name", None))
-    )
+    r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
     r.indexes = [index]
 
     r.select_box = SelectMultiple(

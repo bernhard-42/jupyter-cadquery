@@ -54,9 +54,7 @@ class _CADObject(object):
 
 
 class _Part(_CADObject):
-    def __init__(
-        self, shape, name="Part", color=None, show_faces=True, show_edges=True
-    ):
+    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
         super().__init__()
         self.name = name
         self.id = self.next_id()
@@ -106,9 +104,7 @@ class _Part(_CADObject):
 
 
 class _Faces(_Part):
-    def __init__(
-        self, faces, name="Faces", color=None, show_faces=True, show_edges=True
-    ):
+    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
         super().__init__(faces, name, color, show_faces, show_edges)
         self.color = Color(color or (255, 0, 255))
 
@@ -240,9 +236,7 @@ def _show(assembly, **kwargs):
     shapes = assembly.collect_mapped_shapes(mapping)
 
     d = CadqueryDisplay()
-    widget = d.create(
-        shapes=shapes, mapping=mapping, tree=assembly.to_nav_dict(), **kwargs
-    )
+    widget = d.create(shapes=shapes, mapping=mapping, tree=assembly.to_nav_dict(), **kwargs)
 
     d.info.ready_msg(d.cq_view.grid.step)
 

@@ -479,9 +479,7 @@ class CadqueryDisplay(object):
         tree_view.observe(self.cq_view.change_visibility(paths), "state")
 
         tab_contents = ["Tree", "Clipping"]
-        tree_clipping = Tab(
-            layout=Layout(height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width)
-        )
+        tree_clipping = Tab(layout=Layout(height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width))
         tree_clipping.children = [tree_view, clipping.create()]
         for i in range(len(tab_contents)):
             tree_clipping.set_title(i, tab_contents[i])
@@ -494,11 +492,12 @@ class CadqueryDisplay(object):
             self.create_checkbox("zero", "@ 0", axes0, self.cq_view.toggle_center),
             self.create_checkbox("ortho", "Ortho", ortho, self.cq_view.toggle_ortho),
             self.create_checkbox(
-                "transparent", "Transparency", transparent, self.cq_view.toggle_transparent,
+                "transparent",
+                "Transparency",
+                transparent,
+                self.cq_view.toggle_transparent,
             ),
-            self.create_checkbox(
-                "black_edges", "Black Edges", False, self.cq_view.toggle_black_edges
-            ),
+            self.create_checkbox("black_edges", "Black Edges", False, self.cq_view.toggle_black_edges),
         ]
         self.check_controls[-2].add_class("indent")
 
@@ -522,9 +521,7 @@ class CadqueryDisplay(object):
                 tooltip = "Reset view"
             else:
                 tooltip = "Change view to %s" % typ
-            button = self.create_button(
-                typ, self.cq_view.change_view(typ, CadqueryDisplay.directions), tooltip
-            )
+            button = self.create_button(typ, self.cq_view.change_view(typ, CadqueryDisplay.directions), tooltip)
             self.view_controls.append(button)
 
         # only show pure renderer

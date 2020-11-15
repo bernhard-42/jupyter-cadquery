@@ -61,9 +61,7 @@ class Helpers(object):
 
 
 class Grid(Helpers):
-    def __init__(
-        self, bb_center=None, maximum=5, ticks=10, colorCenterLine="#aaa", colorGrid="#ddd"
-    ):
+    def __init__(self, bb_center=None, maximum=5, ticks=10, colorCenterLine="#aaa", colorGrid="#ddd"):
         super().__init__(bb_center)
         self.maximum = maximum
         axis_start, axis_end, nice_tick = self.nice_bounds(-maximum, maximum, 2 * ticks)
@@ -115,7 +113,9 @@ class Grid(Helpers):
 
         return axis_start, axis_end, nice_tick
 
-    def get_position(self,):
+    def get_position(
+        self,
+    ):
         return self.grid.position
 
     def set_position(self, position):
@@ -136,14 +136,10 @@ class Axes(Helpers):
         super().__init__(bb_center)
 
         self.axes = []
-        for vector, color in zip(
-            ([length, 0, 0], [0, length, 0], [0, 0, length]), ("red", "green", "blue")
-        ):
+        for vector, color in zip(([length, 0, 0], [0, length, 0], [0, 0, length]), ("red", "green", "blue")):
             self.axes.append(
                 LineSegments2(
-                    LineSegmentsGeometry(
-                        positions=[[self.center, self._shift(self.center, vector)]]
-                    ),
+                    LineSegmentsGeometry(positions=[[self.center, self._shift(self.center, vector)]]),
                     LineMaterial(linewidth=width, color=color),
                 )
             )
@@ -194,9 +190,7 @@ class CustomMaterial(ShaderMaterial):
         uniforms = shader["uniforms"]
         uniforms["alpha"] = dict(value=0.7)
 
-        super().__init__(
-            uniforms=uniforms, vertexShader=vertexShader, fragmentShader=fragmentShader
-        )
+        super().__init__(uniforms=uniforms, vertexShader=vertexShader, fragmentShader=fragmentShader)
         self.lights = True
 
     @property
@@ -223,4 +217,3 @@ class CustomMaterial(ShaderMaterial):
             uniforms[key] = {"type": self.types.get(key), "value": value}
         self.uniforms = uniforms
         self.needsUpdate = True
-

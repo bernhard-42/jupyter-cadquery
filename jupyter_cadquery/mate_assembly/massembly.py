@@ -47,9 +47,7 @@ class MAssembly(Assembly):
     def find_assembly(self, selector: str) -> Optional["MAssembly"]:
         return tree_find(self, selector)
 
-    def find_obj(
-        self, assembly: "MAssembly", obj_selectors: Tuple[Selector, ...] = None
-    ) -> Optional[Shape]:
+    def find_obj(self, assembly: "MAssembly", obj_selectors: Tuple[Selector, ...] = None) -> Optional[Shape]:
         obj = assembly.obj
         if obj_selectors is not None and isinstance(obj, (Workplane, Shape)):
             for selector in obj_selectors:

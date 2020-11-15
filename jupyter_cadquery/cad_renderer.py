@@ -69,9 +69,7 @@ class RenderCache:
 
         hash = compound.HashCode(HASH_CODE_MAX)
         if self.objects.get(hash) is None:
-            np_vertices, np_triangles, np_normals = tessellate(
-                compound, quality, angular_tolerance
-            )
+            np_vertices, np_triangles, np_normals = tessellate(compound, quality, angular_tolerance)
 
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
@@ -131,7 +129,9 @@ class IndexedMesh(Mesh):
         self.ind = None
 
     def __repr__(self):
-        return f"IndexedMesh(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
+        return (
+            f"IndexedMesh(name='{self.name}', ind={self.ind}, position={self.position}, quaternion={self.quaternion})"
+        )
 
 
 class IndexedPoints(Points):
@@ -221,9 +221,7 @@ class CadqueryRenderer(object):
                 self.angular_tolerance,
             )
 
-            shp_material = material(
-                mesh_color.web_color, transparent=transparent, opacity=opacity
-            )
+            shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
             # Do not cache building the mesh. Might lead to unpredictable results
             shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
@@ -244,9 +242,7 @@ class CadqueryRenderer(object):
 
             attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
 
-            mat = PointsMaterial(
-                color=vertex_color.web_color, sizeAttenuation=False, size=vertex_width
-            )
+            mat = PointsMaterial(color=vertex_color.web_color, sizeAttenuation=False, size=vertex_width)
             geom = BufferGeometry(attributes=attributes)
             points = IndexedPoints(geometry=geom, material=mat)
 
@@ -260,9 +256,7 @@ class CadqueryRenderer(object):
             edge_list = flatten(list(map(explode, edge_list)))
             if isinstance(edge_color, (list, tuple)):
                 if len(edge_list) != len(edge_color):
-                    print(
-                        "warning: color list and edge list have different length, using first color for all edges"
-                    )
+                    print("warning: color list and edge list have different length, using first color for all edges")
                     edge_color = edge_color[0]
 
             if isinstance(edge_color, (list, tuple)):

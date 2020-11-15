@@ -41,11 +41,7 @@ class Mate:
     @staticmethod
     def _rotate(v, axis, angle) -> float:
         # https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
-        return (
-            v * cos(angle)
-            + axis.cross(v) * sin(angle)
-            + axis * axis.dot(v) * (1 - cos(angle))
-        )
+        return v * cos(angle) + axis.cross(v) * sin(angle) + axis * axis.dot(v) * (1 - cos(angle))
 
     def rx(self, angle: float) -> "Mate":
         a = angle / 180 * pi

@@ -32,9 +32,7 @@ class Animation:
 
     def add_number_track(self, selector, action, times, values):
         if len(times) != len(values):
-            raise AnimationException(
-                "times and values arrays need have the same lenght"
-            )
+            raise AnimationException("times and values arrays need have the same lenght")
 
         group = self.root.find_group(selector)
         if group is None:
@@ -78,9 +76,7 @@ class Animation:
 
             elif action == "q":
                 actual = R.from_quat(group.quaternion)
-                new_values = [
-                    tuple((actual * R.from_quat(q)).as_quat()) for q in values
-                ]
+                new_values = [tuple((actual * R.from_quat(q)).as_quat()) for q in values]
 
             else:
                 raise AnimationException(f"action {action} is not supported")

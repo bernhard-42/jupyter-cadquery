@@ -149,9 +149,7 @@ class CadqueryView(object):
             self._update()
 
         def change(b):
-            self.camera.position = self._add(
-                self.bb.center, self._scale(directions[typ])
-            )
+            self.camera.position = self._add(self.bb.center, self._scale(directions[typ]))
             self._update()
 
         if typ == "fit":
@@ -197,9 +195,7 @@ class CadqueryView(object):
                 else:
                     if isinstance(obj, LineSegments2):
                         if obj.material.linewidth == 1:
-                            obj.material.color = (
-                                "#000" if value else self.default_edge_color.web_color
-                            )
+                            obj.material.color = "#000" if value else self.default_edge_color.web_color
 
         value = self.bool_or_new(change)
         toggle(self.pickable_objects, value)
@@ -287,9 +283,7 @@ class CadqueryView(object):
                     if loc is None:
                         result.append(shape["shape"])
                     else:
-                        reloc_shape = [
-                            Shape(s).located(loc).wrapped for s in shape["shape"]
-                        ]
+                        reloc_shape = [Shape(s).located(loc).wrapped for s in shape["shape"]]
                         result.append(reloc_shape)
                 else:
                     result += all_shapes(shape, loc)
@@ -317,10 +311,7 @@ class CadqueryView(object):
         self.bb = BoundingBox(all_shapes(self.shapes))
         if self.bb.is_empty():
             # add origin to increase bounding box to also show origin
-            self.bb = BoundingBox(
-                [[Vertex.makeVertex(0, 0, 0).wrapped]]
-                + [shape["shape"] for shape in self.shapes]
-            )
+            self.bb = BoundingBox([[Vertex.makeVertex(0, 0, 0).wrapped]] + [shape["shape"] for shape in self.shapes])
             if self.bb.is_empty():
                 # looks like only one vertex in origin is to be shown
                 self.bb = BoundingBox(
@@ -369,15 +360,11 @@ class CadqueryView(object):
         )
 
         # Set up scene
-        environment = (
-            self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
-        )
+        environment = self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
         self.scene = Scene(children=environment + [self.pickable_objects])
 
         # Set up Controllers
-        self.controller = OrbitControls(
-            controlling=self.camera, target=camera_target, target0=camera_target
-        )
+        self.controller = OrbitControls(controlling=self.camera, target=camera_target, target0=camera_target)
 
         # Update controller to instantiate camera position
         self.camera.zoom = zoom
