@@ -15,7 +15,13 @@
 #
 
 from ._version import __version_info__, __version__
-from .cad_display import set_sidecar, set_defaults, get_defaults, reset_defaults
+from .cad_display import (
+    set_sidecar,
+    get_default,
+    get_defaults,
+    set_defaults,
+    reset_defaults,
+)
 from .cad_animation import Animation
 from .cad_renderer import reset_cache
 from .export import exportSTL

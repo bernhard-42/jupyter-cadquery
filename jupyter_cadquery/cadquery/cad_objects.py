@@ -14,6 +14,9 @@
 # limitations under the License.
 #
 
+import html
+from jupyter_cadquery.mate_assembly.massembly import MAssembly
+import numpy as np
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import Workplane, Shape, Vector, Vertex, Location, Assembly as CqAssembly
 
@@ -28,7 +31,7 @@ from jupyter_cadquery.cad_objects import (
 
 from .cqparts import is_cqparts, convert_cqparts
 from ..utils import Color
-
+from ..ocp_utils import get_rgb
 
 class Part(_Part):
     def __init__(
@@ -172,7 +175,11 @@ def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parents=True)
 
 
 def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
-    obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in cad_obj.vals()])
+    if cad_obj.vals():
+        vectors = cad_obj.vals()
+    else:
+        vectors = [cad_obj.val()]
+    obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in vectors])
     result = [
         Vertices(obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))
     ]
@@ -211,7 +218,10 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False):
     loc = Location()
     render_loc = cad_obj.loc
 
-    color = Color(cad_obj.web_color)
+    if isinstance(cad_obj, MAssembly):
+        color = Color(cad_obj.web_color)
+    else:
+        color = Color(get_rgb(cad_obj.color))
 
     parent = [
         Part(
@@ -252,20 +262,35 @@ def _from_workplane(cad_obj, obj_id, name="Part"):
 
 
 def _is_facelist(cad_obj):
-    return all([isinstance(obj, Face) for obj in cad_obj.objects])
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Face) for obj in cad_obj.objects])
+    )
 
 
 def _is_vertexlist(cad_obj):
-    return all([isinstance(obj, Vertex) for obj in cad_obj.objects])
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Vertex) for obj in cad_obj.objects])
+    )
 
 
 def _is_edgelist(cad_obj):
-    return all([isinstance(obj, Edge) for obj in cad_obj.objects])
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Edge) for obj in cad_obj.objects])
+    )
 
 
 def _is_wirelist(cad_obj):
-    return all([isinstance(obj, Wire) for obj in cad_obj.objects])
-
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Wire) for obj in cad_obj.objects])
+    )
 
 def show(*cad_objs, render_mates=False, **kwargs):
     """Show CAD objects in Jupyter

@@ -324,12 +324,11 @@ class CadqueryView(object):
             if self.bb.is_empty():
                 # looks like only one vertex in origin is to be shown
                 self.bb = BoundingBox(
-                    [[Vertex.makeVertex(0.1, 0.1, 0.1).wrapped]]
-                    + [shape["shape"] for shape in self.shapes]
+                    [[Vertex.makeVertex(0.1, 0.1, 0.1).wrapped]] + [shape["shape"] for shape in self.shapes]
                 )
 
-        bb_max = 1.5 * self.bb.max
-        orbit_radius = 2 * self.bb.max_dist_from_center()
+        bb_max = self.bb_factor * self.bb.max_dist_from_center()
+        orbit_radius = 2 * bb_max
 
         # Set up camera
         camera_target = self.bb.center
@@ -357,14 +356,11 @@ class CadqueryView(object):
 
         # Set up lights in every of the 8 corners of the global bounding box
         positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
-        key_lights = [
-            DirectionalLight(color="white", position=position, intensity=0.12)
-            for position in positions
-        ]
+        key_lights = [DirectionalLight(color="white", position=position, intensity=0.12) for position in positions]
         ambient_light = AmbientLight(intensity=1.0)
 
         # Set up Helpers
-        self.axes = Axes(bb_center=self.bb.center, length=bb_max * 1.1)
+        self.axes = Axes(bb_center=self.bb.center, length=bb_max)
         self.grid = Grid(
             bb_center=self.bb.center,
             maximum=bb_max,

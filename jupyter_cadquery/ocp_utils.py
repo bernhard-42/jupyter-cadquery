@@ -147,10 +147,7 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
 
         # add vertices
         if poly is not None:
-            vertices += [
-                (v.X(), v.Y(), v.Z())
-                for v in (v.Transformed(Trsf) for v in poly.Nodes())
-            ]
+            vertices += [(v.X(), v.Y(), v.Z()) for v in (v.Transformed(Trsf) for v in poly.Nodes())]
 
             # add triangles
             triangles += [
@@ -199,13 +196,9 @@ def discretize_edge(a_topods_edge, deflection=0.1, algorithm="QuasiUniformDeflec
     algorithm: to choose in ["UniformAbscissa", "QuasiUniformDeflection"]
     """
     if not is_edge(a_topods_edge):
-        raise AssertionError(
-            "You must provide a TopoDS_Edge to the discretize_edge function."
-        )
+        raise AssertionError("You must provide a TopoDS_Edge to the discretize_edge function.")
     if a_topods_edge.IsNull():
-        print(
-            "Warning : TopoDS_Edge is null. discretize_edge will return an empty list of points."
-        )
+        print("Warning : TopoDS_Edge is null. discretize_edge will return an empty list of points.")
         return []
     curve_adaptator = BRepAdaptor_Curve(a_topods_edge)
     first = curve_adaptator.FirstParameter()
@@ -305,3 +298,10 @@ def tq(loc):
     t = T.Transforms()
     q = T.GetRotation()
     return (t, (q.X(), q.Y(), q.Z(), q.W()))
+
+
+def get_rgb(color):
+    if color is None:
+        return (176, 176, 176)
+    rgb = color.wrapped.GetRGB()
+    return (rgb.Red(), rgb.Green(), rgb.Blue())
