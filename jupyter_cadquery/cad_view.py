@@ -51,6 +51,7 @@ class CadqueryView(object):
         shapes,
         width=600,
         height=400,
+        bb_factor=1.1,
         quality=0.1,
         angular_tolerance=0.1,
         edge_accuracy=0.01,
@@ -64,6 +65,7 @@ class CadqueryView(object):
         self.width = width
         self.height = height
         self.quality = quality
+        self.bb_factor = bb_factor
         self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges

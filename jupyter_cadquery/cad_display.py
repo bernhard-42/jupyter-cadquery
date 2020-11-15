@@ -42,7 +42,97 @@ from .widgets import (
 )
 from .cad_view import CadqueryView
 
-SIDECAR = None
+
+class Defaults:
+    def __init__(self):
+        self.reset_defaults()
+
+    def get_defaults(self):
+        return self.defaults
+
+    def get_default(self, key):
+        return self.defaults.get(key)
+
+    def set_defaults(self, **kwargs):
+        """Set defaults for CAD viewer
+
+        Valid keywords:
+        - height:            Height of the CAD view (default=600)
+        - tree_width:        Width of navigation tree part of the view (default=250)
+        - cad_width:         Width of CAD view part of the view (default=800)
+        - bb_factor:         Scale bounding box to ensure compete rendering (default=1.0)
+        - render_shapes:     Render shapes  (default=True)
+        - render_edges:      Render edges  (default=True)
+        - quality:           Tolerance for tessellation (default=0.1)
+        - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
+        - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
+        - axes:              Show axes (default=False)
+        - axes0:             Show axes at (0,0,0) (default=False)
+        - grid:              Show grid (default=False)
+        - ortho:             Use orthographic projections (default=True)
+        - transparent:       Show objects transparent (default=False)
+        - position:          Relative camera position that will be scaled (default=(1, 1, 1))
+        - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
+        - zoom:              Zoom factor of view (default=2.5)
+        - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
+        - display:           Select display: "sidecar", "cell", "html"
+        - tools:             Show the viewer tools like the object tree
+        - timeit:            Show rendering times (default=False)
+
+        For example isometric projection can be achieved in two ways:
+        - position = (1, 1, 1)
+        - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
+        """
+
+        for k, v in kwargs.items():
+            if self.get_default(k) is None:
+                print("Paramater %s is not a valid argument for show()" % k)
+            else:
+                if k == "zoom" and v == 1.0:
+                    # for zoom == 1 viewing has a bug, so slightly increase it
+                    v = 1 + 1e-6
+                self.defaults[k] = v
+
+    def reset_defaults(self):
+        self.defaults = {
+            "height": 600,
+            "tree_width": 250,
+            "cad_width": 800,
+            "bb_factor": 1.1,
+            "render_shapes": True,
+            "render_edges": True,
+            "quality": 0.1,
+            "edge_accuracy": 0.01,
+            "angular_tolerance": 0.1,
+            "axes": False,
+            "axes0": False,
+            "grid": False,
+            "ortho": True,
+            "transparent": False,
+            "position": (1, 1, 1),
+            "rotation": (0, 0, 0),
+            "zoom": 2.5,
+            "mac_scrollbar": True,
+            "display": "cell",
+            "tools": True,
+            "timeit": False,
+        }
+
+
+def get_defaults():
+    return DEFAULTS.get_defaults()
+
+
+def get_default(key):
+    return DEFAULTS.get_default(key)
+
+
+def set_defaults(**kwargs):
+    DEFAULTS.set_defaults(**kwargs)
+
+
+def reset_defaults():
+    DEFAULTS.reset_defaults()
 
 
 def set_sidecar(title):
@@ -54,6 +144,10 @@ def set_sidecar(title):
         set_defaults(display="sidecar")
     except:
         print("Warning: module sidecar not installed")
+
+
+SIDECAR = None
+DEFAULTS = Defaults()
 
 
 class Info(object):
@@ -366,6 +460,7 @@ class CadqueryDisplay(object):
         render_shapes=None,
         render_edges=None,
         height=None,
+        bb_factor=1.1,
         tree_width=None,
         cad_width=None,
         quality=None,
@@ -384,11 +479,13 @@ class CadqueryDisplay(object):
         tools=None,
         timeit=None,
     ):
-        preset = lambda key, value: DEFAULTS[key] if value is None else value
+        def preset(key, value):
+            return get_default(key) if value is None else value
 
         height = preset("height", height)
         tree_width = preset("tree_width", tree_width)
         cad_width = preset("cad_width", cad_width)
+        bb_factor = preset("bb_factor", bb_factor)
         render_shapes = preset("render_shapes", render_shapes)
         render_edges = preset("render_edges", render_edges)
         quality = preset("quality", quality)
@@ -433,6 +530,7 @@ class CadqueryDisplay(object):
             shapes,
             width=cad_width,
             height=height,
+            bb_factor=bb_factor,
             quality=quality,
             edge_accuracy=edge_accuracy,
             angular_tolerance=angular_tolerance,
