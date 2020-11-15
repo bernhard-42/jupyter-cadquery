@@ -353,7 +353,7 @@ def show(*cad_objs, render_mates=False, **kwargs):
     if assembly is None:
         raise ValueError("%s cannot be viewed" % cad_objs)
 
-    if len(assembly.objects) == 1:
+    if len(assembly.objects) == 1 and isinstance(assembly.objects[0], Assembly):
         # omit leading "Assembly" group
         return _show(assembly.objects[0], **kwargs)
     else:
