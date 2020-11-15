@@ -146,37 +146,39 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
         internal = face.Orientation() == TopAbs_Orientation.TopAbs_INTERNAL
 
         # add vertices
-        vertices += [
-            (v.X(), v.Y(), v.Z()) for v in (v.Transformed(Trsf) for v in poly.Nodes())
-        ]
+        if poly is not None:
+            vertices += [
+                (v.X(), v.Y(), v.Z())
+                for v in (v.Transformed(Trsf) for v in poly.Nodes())
+            ]
 
-        # add triangles
-        triangles += [
-            (
-                t.Value(1) + offset - 1,
-                t.Value(3 if reverse else 2) + offset - 1,
-                t.Value(2 if reverse else 3) + offset - 1,
-            )
-            for t in poly.Triangles()
-        ]
+            # add triangles
+            triangles += [
+                (
+                    t.Value(1) + offset - 1,
+                    t.Value(3 if reverse else 2) + offset - 1,
+                    t.Value(2 if reverse else 3) + offset - 1,
+                )
+                for t in poly.Triangles()
+            ]
 
-        # add normals
-        if poly.HasUVNodes():
-            prop = BRepGProp_Face(face)
-            uvnodes = poly.UVNodes()
-            for uvnode in uvnodes:
-                p = gp_Pnt()
-                n = gp_Vec()
-                prop.Normal(uvnode.X(), uvnode.Y(), p, n)
+            # add normals
+            if poly.HasUVNodes():
+                prop = BRepGProp_Face(face)
+                uvnodes = poly.UVNodes()
+                for uvnode in uvnodes:
+                    p = gp_Pnt()
+                    n = gp_Vec()
+                    prop.Normal(uvnode.X(), uvnode.Y(), p, n)
 
-                if n.SquareMagnitude() > 0:
-                    n.Normalize()
-                if internal:
-                    n.Reverse()
+                    if n.SquareMagnitude() > 0:
+                        n.Normalize()
+                    if internal:
+                        n.Reverse()
 
-                normals.append((n.X(), n.Y(), n.Z()))
+                    normals.append((n.X(), n.Y(), n.Z()))
 
-        offset += poly.NbNodes()
+            offset += poly.NbNodes()
 
     if not triangulated:
         # Remove the mesh data again
