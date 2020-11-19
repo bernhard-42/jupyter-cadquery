@@ -1,4 +1,4 @@
-from typing import Optional, Union, Tuple, cast
+from typing import Optional, Union, Tuple, cast, overload
 
 from cadquery import Shape, Workplane, Location, NearestToPointSelector, Assembly
 from .mate import Mate
@@ -99,11 +99,24 @@ class MAssembly(Assembly):
                     v["mate"] = v["mate"].moved(assy.origin.loc.inverse)
             self.relocated = True
 
-    def assemble(self, mate_obj: str, mate_target: str):
+    @overload
+    def assemble(self, mate_obj: str, target_mate: str):
+        ...
+
+    @overload
+    def assemble(self, mate_obj: str, target_location: Location):
+        ...
+
+    def assemble(self, *args):
+        mate_obj = args[0]
         m_obj = self.mates[mate_obj]["mate"]
         assy = self.find_assembly(self.mates[mate_obj]["assembly"])
-        if assy is not None:
-            m_target = self.mates[mate_target]["mate"]
-            assy.loc = m_target.loc * m_obj.loc.inverse
+        if isinstance(args[1], str):
+            target_mate = args[1]
+            if assy is not None:
+                m_target = self.mates[target_mate]["mate"]
+                assy.loc = m_target.loc * m_obj.loc.inverse
+        else:
+            assy.loc = args[1]
 
         return self
