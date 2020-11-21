@@ -60,11 +60,7 @@ class BoundingBox(object):
         return max(
             [
                 distance(self.center, v)
-                for v in itertools.product(
-                    (self.xmin, self.xmax),
-                    (self.ymin, self.ymax),
-                    (self.zmin, self.zmax),
-                )
+                for v in itertools.product((self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax),)
             ]
         )
 
@@ -72,11 +68,7 @@ class BoundingBox(object):
         return max(
             [
                 np.linalg.norm(v)
-                for v in itertools.product(
-                    (self.xmin, self.xmax),
-                    (self.ymin, self.ymax),
-                    (self.zmin, self.zmax),
-                )
+                for v in itertools.product((self.xmin, self.xmax), (self.ymin, self.ymax), (self.zmin, self.zmax),)
             ]
         )
 
@@ -304,4 +296,5 @@ def get_rgb(color):
     if color is None:
         return (176, 176, 176)
     rgb = color.wrapped.GetRGB()
-    return (rgb.Red(), rgb.Green(), rgb.Blue())
+    return (int(255 * rgb.Red()), int(255 * rgb.Green()), int(255 * rgb.Blue()))
+
