@@ -1,4 +1,5 @@
-from typing import Optional, Union, Tuple, cast, overload
+from dataclasses import dataclass
+from typing import Optional, Union, Tuple, cast, Dict
 
 from cadquery import Shape, Workplane, Location, NearestToPointSelector, Assembly
 from .mate import Mate
@@ -8,20 +9,37 @@ from ..ocp_utils import get_rgb
 Selector = Tuple[str, Union[str, Tuple[float, float]]]
 
 
+def __location__repr__(self):
+    T = self.wrapped.Transformation()
+    t = T.Transforms()
+    r = T.GetRotation()
+    return f"Location(t={t}, q=({r.X()}, {r.X()}, {r.Y()}, {r.W()}))"
+
+
+Location.__repr__ = __location__repr__
+
+
+@dataclass
+class MateDef:
+    mate: Mate
+    assembly: "MAssembly"
+
+
 class MAssembly(Assembly):
     def __init__(self, *args, **kwargs):
-        self.mates = {}
-        self.matelist = []
-        self.origin = None
-        self._relocated = False
+        self.mates: Dict[str, MateDef] = {}
+        self._origin: Location = None
 
         super().__init__(*args, **kwargs)
 
-    def __str__(self) -> str:
+    def __repr__(self):
+        return f"MAssembly('{self.name}', objects: {len(self.objects)}, children: {len(self.children)})"
+
+    def dump(self) -> str:
         def to_string(self, ind=""):
             result = f"{ind}MAssembly({self.name}: {self.obj})\n"
-            if self.matelist:
-                result += f"{ind}  mates={self.matelist}\n"
+            # if self.matelist:
+            #     result += f"{ind}  mates={self.mates.keys()}\n"
             for c in self.children:
                 result += to_string(c, ind + "  ")
             return result
@@ -113,33 +131,32 @@ class MAssembly(Assembly):
         """
         assembly = self.find_assembly(selector)
         if assembly is not None:
-            # TODO remove assembly or add object to dict
-            self.mates[name] = {"mate": mate, "assembly": selector}
-            assembly.matelist.append(name)
+            self.mates[name] = MateDef(mate, assembly)
             if origin:
-                assembly.origin = mate
-
+                assembly._origin = mate.loc
+        else:
+            print(f"An assembly for the selector '{selector}' does not exist")
         return self
 
-    def _set_origin(self):
-        """Relocate every shape to have its origin at the assembly origin"""
-        if self.origin is not None:
-            self.obj = Workplane(self.obj.val().moved(self.origin.loc.inverse))
+    def _relocate(self):
+        """Relocate all shapes to have its origin at the assembly origin"""
+        if self._origin is not None:
+            self.obj = Workplane(self.obj.val().moved(self._origin.inverse))
             self.loc = Location()  # change location to identity
         for c in self.children:
-            c._set_origin()
+            c._relocate()
 
     def relocate(self):
-        """Relocate every sub assembly so that all its shapes have their origin at the assembly origin"""
-        if self._relocated:
-            print("Already relocated")
-        else:
-            self._set_origin()
-            for _, v in self.mates.items():
-                assy = self.find_assembly(v["assembly"])
-                if assy.origin is not None:
-                    v["mate"] = v["mate"].moved(assy.origin.loc.inverse)
-            self._relocated = True
+        """Relocate the assembly so that all its shapes have their origin at the assembly origin"""
+        # relocate all CadQuery objects
+        self._relocate()
+        # relocate all mates
+        for _, mate_def in self.mates.items():
+            if mate_def.assembly._origin is not None:
+                mate_def.mate = mate_def.mate.moved(mate_def.assembly._origin.inverse)
+        # Reset all _origin values
+        for _, mate_def in self.mates.items():
+            mate_def.assembly._origin = None
 
     def assemble(self, mate_name: str, target: Union[str, Location]):
         """
@@ -148,11 +165,11 @@ class MAssembly(Assembly):
         :param target: name of the target mate or a Location object to relocate the mate to
         :returns self
         """
-        mate = self.mates[mate_name]["mate"]
-        assy = self.find_assembly(self.mates[mate_name]["assembly"])
+        mate = self.mates[mate_name].mate
+        assy = self.mates[mate_name].assembly
         if isinstance(target, str):
             if assy is not None:
-                target_mate = self.mates[target]["mate"]
+                target_mate = self.mates[target].mate
                 assy.loc = target_mate.loc * mate.loc.inverse
         else:
             assy.loc = target

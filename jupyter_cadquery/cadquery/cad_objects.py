@@ -216,20 +216,14 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
         for i, shape in enumerate(cad_obj.shapes)
     ]
 
-    if render_mates and hasattr(cad_obj, "matelist") and cad_obj.matelist:
+    if render_mates and cad_obj.mates is not None:
+        RGB = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
         parent.append(
             Assembly(
                 [
-                    Part(
-                        to_edge(top.mates[mate]["mate"], scale=mate_scale),
-                        name=mate,
-                        color=(
-                            Color((255, 0, 0)),
-                            Color((0, 128, 0)),
-                            Color((0, 0, 255)),
-                        ),
-                    )
-                    for mate in cad_obj.matelist
+                    Part(to_edge(mate_def.mate, scale=mate_scale), name=name, color=RGB)
+                    for name, mate_def in top.mates.items() 
+                    if mate_def.assembly == cad_obj
                 ],
                 name="mates",
                 loc=Location(),  # mates inherit the parent location, so actually add a no-op

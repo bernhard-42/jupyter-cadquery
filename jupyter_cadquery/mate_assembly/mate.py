@@ -34,9 +34,9 @@ class Mate:
     def loc(self):
         return Location(Plane(self.pnt, self.x_dir, self.z_dir))
 
-    def __str__(self) -> str:
-        c = lambda v: f"({v.x:9.5f}, {v.y:9.5f}, {v.z:9.5f})"
-        return f"Mate(pnt={c(self.pnt)}, x_dir={c(self.x_dir)}, y_dir={c(self.y_dir)}, z_dir={c(self.z_dir)})"
+    def __repr__(self) -> str:
+        c = lambda v: f"({v.x:.4f}, {v.y:.4f}, {v.z:.4f})"
+        return f"Mate(pnt={c(self.pnt)}, x_dir={c(self.x_dir)}, z_dir={c(self.z_dir)})"
 
     @staticmethod
     def _rotate(v, axis, angle) -> float:
