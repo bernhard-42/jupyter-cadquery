@@ -9,16 +9,6 @@ from ..ocp_utils import get_rgb
 Selector = Tuple[str, Union[str, Tuple[float, float]]]
 
 
-def __location__repr__(self):
-    T = self.wrapped.Transformation()
-    t = T.Transforms()
-    r = T.GetRotation()
-    return f"Location(t={t}, q=({r.X()}, {r.X()}, {r.Y()}, {r.W()}))"
-
-
-Location.__repr__ = __location__repr__
-
-
 @dataclass
 class MateDef:
     mate: Mate

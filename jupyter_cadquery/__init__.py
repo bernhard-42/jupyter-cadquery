@@ -25,3 +25,13 @@ from .cad_display import (
 from .cad_animation import Animation
 from .cad_renderer import reset_cache
 from .export import exportSTL
+from .ocp_utils import tq
+from cadquery import Location
+
+
+def __location__repr__(loc):
+    t, r = tq(loc)
+    return f"Location(t={t}, q=({r.X()}, {r.X()}, {r.Y()}, {r.W()}))"
+
+
+Location.__repr__ = __location__repr__
