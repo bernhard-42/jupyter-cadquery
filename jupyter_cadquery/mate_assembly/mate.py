@@ -44,35 +44,64 @@ class Mate:
         return v * cos(angle) + axis.cross(v) * sin(angle) + axis * axis.dot(v) * (1 - cos(angle))
 
     def rx(self, angle: float) -> "Mate":
+        """
+        Rotate with a given angle around x axis
+        :param angle: angle to ratate in degrees
+        """
         a = angle / 180 * pi
         self.y_dir = Mate._rotate(self.y_dir, self.x_dir, a)
         self.z_dir = Mate._rotate(self.z_dir, self.x_dir, a)
         return self
 
     def ry(self, angle: float) -> "Mate":
+        """
+        Rotate with a given angle around y axis
+        :param angle: angle to ratate in degrees
+        """
         a = angle / 180 * pi
         self.x_dir = Mate._rotate(self.x_dir, self.y_dir, a)
         self.z_dir = Mate._rotate(self.z_dir, self.y_dir, a)
         return self
 
     def rz(self, angle: float) -> "Mate":
+        """
+        Rotate with a given angle around z axis
+        :param angle: angle to ratate in degrees
+        """
         a = angle / 180 * pi
         self.x_dir = Mate._rotate(self.x_dir, self.z_dir, a)
         self.y_dir = Mate._rotate(self.y_dir, self.z_dir, a)
         return self
 
     def translate(self, axis: Vector, dist: float):
+        """
+        Translate with a given direction scaled by dist
+        :param axis: the direction to translate
+        :param dist: scale of axis
+        """
         self.pnt = self.pnt + axis * dist
 
     def tx(self, dist: float) -> "Mate":
+        """
+        Translate with a given distance along x axis
+        :param dist: distance to translate
+        """
         self.translate(self.x_dir, dist)
         return self
 
     def ty(self, dist: float) -> "Mate":
+        """
+        Translate with a given distance along y axis
+        :param dist: distance to translate
+        """
         self.translate(self.y_dir, dist)
         return self
 
     def tz(self, dist: float) -> "Mate":
+        """
+        Translate with a given distance along z axis
+        :param dist: distance to translate
+        """
         self.translate(self.z_dir, dist)
         return self
 
