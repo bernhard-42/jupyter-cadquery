@@ -63,6 +63,8 @@ class Defaults:
         - bb_factor:         Scale bounding box to ensure compete rendering (default=1.0)
         - render_shapes:     Render shapes  (default=True)
         - render_edges:      Render edges  (default=True)
+        - render_mates:      Render mates (for MAssemblies)
+        - mate_scale:        Scale of rendered mates (for MAssemblies)
         - quality:           Tolerance for tessellation (default=0.1)
         - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
         - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
@@ -101,6 +103,8 @@ class Defaults:
             "bb_factor": 1.1,
             "render_shapes": True,
             "render_edges": True,
+            "render_mates": False,
+            "mate_scale": 1,
             "quality": 0.1,
             "edge_accuracy": 0.01,
             "angular_tolerance": 0.1,

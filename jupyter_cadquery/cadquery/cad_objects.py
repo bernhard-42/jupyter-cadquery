@@ -29,6 +29,7 @@ from jupyter_cadquery.cad_objects import (
     _show,
 )
 
+from jupyter_cadquery.cad_display import get_default
 from .cqparts import is_cqparts, convert_cqparts
 from ..utils import Color
 from ..ocp_utils import get_rgb
@@ -188,7 +189,7 @@ def _from_wirelist(cad_obj, obj_id, name="Edges", color=None):
     return Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))
 
 
-def to_edge(mate, loc=None, scale=4) -> Workplane:
+def to_edge(mate, loc=None, scale=1) -> Workplane:
     w = Workplane()
     for d in (mate.x_dir, mate.y_dir, mate.z_dir):
         edge = Edge.makeLine(mate.pnt, mate.pnt + d * scale)
@@ -197,7 +198,7 @@ def to_edge(mate, loc=None, scale=4) -> Workplane:
     return w
 
 
-def from_assembly(cad_obj, top, loc=None, render_mates=False):
+def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
     loc = Location()
     render_loc = cad_obj.loc
 
@@ -215,28 +216,27 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False):
         for i, shape in enumerate(cad_obj.shapes)
     ]
 
-    if render_mates:
-        if cad_obj.matelist:
-            parent.append(
-                Assembly(
-                    [
-                        Part(
-                            to_edge(top.mates[mate]["mate"]),
-                            name=mate,
-                            color=(
-                                Color((255, 0, 0)),
-                                Color((0, 128, 0)),
-                                Color((0, 0, 255)),
-                            ),
-                        )
-                        for mate in cad_obj.matelist
-                    ],
-                    name="mates",
-                    loc=Location(),  # mates inherit the parent location, so actually add a no-op
-                )
+    if render_mates and hasattr(cad_obj, "matelist") and cad_obj.matelist:
+        parent.append(
+            Assembly(
+                [
+                    Part(
+                        to_edge(top.mates[mate]["mate"], scale=mate_scale),
+                        name=mate,
+                        color=(
+                            Color((255, 0, 0)),
+                            Color((0, 128, 0)),
+                            Color((0, 0, 255)),
+                        ),
+                    )
+                    for mate in cad_obj.matelist
+                ],
+                name="mates",
+                loc=Location(),  # mates inherit the parent location, so actually add a no-op
             )
+        )
 
-    children = [from_assembly(c, top, loc, render_mates) for c in cad_obj.children]
+    children = [from_assembly(c, top, loc, render_mates, mate_scale) for c in cad_obj.children]
     return Assembly(parent + children, cad_obj.name, loc=render_loc)
 
 
@@ -276,7 +276,7 @@ def _is_wirelist(cad_obj):
     )
 
 
-def show(*cad_objs, render_mates=False, **kwargs):
+def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:
@@ -286,6 +286,8 @@ def show(*cad_objs, render_mates=False, **kwargs):
     - bb_factor:         Scale bounding box to ensure compete rendering (default=1.0)
     - render_shapes:     Render shapes  (default=True)
     - render_edges:      Render edges  (default=True)
+    - render_mates:      For MAssemblies, whether to rander the mates (default=True)
+    - mate_scale:        For MAssemblies, scale of rendered mates (default=1)
     - quality:           Tolerance for tessellation (default=0.1)
     - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
     - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
@@ -306,20 +308,20 @@ def show(*cad_objs, render_mates=False, **kwargs):
     - position = (1, 1, 1)
     - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
+    render_mates = render_mates or get_default("render_mates")
+    mate_scale = mate_scale or get_default("mate_scale")
+    
     assembly = Assembly([], "Assembly")
     obj_id = 0
     for cad_obj in cad_objs:
         if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Vertices)):
             assembly.add(cad_obj)
 
+        elif isinstance(cad_obj, MAssembly):
+            assembly.add(from_assembly(cad_obj, cad_obj, render_mates=render_mates, mate_scale=mate_scale))
+
         elif isinstance(cad_obj, CqAssembly):
-            assembly.add(
-                from_assembly(
-                    cad_obj,
-                    cad_obj,
-                    render_mates=render_mates,
-                )
-            )
+            assembly.add(from_assembly(cad_obj, cad_obj))
 
         elif isinstance(cad_obj, Edge):
             assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id))
