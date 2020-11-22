@@ -8,9 +8,11 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 Click on the icon to start *jupyter-cadquery* on binder:
 
-[![Binder: Stable version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.0.0-beta0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+
+- Stable version: [![Binder: Stable version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
+
+- Latest development version: [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.0.0-beta0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Overview
 
@@ -122,7 +124,7 @@ show(a1, grid=False)  # overwrite grid default value
         ```
 
     - Latest development version:
-    
+
         ```bash
         WORKDIR=/tmp/jupyter
         mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
