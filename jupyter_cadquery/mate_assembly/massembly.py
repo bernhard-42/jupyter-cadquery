@@ -143,18 +143,18 @@ class MAssembly(Assembly):
             print(f"An assembly for the selector '{selector}' does not exist")
         return self
 
-    def _relocate(self):
+    def _relocate(self, identity):
         """Relocate all shapes to have its origin at the assembly origin"""
         if self._origin is not None:
             self.obj = Workplane(self.obj.val().moved(self._origin.inverse))
-            self.loc = Location()  # change location to identity
+            self.loc = identity
         for c in self.children:
-            c._relocate()
+            c._relocate(identity)
 
     def relocate(self):
         """Relocate the assembly so that all its shapes have their origin at the assembly origin"""
         # relocate all CadQuery objects
-        self._relocate()
+        self._relocate(self.obj.plane.location)  # identity is the orientation of the root workplane
         # relocate all mates
         for _, mate_def in self.mates.items():
             if mate_def.assembly._origin is not None:
