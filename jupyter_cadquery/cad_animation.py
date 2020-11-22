@@ -92,7 +92,7 @@ class Animation:
     def animate(self, speed=1, autoplay=False):
         if speed != 1:
             for track in self.tracks:
-                track.times /= speed
+                track.times = track.times / float(speed)
         clip = AnimationClip(tracks=self.tracks)
         action = AnimationAction(AnimationMixer(self.root), clip, self.root)
         if autoplay:
