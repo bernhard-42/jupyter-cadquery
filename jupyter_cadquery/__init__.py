@@ -29,9 +29,9 @@ from .ocp_utils import tq
 from cadquery import Location
 
 
-def __location__repr__(loc):
-    t, r = tq(loc)
-    return f"Location(t={t}, q=({r.X()}, {r.X()}, {r.Y()}, {r.W()}))"
+def __location__repr__(self):
+    t, r = tq(self)
+    return f"Location(t={t}, q=({r[0]}, {r[1]}, {r[2]}, {r[3]}))"
 
 
-Location.__repr__ = __location__repr__
+Location.__repr__ = __location__repr__  # type: ignore
