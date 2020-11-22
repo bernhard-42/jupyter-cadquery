@@ -1,0 +1,5 @@
+@jupyter-widgets/jupyterlab-manager@2.0.0
+@jupyter-widgets/jupyterlab-sidecar@0.5.0
+jupyterlab-datawidgets@6.3.0
+jupyter_cadquery@v1.0.0
+jupyter-threejs@v2.2.0

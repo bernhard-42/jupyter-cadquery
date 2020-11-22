@@ -1,0 +1,17 @@
+channels:
+  - defaults
+  - cadquery
+  - conda-forge
+dependencies:
+  - python=3.8
+  - numpy=1.19.4
+  - pip=20.2.4
+  - notebook>=6.1,<6.2
+  - jupyterlab>=2.2,<3
+  - sidecar=0.4.0
+  - ipywidgets=7.5.1
+  - pythreejs>=2.2,<2.3
+  - cadquery=master
+  - webcolors=1.11.1
+  - pip:
+    - jupyter_cadquery==git+https://github.com/bernhard-42/jupyter-cadquery.git
