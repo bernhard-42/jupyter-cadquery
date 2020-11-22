@@ -13,7 +13,12 @@ here = os.path.dirname(os.path.abspath(__file__))
 node_root = os.path.join(here, "js")
 is_repo = os.path.exists(os.path.join(here, ".git"))
 
-npm_path = os.pathsep.join([os.path.join(node_root, "node_modules", ".bin"), os.environ.get("PATH", os.defpath),])
+npm_path = os.pathsep.join(
+    [
+        os.path.join(node_root, "node_modules", ".bin"),
+        os.environ.get("PATH", os.defpath),
+    ]
+)
 
 from distutils import log
 
@@ -110,9 +115,7 @@ class NPM(Command):
         env["PATH"] = npm_path
 
         if self.should_run_npm_install():
-            log.info(
-                "Installing build dependencies with npm.  This may take a while..."
-            )
+            log.info("Installing build dependencies with npm.  This may take a while...")
             npmName = self.get_npm_name()
             check_call(
                 [npmName, "install"],
