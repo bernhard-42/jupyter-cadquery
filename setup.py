@@ -13,18 +13,13 @@ here = os.path.dirname(os.path.abspath(__file__))
 node_root = os.path.join(here, "js")
 is_repo = os.path.exists(os.path.join(here, ".git"))
 
-npm_path = os.pathsep.join(
-    [
-        os.path.join(node_root, "node_modules", ".bin"),
-        os.environ.get("PATH", os.defpath),
-    ]
-)
+npm_path = os.pathsep.join([os.path.join(node_root, "node_modules", ".bin"), os.environ.get("PATH", os.defpath),])
 
 from distutils import log
 
 log.set_verbosity(log.DEBUG)
 log.info("setup.py entered")
-log.info("$PATH=%s" % os.environ["PATH"])
+log.info("$PATH=%s", os.environ["PATH"])
 
 LONG_DESCRIPTION = "An extension to render cadquery objects in JupyterLab via pythreejs"
 
@@ -180,9 +175,9 @@ setup_args = {
         "Intended Audience :: Science/Research",
         "Topic :: Multimedia :: Graphics",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
 }
 
