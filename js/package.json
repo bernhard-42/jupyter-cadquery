@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "css-loader": "4.2.1",
+    "lodash": ">=4.17.19",
     "style-loader": "^1.2.1",
     "@jupyter-widgets/controls": "^2.0.0",
     "@jupyter-widgets/base": "^3.0.0"
