@@ -8,7 +8,9 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 Click on the icon to start *jupyter-cadquery* on binder:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
+[![Binder: Stable version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
+
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.0.0-beta0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Overview
 
@@ -74,10 +76,19 @@ show(a1, grid=False)  # overwrite grid default value
 
     - Download the environment definition files:
 
-        ```bash
-        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/environment.yml
-        wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/labextensions.txt
-        ```
+        - The latest stable:
+        
+            ```bash
+            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/environment.yml
+            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/labextensions.txt
+            ```
+
+        - The latest development version:
+
+            ```bash
+            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0-beta0/environment.yml
+            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0-beta0/labextensions.txt
+            ```
 
     - Create the conda environment and install the Jupyter labextensions
 
@@ -102,15 +113,25 @@ show(a1, grid=False)  # overwrite grid default value
 
 - Run the docker container (jupyter in the container will start in `/home/cq`)
 
-    ```bash
-    WORKDIR=/tmp/jupyter
-    mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
-    docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:1.0.0
-    ```
+    - Stable version:
+
+        ```bash
+        WORKDIR=/tmp/jupyter
+        mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
+        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:1.0.0
+        ```
+
+    - Latest development version:
+    
+        ```bash
+        WORKDIR=/tmp/jupyter
+        mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
+        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-beta0
+        ```
 
     **Notes:** 
     - To start with examples, you can 
-        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:1.0.0` or
+        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-beta0` or
         - copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
     - If you want to change the Dockerfile, `make docker` will create a new docker image
 
@@ -262,27 +283,3 @@ Notes:
 
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
 - Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
-
-## Development setup
-
-To work with the latest master of `caduery` and `jupyter-cadquery`, use:
-
-```bash
-# install jupyter-cadquery
-git clone https://github.com/bernhard-42/jupyter-cadquery.git
-cd jupyter-cadquery
-conda env create -f ./environment.yml -n cq-ocp
-conda activate cq-ocp
-pip install jupyterlab==2.2.8
-jupyter-labextension install --no-build $(cat labextensions.txt)
-jupyter lab build --dev-build=True --minimize=False
-
-# Uninstall pythonocc
-conda uninstall pythonocc-core oce
-
-# Install cadquery with OCP from master
-conda install -c conda-forge -c cadquery cadquery=master
-
-# Install latest jupyter cadquery
-pip install .
-```

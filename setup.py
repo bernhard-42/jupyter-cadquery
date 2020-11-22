@@ -135,7 +135,7 @@ class NPM(Command):
 
 setup_args = {
     "name": "jupyter_cadquery",
-    "version": "1.0.0",
+    "version": "2.0.0-beta0",
     "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
     "long_description": LONG_DESCRIPTION,
     "include_package_data": True,
