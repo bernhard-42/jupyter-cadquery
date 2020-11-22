@@ -47,6 +47,7 @@ class Mate:
         """
         Rotate with a given angle around x axis
         :param angle: angle to ratate in degrees
+        :return: self
         """
         a = angle / 180 * pi
         self.y_dir = Mate._rotate(self.y_dir, self.x_dir, a)
@@ -57,6 +58,7 @@ class Mate:
         """
         Rotate with a given angle around y axis
         :param angle: angle to ratate in degrees
+        :return: self
         """
         a = angle / 180 * pi
         self.x_dir = Mate._rotate(self.x_dir, self.y_dir, a)
@@ -67,6 +69,7 @@ class Mate:
         """
         Rotate with a given angle around z axis
         :param angle: angle to ratate in degrees
+        :return: self
         """
         a = angle / 180 * pi
         self.x_dir = Mate._rotate(self.x_dir, self.z_dir, a)
@@ -85,7 +88,8 @@ class Mate:
         """
         Translate with a given distance along x axis
         :param dist: distance to translate
-        """
+        :return: self
+       """
         self.translate(self.x_dir, dist)
         return self
 
@@ -93,6 +97,7 @@ class Mate:
         """
         Translate with a given distance along y axis
         :param dist: distance to translate
+        :return: self
         """
         self.translate(self.y_dir, dist)
         return self
@@ -101,11 +106,17 @@ class Mate:
         """
         Translate with a given distance along z axis
         :param dist: distance to translate
+        :return: self
         """
         self.translate(self.z_dir, dist)
         return self
 
     def moved(self, loc: Location) -> "Mate":
+        """
+        Return a new mate moved by the given Location
+        :param loc: The Location object to move the mate
+        :return: Mate
+        """
         def move(pnt: Vector, vec: Vector, loc: Location) -> Tuple[Vector, Vector]:
             reloc = cast(Edge, Edge.makeLine(pnt, pnt + vec).moved(loc))
             v1, v2 = reloc.startPoint(), reloc.endPoint()

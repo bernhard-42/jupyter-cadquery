@@ -55,6 +55,7 @@ class MAssembly(Assembly):
         """
         Find an assembly
         :param assy_selector: an MAssembly selector (enhanced CadQuery Assembly selector)
+        :return: MAssembly or None
 
         To find sub assemblies of the same object in assemblies this is an enhanced CadQuery
         Assembly selector joining assembly name with ">".
@@ -67,9 +68,13 @@ class MAssembly(Assembly):
         Find a CadQuery object in an assembly
         :param assembly: A MAssembly object
         :param obj_selectors: a list of an CadQuery object selectors (enhanced CadQuery selectors)
+        :return: Shape or None
 
-        Finding wires around points, e.g. holes, is often needed. To ease life here, there is one enhanced
-        CadQuery  obj_selector: ("wires", (x,y))", often use as a chain
+        Possible object selectors:
+        - "faces@>Z" is the same as ("faces", ">Z")
+        - Finding wires around points, e.g. holes, is often needed. 
+          To ease life here, there is one enhanced CadQuery obj_selector: ("wires", (x,y))"
+          It is often use as a chain:
             ("faces", ">Z)\\            # select a face
             .("wires", (x[i], y[i]))    # and from there select holes i by its 2 dim coordinates on the face
         """
@@ -93,16 +98,26 @@ class MAssembly(Assembly):
         """
         Find an assembly and one of its CadQuery shapes
         :param selector: an MAssembly selector (enhanced CadQuery Assembly selector)
-        :param obj_selectors: a list of an CadQuery object selectors (enhanced CadQuery selectors)
+        :param obj_selectors: a list of an CadQuery object selectors (enhanced CadQuery object selectors)
+        :return: Shape or None
 
-        To find sub assemblies of the same object in assemblies this is an enhanced CadQuery
-        Assembly selector joining assembly name with ">".
-        Valid selectors: "name", "name>child", "name>child>child", ...
+        MAssembly splits CadQuery Assembly's combined selectors like "assy_name@faces@>Z" into 
+        two parts, selector="assy_name" and obj_selectors=("faces@>Z", ...) or (("faces", ">Z"), ...)
 
-        Finding wires around points, e.g. holes, is often needed. To ease life here, there is one enhanced
-        CadQuery  obj_selector: ("wires", (x,y))", often use as a chain
-            ("faces", ">Z)\\            # select a face
-            .("wires", (x[i], y[i]))    # and from there select holes i by its 2 dim coordinates on the face
+        Reasons:
+        1) To find sub assemblies of the same object in assemblies, an enhanced CadQuery Assembly selector
+           is needed. It allows joining assembly names with ">", e.g. "name>child", "name>child>child", ...
+        2) Finding wires around points, e.g. holes, is often needed. To ease life here, MAssembly uses an
+           enhanced CadQuery obj_selector: ("wires", (x, y))
+           It is often use as a chain:
+            ("faces", ">Z), \\       # select a face
+            ("wires", (x[i], y[i]))  # and on the face select holes i by its 2 dim coordinates.
+        
+        :Example:
+
+        assy.find("base>leg", ("faces@>Z", ("wires", (x, y))))
+
+        :note: "faces@>Z" is the same as ("faces", ">Z")
         """
         assembly = self.find_assembly(selector)
         if assembly is None:
@@ -111,13 +126,13 @@ class MAssembly(Assembly):
         else:
             return assembly.find_obj(obj_selectors)
 
-    def mate(self, name: str, selector: str, mate: Mate, origin=False):
+    def mate(self, name: str, selector: str, mate: Mate, origin=False) -> Optional["MAssembly"]:
         """
         Add a mate to an assembly
         :param name: name of the new mate
         :param selector: an object assembly (enhanced CadQuery selector)
         :param mate: the mate to be added
-        :returns mate
+        :return: Mate
         """
         assembly = self.find_assembly(selector)
         if assembly is not None:
@@ -148,19 +163,18 @@ class MAssembly(Assembly):
         for _, mate_def in self.mates.items():
             mate_def.assembly._origin = None
 
-    def assemble(self, mate_name: str, target: Union[str, Location]):
+    def assemble(self, mate_name: str, target: Union[str, Location]) -> Optional["MAssembly"]:
         """
         Translate and rotate a mate onto a target mate
         :param mate: name of the mate to be relocated
         :param target: name of the target mate or a Location object to relocate the mate to
-        :returns self
+        :return: self
         """
         mate = self.mates[mate_name].mate
         assy = self.mates[mate_name].assembly
         if isinstance(target, str):
-            if assy is not None:
-                target_mate = self.mates[target].mate
-                assy.loc = target_mate.loc * mate.loc.inverse
+            target_mate = self.mates[target].mate
+            assy.loc = target_mate.loc * mate.loc.inverse
         else:
             assy.loc = target
 
