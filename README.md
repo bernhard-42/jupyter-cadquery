@@ -12,7 +12,7 @@ Click on the icon to start *jupyter-cadquery* on binder:
 
 - Stable version: [![Binder: Stable version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
 
-- Latest development version: [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.0.0-beta0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+- Latest development version: [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.0.0-beta1?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Overview
 
@@ -128,12 +128,12 @@ show(a1, grid=False)  # overwrite grid default value
         ```bash
         WORKDIR=/tmp/jupyter
         mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
-        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-beta0
+        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-beta1
         ```
 
     **Notes:** 
     - To start with examples, you can 
-        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-beta0` or
+        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-beta1` or
         - copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
     - If you want to change the Dockerfile, `make docker` will create a new docker image
 
