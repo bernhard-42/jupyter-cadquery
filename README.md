@@ -88,8 +88,8 @@ show(a1, grid=False)  # overwrite grid default value
         - The latest development version:
 
             ```bash
-            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0beta0/environment.yml
-            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0beta0/labextensions.txt
+            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0beta1/environment.yml
+            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0beta1/labextensions.txt
             ```
 
     - Create the conda environment and install the Jupyter labextensions
