@@ -6,7 +6,7 @@ build/
 node_modules/
 
 # Compiled javascript
-jupyter_cadquery/static/
+# jupyter_cadquery/static/
 
 # OS X
 .DS_Store
