@@ -1,14 +1,21 @@
 FROM continuumio/miniconda3:4.8.2
 
-COPY environment.yml labextensions.txt /tmp/
-
 RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
     apt-get update -y && \
     apt-get install --no-install-recommends -y libgl1-mesa-glx libglu1-mesa && \
     apt-get clean
 
-RUN conda env create -f /tmp/environment.yml -n cq && \
+COPY environment.yml labextensions.txt /tmp/
+
+# To streamline the upload uild one layer that has all fixed parts
+RUN grep -v jupyter_cadquery /tmp/environment.yml > /tmp/environment-common.yml  && \
+    conda env create -f /tmp/environment-common.yml -n cq && \
     conda install -n cq -y nodejs && \
+    conda clean --all && \
+    find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+
+# And just add jupyter-cadquery on top
+RUN conda env update -f /tmp/environment.yml -n cq && \
     conda run -n cq jupyter labextension install --no-build $(cat /tmp/labextensions.txt) && \
     conda run -n cq jupyter lab build --dev-build=True --minimize=False && \
     conda clean --all && \

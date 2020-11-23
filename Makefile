@@ -55,7 +55,7 @@ endif
 dist:
 	@python setup.py sdist bdist_wheel
 	@echo "jupyter-labextension install --no-build $(shell cat labextensions.txt | xargs)" > postBuild
-	@echo "jupyter lab build" >> postBuild
+	@echo "jupyter lab build --dev-build=False --minimize=False" >> postBuild
 
 release:
 	git add .
@@ -90,5 +90,5 @@ docker:
 	@rm -f docker/environment.yml docker/labextensions.txt
 	@rm -fr docker/examples
 
-upload_docker: docker
+upload_docker: 
 	@docker push bwalter42/jupyter_cadquery:$(CURRENT_VERSION)
