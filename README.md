@@ -6,7 +6,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 - The extension relies on *CadQuery 2.0* with *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery*.
 - The latest development version 
-    - deprecates jupyter-cadquery's `Assembly` and has renamed it to "PartGroup` (no semantic change). Assembly can still be used with warnings at the moment.
+    - deprecates jupyter-cadquery's `Assembly` and has renamed it to `PartGroup` (no semantic change). `Assembly` can still be used with warnings at the moment.
     - Comes with its own `MAssembly`, meaning "Mate base Assembly" which is derived from `cadquery.Assembly` but similar to `cqparts` or FrreCad's `Assembly4` works with mates to connect instead of constraints and a numerical solver.
     - Comes with an animation system to simulate models
 
