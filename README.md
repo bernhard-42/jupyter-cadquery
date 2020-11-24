@@ -2,12 +2,20 @@
 
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
-**Note:** The extension relies on *CadQuery 2.0* with *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery*.
+**Notes:** 
+
+- The extension relies on *CadQuery 2.0* with *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery*.
+- The latest development version 
+    - deprecates jupyter-cadquery's `Assembly` and has renamed it to "PartGroup` (no semantic change). Assembly can still be used with warnings at the moment.
+    - Comes with its own `MAssembly`, meaning "Mate base Assembly" which is derived from `cadquery.Assembly` but similar to `cqparts` or FrreCad's `Assembly4` works with mates to connect instead of constraints and a numerical solver.
+    - Comes with an animation system to simulate models
+
+        ![Sidecar](screenshots/hexapod-crawling.gif)
+
 
 ## Quick use via Binder
 
 Click on the icon to start *jupyter-cadquery* on binder:
-
 
 
 - Stable version: [![Binder: Stable version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
@@ -40,7 +48,7 @@ The screenshot shows one of the official cadquery examples in *replay* mode with
 
 ```python
 import cadquery as cq
-from jupyter_cadquery.cadquery import (Assembly, Part, Edges, Faces, Vertices, show)
+from jupyter_cadquery.cadquery import (PartGroup, Part, Edges, Faces, Vertices, show)
 from jupyter_cadquery import set_sidecar, set_defaults, reset_defaults
 
 set_sidecar("CadQuery")  # force usage of one cad view on the right
@@ -56,7 +64,7 @@ box1 = box1\
     .cut(box3)\
     .cut(box4)
 
-a1 = Assembly(
+a1 = PartGroup(
     [
         Part(box1, "red box",   "#d7191c", show_edges=False),
         Part(box3, "green box", "#abdda4", show_edges=False),
@@ -99,7 +107,7 @@ show(a1, grid=False)  # overwrite grid default value
         conda activate cq2-jl
 
         jupyter-labextension install --no-build $(cat labextensions.txt)
-        jupyter lab build --dev-build=True --minimize=False
+        jupyter lab build --dev-build=False --minimize=False
         ```
 
         Note, `jupyter-labextension list` should now show green "enabled OK" for “*@jupyter-widgets/jupyterlab-manager*, *@jupyter-widgets/jupyterlab-sidecar*, *jupyter-threejs*, *jupyter_cadquery* and *jupyterlab-datawidgets*
@@ -270,8 +278,8 @@ Notes:
     - `name`: Part name in the view
     - `color`: Part color in the view
 
-- `Assembly`: Basically a list of parts and some attributes for the view:
-    - `name`: Assembly name in the view
+- `PartGroup`: Basically a list of parts and some attributes for the view:
+    - `name`: PartGroup name in the view
     - `objects`: all parts and assemblies included in the assembly as a list
 
 

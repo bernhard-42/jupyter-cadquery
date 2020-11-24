@@ -51,7 +51,7 @@ def _convert_cqparts(cad_obj, name, default_color, replay):
         parts = []
         for k, v in cad_obj._components.items():
             parts.append(_convert_cqparts(v, k, default_color, replay))
-        return jcq.cadquery.Assembly(parts, name)
+        return jcq.cadquery.PartGroup(parts, name)
 
     elif isinstance(cad_obj, cqparts.Part):
         if replay:

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from jupyter_cadquery.cad_objects import _Assembly, _Part, _show
+from jupyter_cadquery.cad_objects import _PartGroup, _Part, _show
 
 
 class Part(_Part):
@@ -22,18 +22,29 @@ class Part(_Part):
         super().__init__([shape], name, color, show_faces, show_edges)
 
     def to_assembly(self):
-        return Assembly([self])
+        return PartGroup([self])
 
     def show(self, grid=False, axes=False):
         return show(self, grid=grid, axes=axes)
 
 
-class Assembly(_Assembly):
+class PartGroup(_PartGroup):
     def to_assembly(self):
         return self
 
     def show(self, grid=False, axes=False):
         return show(self, grid=grid, axes=axes)
+
+
+class Assembly(PartGroup):
+    def __init__(self, *args, **kwargs):
+        import warnings
+
+        super().__init__(*args, **kwargs)
+        warnings.warn(
+            "Class 'Assembly' is deprecated (too many assemblies ...). Please use class 'PartGroup' instead",
+            RuntimeWarning,
+        )
 
 
 def show(cad_obj, **kwargs):
@@ -66,7 +77,7 @@ def show(cad_obj, **kwargs):
     - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
     assembly = None
-    if isinstance(cad_obj, (Assembly, Part)):
+    if isinstance(cad_obj, (PartGroup, Part)):
         assembly = cad_obj.to_assembly()
 
     if assembly is None:

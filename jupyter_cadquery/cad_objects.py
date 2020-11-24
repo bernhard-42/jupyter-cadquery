@@ -24,7 +24,7 @@ PART_ID = 0
 
 
 #
-# Simple Part and Assembly classes
+# Simple Part and PartGroup classes
 #
 
 
@@ -165,8 +165,8 @@ class _Vertices(_CADObject):
         }
 
 
-class _Assembly(_CADObject):
-    def __init__(self, objects, name="Assembly", loc=None):
+class _PartGroup(_CADObject):
+    def __init__(self, objects, name="Group", loc=None):
         super().__init__()
         self.objects = objects
         self.name = name
@@ -205,7 +205,7 @@ class _Assembly(_CADObject):
         parents = parents or ()
         result = {}
         for i, obj in enumerate(self.objects):
-            if isinstance(obj, _Assembly):
+            if isinstance(obj, _PartGroup):
                 for k, v in obj.to_state((*parents, i)).items():
                     result[k] = v
             else:

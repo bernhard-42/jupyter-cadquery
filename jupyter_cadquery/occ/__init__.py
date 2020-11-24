@@ -14,4 +14,4 @@
 # limitations under the License.
 #
 
-from .cad_objects import Assembly, Part, show
+from .cad_objects import Assembly, PartGroup, Part, show

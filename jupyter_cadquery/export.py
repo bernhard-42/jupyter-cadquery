@@ -15,20 +15,20 @@
 #
 
 import cadquery as cq
-from .cad_objects import _Assembly, _Part
+from .cad_objects import _PartGroup, _Part
 from .ocp_utils import write_stl_file, is_compound
 
 
 def exportSTL(cadObj, filename, tolerance=1e-3, angular_tolerance=0.1):
     compound = None
-    if isinstance(cadObj, (_Assembly, _Part)):
+    if isinstance(cadObj, (_PartGroup, _Part)):
         compound = cadObj.compound()
     elif is_compound(cadObj):
         compound = cadObj
     elif isinstance(cadObj, (cq.Shape, cq.Workplane)):
         compound = _Part(cadObj).compound()
     else:
-        print("Unsupported CAD object %s, convert to Assembly or Part" % type(cadObj))
+        print("Unsupported CAD object %s, convert to PartGroup or Part" % type(cadObj))
 
     if compound is not None:
         write_stl_file(

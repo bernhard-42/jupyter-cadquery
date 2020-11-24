@@ -21,7 +21,7 @@ from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import Workplane, Shape, Vector, Vertex, Location, Assembly as CqAssembly
 
 from jupyter_cadquery.cad_objects import (
-    _Assembly,
+    _PartGroup,
     _Part,
     _Edges,
     _Faces,
@@ -40,7 +40,7 @@ class Part(_Part):
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
     def to_assembly(self):
-        return Assembly([self])
+        return PartGroup([self])
 
     def show(self, grid=False, axes=False):
         return show(self, grid=grid, axes=axes)
@@ -51,7 +51,7 @@ class Faces(_Faces):
         super().__init__(_to_occ(faces.combine()), name, color, show_faces, show_edges)
 
     def to_assembly(self):
-        return Assembly([self])
+        return PartGroup([self])
 
     def show(self, grid=False, axes=False):
         return show(self, grid=grid, axes=axes)
@@ -62,7 +62,7 @@ class Edges(_Edges):
         super().__init__(_to_occ(edges), name, color)
 
     def to_assembly(self):
-        return Assembly([self])
+        return PartGroup([self])
 
     def show(self, grid=False, axes=False):
         return show(self, grid=grid, axes=axes)
@@ -73,13 +73,13 @@ class Vertices(_Vertices):
         super().__init__(_to_occ(vertices), name, color)
 
     def to_assembly(self):
-        return Assembly([self])
+        return PartGroup([self])
 
     def show(self, grid=False, axes=False):
         return show(self, grid=grid, axes=axes)
 
 
-class Assembly(_Assembly):
+class PartGroup(_PartGroup):
     def to_assembly(self):
         return self
 
@@ -91,6 +91,17 @@ class Assembly(_Assembly):
 
     def add_list(self, cad_objs):
         self.objects += cad_objs
+
+
+class Assembly(PartGroup):
+    def __init__(self, *args, **kwargs):
+        import warnings
+
+        super().__init__(*args, **kwargs)
+        warnings.warn(
+            "Class 'Assembly' is deprecated (too many assemblies ...). Please use class 'PartGroup' instead",
+            RuntimeWarning,
+        )
 
 
 def _to_occ(cad_obj):
@@ -219,10 +230,10 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
     if render_mates and cad_obj.mates is not None:
         RGB = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
         parent.append(
-            Assembly(
+            PartGroup(
                 [
                     Part(to_edge(mate_def.mate, scale=mate_scale), name=name, color=RGB)
-                    for name, mate_def in top.mates.items() 
+                    for name, mate_def in top.mates.items()
                     if mate_def.assembly == cad_obj
                 ],
                 name="mates",
@@ -231,7 +242,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
         )
 
     children = [from_assembly(c, top, loc, render_mates, mate_scale) for c in cad_obj.children]
-    return Assembly(parent + children, cad_obj.name, loc=render_loc)
+    return PartGroup(parent + children, cad_obj.name, loc=render_loc)
 
 
 def _from_workplane(cad_obj, obj_id, name="Part"):
@@ -304,11 +315,11 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     """
     render_mates = render_mates or get_default("render_mates")
     mate_scale = mate_scale or get_default("mate_scale")
-    
-    assembly = Assembly([], "Assembly")
+
+    assembly = PartGroup([], "Group")
     obj_id = 0
     for cad_obj in cad_objs:
-        if isinstance(cad_obj, (Assembly, Part, Faces, Edges, Vertices)):
+        if isinstance(cad_obj, (PartGroup, Part, Faces, Edges, Vertices)):
             assembly.add(cad_obj)
 
         elif isinstance(cad_obj, MAssembly):
@@ -358,15 +369,15 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     if assembly is None:
         raise ValueError("%s cannot be viewed" % cad_objs)
 
-    if len(assembly.objects) == 1 and isinstance(assembly.objects[0], Assembly):
-        # omit leading "Assembly" group
+    if len(assembly.objects) == 1 and isinstance(assembly.objects[0], PartGroup):
+        # omit leading "PartGroup" group
         return _show(assembly.objects[0], **kwargs)
     else:
         return _show(assembly, **kwargs)
 
 
 def auto_show():
-    Assembly._ipython_display_ = lambda self: self.show()
+    PartGroup._ipython_display_ = lambda self: self.show()
     Part._ipython_display_ = lambda self: self.show()
     Faces._ipython_display_ = lambda self: self.show(grid=False, axes=False)
     Edges._ipython_display_ = lambda self: self.show(grid=False, axes=False)
@@ -453,9 +464,9 @@ def show_constraints(assy, qs):
                     color=colors[i % len(colors)],
                 )
             )
-        constraints.append(Assembly(parts, "%s_%d" % (kind, i)))
+        constraints.append(PartGroup(parts, "%s_%d" % (kind, i)))
 
-    show(Assembly([Assembly(objects, "objects")] + constraints), axes=True, axes0=True)
+    show(PartGroup([PartGroup(objects, "objects")] + constraints), axes=True, axes0=True)
 
 
 def show_accuracy(assy, cs):
