@@ -127,6 +127,7 @@ class Context(object):
 
 _CTX = Context()
 DEBUG = True
+REPLAY = False
 
 
 def _trace(*objs):
@@ -408,7 +409,14 @@ class Replay(object):
             )
 
 
-def replay(cad_obj, index=0, debug=False, cad_width=600, height=600):
+def replay(cad_obj, index=-1, debug=False, cad_width=600, height=600):
+
+    if not REPLAY:
+        print("Replay is not enabled. To do so call 'enable_replay()'. Falling back to 'show()'")
+        return show(cad_obj, cad_width=cad_width, height=height)
+    else:
+        print("Use the multi select box below to select one or more steps you want to examine")
+
     r = Replay(debug, cad_width, height)
 
     if isinstance(cad_obj, cq.Workplane):
@@ -420,7 +428,10 @@ def replay(cad_obj, index=0, debug=False, cad_width=600, height=600):
         return None
 
     r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
-    r.indexes = [index]
+    if index == -1:
+        r.indexes = [len(r.stack) - 1]
+    else:
+        r.indexes = [index]
 
     r.select_box = SelectMultiple(
         options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(r.stack)],
@@ -461,21 +472,25 @@ def reset_replay():
 
 
 def enable_replay(debug=False):
-    global DEBUG
+    global DEBUG, REPLAY
+
+    DEBUG = debug
 
     print("\nEnabling jupyter_cadquery replay")
-    DEBUG = debug
     cq.Workplane.__getattribute__ = _add_context
 
     ip = get_ipython()
     if not "reset_replay" in [f.__name__ for f in ip.events.callbacks["pre_run_cell"]]:
         ip.events.register("pre_run_cell", reset_replay)
+    REPLAY = True
 
 
 def disable_replay():
+    global REPLAY
     print("Removing replay from cadquery.Workplane (will show a final RuntimeWarning)")
     cq.Workplane.__getattribute__ = object.__getattribute__
 
     ip = get_ipython()
     if "reset_replay" in [f.__name__ for f in ip.events.callbacks["pre_run_cell"]]:
         ip.events.unregister("pre_run_cell", reset_replay)
+    REPLAY = False
