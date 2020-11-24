@@ -15,4 +15,4 @@ dependencies:
   - cadquery=master
   - pip:
     - webcolors==1.11.1
-    - git+https://github.com/bernhard-42/jupyter-cadquery.git  # jupyter_cadquery==2.0.0-beta1
+    - git+https://github.com/bernhard-42/jupyter-cadquery.git  # jupyter_cadquery==2.0.0-beta2
