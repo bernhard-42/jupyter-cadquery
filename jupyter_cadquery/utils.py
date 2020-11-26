@@ -141,18 +141,3 @@ def tree_find_single_selector(tree, selector):
         if result is not None:
             return result
     return None
-
-
-def tree_find(tree, query):
-    def _find(tree, selectors):
-        if tree is None or not selectors:
-            return tree
-
-        for c in tree.children:
-            if c.name == selectors[0]:
-                return _find(c, selectors[1:])
-        return None
-
-    (root_selector, *sub_selectors) = query.split(">")
-    root = tree_find_single_selector(tree, root_selector)
-    return _find(root, sub_selectors)

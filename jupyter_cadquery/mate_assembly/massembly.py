@@ -3,7 +3,6 @@ from typing import Optional, Union, Tuple, cast, Dict
 
 from cadquery import Shape, Workplane, Location, NearestToPointSelector, Assembly
 from .mate import Mate
-from ..utils import tree_find
 from ..ocp_utils import get_rgb
 
 Selector = Tuple[str, Union[str, Tuple[float, float]]]
@@ -51,17 +50,29 @@ class MAssembly(Assembly):
 
         return self
 
-    def find_assembly(self, assy_selector: str) -> Optional["MAssembly"]:
+    def find_assembly(self, query: str) -> Optional["MAssembly"]:
         """
         Find an assembly
-        :param assy_selector: an MAssembly selector (enhanced CadQuery Assembly selector)
+        :param query: an MAssembly selector (enhanced CadQuery Assembly selector)
         :return: MAssembly or None
 
         To find sub assemblies of the same object in assemblies this is an enhanced CadQuery
         Assembly selector joining assembly name with ">".
         Valid selectors: "name", "name>child", "name>child>child", ...
         """
-        return tree_find(self, assy_selector)
+
+        def find(assy, selectors):
+            if assy is None or not selectors:
+                return assy
+
+            for c in assy.children:
+                if c.name == selectors[0]:
+                    return find(c, selectors[1:])
+            return None
+
+        (root_selector, *sub_selectors) = query.split(">")
+        root = self.objects.get(root_selector)
+        return find(root, sub_selectors)
 
     def find_obj(self, obj_selectors: Tuple[Selector, ...] = None) -> Optional[Shape]:
         """
@@ -72,7 +83,7 @@ class MAssembly(Assembly):
 
         Possible object selectors:
         - "faces@>Z" is the same as ("faces", ">Z")
-        - Finding wires around points, e.g. holes, is often needed. 
+        - Finding wires around points, e.g. holes, is often needed.
           To ease life here, there is one enhanced CadQuery obj_selector: ("wires", (x,y))"
           It is often use as a chain:
             ("faces", ">Z)\\            # select a face
@@ -101,7 +112,7 @@ class MAssembly(Assembly):
         :param obj_selectors: a list of an CadQuery object selectors (enhanced CadQuery object selectors)
         :return: Shape or None
 
-        MAssembly splits CadQuery Assembly's combined selectors like "assy_name@faces@>Z" into 
+        MAssembly splits CadQuery Assembly's combined selectors like "assy_name@faces@>Z" into
         two parts, selector="assy_name" and obj_selectors=("faces@>Z", ...) or (("faces", ">Z"), ...)
 
         Reasons:
@@ -112,7 +123,7 @@ class MAssembly(Assembly):
            It is often use as a chain:
             ("faces", ">Z), \\       # select a face
             ("wires", (x[i], y[i]))  # and on the face select holes i by its 2 dim coordinates.
-        
+
         :Example:
 
         assy.find("base>leg", ("faces@>Z", ("wires", (x, y))))
@@ -179,4 +190,3 @@ class MAssembly(Assembly):
             assy.loc = target
 
         return self
-
