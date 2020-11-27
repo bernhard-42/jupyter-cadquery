@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Union, Tuple, cast, Dict
+from typing import Optional, Union, Tuple, cast, Dict, List
 
 from cadquery import Shape, Workplane, Location, NearestToPointSelector, Assembly
 from .mate import Mate
@@ -24,16 +24,31 @@ class MAssembly(Assembly):
     def __repr__(self):
         return f"MAssembly('{self.name}', objects: {len(self.objects)}, children: {len(self.children)})"
 
-    def dump(self) -> str:
-        def to_string(self, ind=""):
-            result = f"{ind}MAssembly({self.name}: {self.obj})\n"
-            # if self.matelist:
-            #     result += f"{ind}  mates={self.mates.keys()}\n"
-            for c in self.children:
-                result += to_string(c, ind + "  ")
+    def dump(self):
+        def fqpath(assy):
+            result = assy.name
+            p = assy.parent
+            while p:
+                result = f"{p.name}>{result}"
+                p = p.parent
             return result
 
-        return to_string(self, "")
+        def to_string(assy, matelist, ind="") -> str:
+            fq = fqpath(assy)
+            result = f"{ind}MAssembly(name: '{assy.name}', 'fq: '{fq}', obj_hash: {assy.obj.__hash__()})\n"
+            result += f"{ind}    mates: {matelist[fq]}\n"
+            for c in assy.children:
+                result += to_string(c, matelist, ind + "    ")
+            return result
+
+        matelist: Dict[str, List[str]] = {}
+        for k, v in ((k, fqpath(v.assembly)) for k, v in self.mates.items()):
+            if matelist.get(v) is None:
+                matelist[v] = [k]
+            else:
+                matelist[v].append(k)
+
+        print(to_string(self, matelist, ""))
 
     @property
     def web_color(self) -> str:
