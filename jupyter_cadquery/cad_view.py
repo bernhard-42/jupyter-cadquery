@@ -58,6 +58,7 @@ class CadqueryView(object):
         render_edges=True,
         render_shapes=True,
         info=None,
+        parallel=False,
         timeit=False,
     ):
 
@@ -71,6 +72,7 @@ class CadqueryView(object):
         self.render_edges = render_edges
         self.render_shapes = render_shapes
         self.info = info
+        self.parallel = parallel
         self.timeit = timeit
 
         self.pick_color = Color("LightGreen")
@@ -250,12 +252,7 @@ class CadqueryView(object):
 
                 self.info.bb_info(
                     shape["name"],
-                    (
-                        (bbox.xmin, bbox.xmax),
-                        (bbox.ymin, bbox.ymax),
-                        (bbox.zmin, bbox.zmax),
-                        bbox.center,
-                    ),
+                    ((bbox.xmin, bbox.xmax), (bbox.ymin, bbox.ymax), (bbox.zmin, bbox.zmax), bbox.center,),
                 )
                 self.pick_last_mesh_color = self.pick_last_mesh.material.color
                 self.pick_last_mesh.material.color = self.pick_color.web_color
@@ -303,6 +300,7 @@ class CadqueryView(object):
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             timeit=self.timeit,
+            parallel=self.parallel,
         )
         self.pickable_objects, self.pick_mapping = cq_renderer.render(self.shapes)
 
@@ -329,8 +327,7 @@ class CadqueryView(object):
             position = rotate(position, *rotation)
 
         camera_position = self._add(
-            self.bb.center,
-            self._scale([1, 1, 1] if position is None else self._scale(position)),
+            self.bb.center, self._scale([1, 1, 1] if position is None else self._scale(position)),
         )
 
         self.camera = CombinedCamera(
@@ -352,12 +349,7 @@ class CadqueryView(object):
 
         # Set up Helpers
         self.axes = Axes(bb_center=self.bb.center, length=bb_max)
-        self.grid = Grid(
-            bb_center=self.bb.center,
-            maximum=bb_max,
-            colorCenterLine="#aaa",
-            colorGrid="#ddd",
-        )
+        self.grid = Grid(bb_center=self.bb.center, maximum=bb_max, colorCenterLine="#aaa", colorGrid="#ddd",)
 
         # Set up scene
         environment = self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]

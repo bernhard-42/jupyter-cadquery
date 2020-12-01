@@ -79,6 +79,7 @@ class Defaults:
         - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
         - display:           Select display: "sidecar", "cell", "html"
         - tools:             Show the viewer tools like the object tree
+        - parallel:          Use multiprocessing for tessellation of multiple objects
         - timeit:            Show rendering times (default=False)
 
         For example isometric projection can be achieved in two ways:
@@ -119,6 +120,7 @@ class Defaults:
             "mac_scrollbar": True,
             "display": "cell",
             "tools": True,
+            "parallel": False,
             "timeit": False,
         }
 
@@ -159,10 +161,7 @@ class Info(object):
         self.html = HTML(
             value="",
             layout=Layout(
-                width=("%dpx" % width),
-                height=("%dpx" % height),
-                border="solid 1px #ddd",
-                overflow="scroll",
+                width=("%dpx" % width), height=("%dpx" % height), border="solid 1px #ddd", overflow="scroll",
             ),
         )
         self.width = width
@@ -383,6 +382,7 @@ class CadqueryDisplay(object):
         mac_scrollbar=None,
         display=None,
         tools=None,
+        parallel=None,
         timeit=None,
     ):
         def preset(key, value):
@@ -409,8 +409,8 @@ class CadqueryDisplay(object):
             mac_scrollbar = False
         else:
             mac_scrollbar = preset("mac_scrollbar", mac_scrollbar)
+        parallel = preset("parallel", parallel)
         timeit = preset("timeit", timeit)
-
         self._display = preset("display", display)
         self._tools = preset("tools", tools)
 
@@ -443,6 +443,7 @@ class CadqueryDisplay(object):
             render_shapes=render_shapes,
             render_edges=render_edges,
             info=self.info,
+            parallel=parallel,
             timeit=timeit,
         )
 
@@ -454,10 +455,7 @@ class CadqueryDisplay(object):
 
         self.output = Box([self.info.html])
         self.output.layout = Layout(
-            height="%dpx" % output_height,
-            width="%dpx" % tree_width,
-            overflow_y="scroll",
-            overflow_x="scroll",
+            height="%dpx" % output_height, width="%dpx" % tree_width, overflow_y="scroll", overflow_x="scroll",
         )
 
         self.output.add_class("view_output")
@@ -495,12 +493,7 @@ class CadqueryDisplay(object):
             self.create_checkbox("grid", "Grid", grid, self.cq_view.toggle_grid),
             self.create_checkbox("zero", "@ 0", axes0, self.cq_view.toggle_center),
             self.create_checkbox("ortho", "Ortho", ortho, self.cq_view.toggle_ortho),
-            self.create_checkbox(
-                "transparent",
-                "Transparency",
-                transparent,
-                self.cq_view.toggle_transparent,
-            ),
+            self.create_checkbox("transparent", "Transparency", transparent, self.cq_view.toggle_transparent,),
             self.create_checkbox("black_edges", "Black Edges", False, self.cq_view.toggle_black_edges),
         ]
         self.check_controls[-2].add_class("indent")

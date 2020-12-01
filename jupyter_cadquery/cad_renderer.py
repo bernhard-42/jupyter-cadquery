@@ -14,7 +14,11 @@
 # limitations under the License.
 #
 
+import logging
+from multiprocessing import Pool
 import numpy as np
+import os
+from tempfile import NamedTemporaryFile
 import time
 from uuid import uuid4
 import warnings
@@ -42,6 +46,8 @@ from .ocp_utils import (
     get_point,
     tessellate,
     tq,
+    serialize,
+    deserialize,
 )
 from .utils import (
     explode,
@@ -53,9 +59,41 @@ from .utils import (
 HASH_CODE_MAX = 2147483647
 
 
+class _tessellate_wrapper:
+    def __init__(self, quality=0.1, angular_tolerance=0.1):
+        self.quality = quality
+        self.angular_tolerance = angular_tolerance
+
+    def __call__(self, path_hash):
+        s = time.time()
+
+        path, hash = path_hash
+        shape = deserialize(path)
+        try:
+            os.unlink(path)
+        except:
+            logging.warn("Cannot unlink %s", path)
+
+        if RENDER_CACHE.get(hash) is None:
+            logging.debug(" Tessellate object(hash=%d)", hash)
+            result = (hash, tessellate(shape, self.quality, self.angular_tolerance))
+            print("T", (time.time() - s) * 1000)
+            return result
+        else:
+            logging.debug(" Get object(hash=%d) from cache", hash)
+            return None
+
+
 class RenderCache:
-    def __init__(self):
+    def __init__(self, log_level="INFO"):
         self.objects = {}
+        self.set_log_level(log_level)
+
+    def set_log_level(self, level):
+        logging.getLogger().setLevel(level)
+
+    def get(self, key):
+        return self.objects.get(key)
 
     def reset_cache(self):
         self.objects = {}
@@ -69,6 +107,7 @@ class RenderCache:
 
         hash = compound.HashCode(HASH_CODE_MAX)
         if self.objects.get(hash) is None:
+            logging.debug(" Tessellate object(hash=%d)", hash)
             np_vertices, np_triangles, np_normals = tessellate(compound, quality, angular_tolerance)
 
             if np_normals.shape != np_vertices.shape:
@@ -83,10 +122,33 @@ class RenderCache:
             )
 
             self.objects[hash] = shape_geometry
+        else:
+            logging.debug(" Get object(hash=%d) from cache", hash)
+
         return self.objects[hash]
 
+    def parallel_tessellate(self, shapes, quality=0.1, angular_tolerance=0.1):
+        files = []
+        for shape in shapes:
+            with NamedTemporaryFile(delete=False) as ntf:
+                serialize(shape, ntf.name)
+                files.append((ntf.name, shape.HashCode(HASH_CODE_MAX)))
 
-RENDER_CACHE = RenderCache()
+        with Pool() as p:
+            result = p.map(_tessellate_wrapper(quality, angular_tolerance), files)
+            for r in result:
+                if r is not None:
+                    np_vertices, np_triangles, np_normals = r[1]
+                    self.objects[r[0]] = BufferGeometry(
+                        attributes={
+                            "position": BufferAttribute(np_vertices),
+                            "index": BufferAttribute(np_triangles.ravel()),
+                            "normal": BufferAttribute(np_normals),
+                        }
+                    )
+
+
+RENDER_CACHE = RenderCache("DEBUG")
 reset_cache = RENDER_CACHE.reset_cache
 
 
@@ -162,6 +224,7 @@ class CadqueryRenderer(object):
         edge_accuracy=0.01,
         default_mesh_color=None,
         default_edge_color=None,
+        parallel=False,
         timeit=False,
     ):
         self.quality = quality
@@ -173,6 +236,7 @@ class CadqueryRenderer(object):
         self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
         self.default_edge_color = Color(default_edge_color or (128, 128, 128))
 
+        self.parallel = parallel
         self.timeit = timeit
 
     def _start_timer(self):
@@ -181,10 +245,11 @@ class CadqueryRenderer(object):
 
     def _stop_timer(self, msg, start):
         if self.timeit:
-            print("%20s: %7.2f sec" % (msg, time.time() - start))
+            print("%20s: %d ms" % (msg, int((time.time() - start) * 1000)))
 
     def render_shape(
         self,
+        name,
         shape=None,
         edges=None,
         vertices=None,
@@ -215,17 +280,20 @@ class CadqueryRenderer(object):
 
             # Compute the tesselation and build mesh
             start_tesselation_time = self._start_timer()
-            shape_geometry = RENDER_CACHE.tessellate(
-                shape,
-                self.quality,
-                self.angular_tolerance,
-            )
+
+            shape_geometry = RENDER_CACHE.get(shape.HashCode(HASH_CODE_MAX))
+            if shape_geometry is None:
+                shape_geometry = RENDER_CACHE.tessellate(
+                    shape,
+                    self.quality,
+                    self.angular_tolerance,
+                )
 
             shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
             # Do not cache building the mesh. Might lead to unpredictable results
             shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
-            self._stop_timer("build mesh time", start_tesselation_time)
+            self._stop_timer(" - build mesh time", start_tesselation_time)
 
             if render_edges:
                 edges = get_edges(shape)
@@ -249,7 +317,7 @@ class CadqueryRenderer(object):
         if edges is not None:
             start_discretize_time = self._start_timer()
             edge_list = [discretize_edge(edge, self.edge_accuracy) for edge in edges]
-            self._stop_timer("discretize time", start_discretize_time)
+            self._stop_timer(" - discretize time", start_discretize_time)
 
         if edge_list is not None:
             start_discretize_time = self._start_timer()
@@ -265,14 +333,14 @@ class CadqueryRenderer(object):
                     colors=[[color.percentage] * 2 for color in edge_color],
                 )
                 mat = LineMaterial(linewidth=edge_width, vertexColors="VertexColors")
-                edge_lines = [IndexedLineSegments2(lines, mat)]
             else:
                 lines = LineSegmentsGeometry(positions=edge_list)
                 mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
-                edge_lines = [IndexedLineSegments2(lines, mat)]
-            self._stop_timer("edge list", start_discretize_time)
 
-        self._stop_timer("shape render time", start_render_time)
+            edge_lines = [IndexedLineSegments2(lines, mat)]
+            self._stop_timer(" - edge list", start_discretize_time)
+
+        self._stop_timer(f"render shape {name:30} time", start_render_time)
 
         return shape_mesh, edge_lines, points
 
@@ -287,25 +355,16 @@ class CadqueryRenderer(object):
         if shapes["loc"] is not None:
             group.position, group.quaternion = tq(shapes["loc"])
 
-        # Render all shapes
         for shape in shapes["parts"]:
             if shape.get("parts") is None:
                 self._mapping[shape["ind"]] = {"mesh": None, "edges": None}
 
                 # Assume that all are edges when first element is an edge
                 if is_edge(shape["shape"][0]):
-                    options = dict(
-                        edges=shape["shape"],
-                        edge_color=shape["color"],
-                        edge_width=3,
-                        render_edges=True,
-                    )
+                    options = dict(edges=shape["shape"], edge_color=shape["color"], edge_width=3, render_edges=True)
                 elif is_vertex(shape["shape"][0]):
                     options = dict(
-                        vertices=shape["shape"],
-                        vertex_color=shape["color"],
-                        vertex_width=6,
-                        render_edges=False,
+                        vertices=shape["shape"], vertex_color=shape["color"], vertex_width=6, render_edges=False
                     )
                 else:
                     # shape has only 1 object
@@ -316,7 +375,7 @@ class CadqueryRenderer(object):
                         render_edges=self.render_edges,
                     )
 
-                shape_mesh, edge_lines, points = self.render_shape(**options)
+                shape_mesh, edge_lines, points = self.render_shape(shapes["name"], **options)
 
                 ind = len(group.children)
                 if shape_mesh is not None:
@@ -352,8 +411,33 @@ class CadqueryRenderer(object):
         return group
 
     def render(self, shapes):
+        hashes = []
+
+        def collect(shapes):
+            all_shapes = []
+            for shape in shapes:
+                if shape.get("parts") is None:
+                    if not is_edge(shape["shape"][0]) and not is_vertex(shape["shape"][0]):
+                        hash = shape["shape"][0].HashCode(HASH_CODE_MAX)
+                        if not hash in hashes and RENDER_CACHE.get(hash) is None:
+                            all_shapes.append(shape["shape"][0])
+                            hashes.append(hash)
+                else:
+                    all_shapes = all_shapes + collect(shape["parts"])
+            return all_shapes
+
         start_render_time = self._start_timer()
         self._mapping = {}
+
+        # Render all shapes via multiprocessing
+        if self.parallel:
+            print("Using multiprocessing")
+            start_parallel_tessellate_time = self._start_timer()
+            all_shapes = collect(shapes["parts"])
+            if all_shapes:
+                RENDER_CACHE.parallel_tessellate(all_shapes)
+            self._stop_timer("parallel tessellation time", start_parallel_tessellate_time)
+
         rendered_objects = self._render(shapes, (), "")
         self._stop_timer("overall render time", start_render_time)
         return rendered_objects, self._mapping

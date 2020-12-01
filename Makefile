@@ -81,6 +81,11 @@ upload_ext:
 dev_tools:
 	pip install twine bumpversion yapf pylint pyYaml
 
+clear_notebooks:
+	@for notebook in examples/*.ipynb examples/assemblies/*.ipynb; do \
+		jupyter nbconvert --clear-output --inplace $$notebook; \
+	done
+
 docker:
 	@rm -fr docker/examples
 	@cp -R examples docker/

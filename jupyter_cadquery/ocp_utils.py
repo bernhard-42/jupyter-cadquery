@@ -5,7 +5,7 @@ import numpy as np
 from OCP.gp import gp_Vec, gp_Pnt
 
 from OCP.Bnd import Bnd_Box
-from OCP.BRep import BRep_Tool
+from OCP.BRep import BRep_Tool, BRep_Builder
 from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepGProp import BRepGProp_Face
@@ -298,3 +298,15 @@ def get_rgb(color):
     rgb = color.wrapped.GetRGB()
     return (int(255 * rgb.Red()), int(255 * rgb.Green()), int(255 * rgb.Blue()))
 
+
+def serialize(shape, path):
+    BRepTools().Write_s(shape, path)
+
+
+def deserialize(path):
+    shape = TopoDS_Shape()
+    builder = BRep_Builder()
+    if BRepTools().Read_s(shape, path, builder):
+        return shape
+    else:
+        return None

@@ -13,12 +13,7 @@ here = os.path.dirname(os.path.abspath(__file__))
 node_root = os.path.join(here, "js")
 is_repo = os.path.exists(os.path.join(here, ".git"))
 
-npm_path = os.pathsep.join(
-    [
-        os.path.join(node_root, "node_modules", ".bin"),
-        os.environ.get("PATH", os.defpath),
-    ]
-)
+npm_path = os.pathsep.join([os.path.join(node_root, "node_modules", ".bin"), os.environ.get("PATH", os.defpath),])
 
 from distutils import log
 
@@ -118,10 +113,7 @@ class NPM(Command):
             log.info("Installing build dependencies with npm.  This may take a while...")
             npmName = self.get_npm_name()
             check_call(
-                [npmName, "install"],
-                cwd=node_root,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
+                [npmName, "install"], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr,
             )
             os.utime(self.node_modules, None)
 
@@ -157,20 +149,16 @@ setup_args = {
     "install_requires": ["ipywidgets>=7.5.0", "jupyterlab>=1.1.4"],
     "packages": find_packages(),
     "zip_safe": False,
-    "cmdclass": {
-        "build_py": js_prerelease(build_py),
-        "egg_info": js_prerelease(egg_info),
-        "sdist": js_prerelease(sdist, strict=True),
-        "jsdeps": NPM,
-    },
+    # "cmdclass": {
+    #     "build_py": js_prerelease(build_py),
+    #     "egg_info": js_prerelease(egg_info),
+    #     "sdist": js_prerelease(sdist, strict=True),
+    #     "jsdeps": NPM,
+    # },
     "author": "Bernhard Walter",
     "author_email": "b_walter@arcor.de",
     "url": "https://github.com/bernhard-42/jupyter-cadquery",
-    "keywords": [
-        "ipython",
-        "jupyter",
-        "widgets",
-    ],
+    "keywords": ["ipython", "jupyter", "widgets",],
     "classifiers": [
         "Development Status :: 4 - Beta",
         "Framework :: IPython",

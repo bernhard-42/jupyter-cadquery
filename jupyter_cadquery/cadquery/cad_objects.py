@@ -126,39 +126,20 @@ def _parent(cad_obj, obj_id):
     if cad_obj.parent is not None:
         if isinstance(cad_obj.parent.val(), Vector):
             return _from_vectorlist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Vertex):
             return _from_vertexlist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Edge):
             return _from_edgelist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Wire):
             return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)))]
         else:
-            return [
-                Part(
-                    cad_obj.parent,
-                    "Parent_%d" % obj_id,
-                    show_edges=True,
-                    show_faces=False,
-                )
-            ]
+            return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False,)]
     else:
         return []
 
@@ -219,12 +200,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
         color = Color(get_rgb(cad_obj.color))
 
     parent = [
-        Part(
-            Workplane(shape),
-            "%s_%d" % (cad_obj.name, i),
-            color=color,
-        )
-        for i, shape in enumerate(cad_obj.shapes)
+        Part(Workplane(shape), "%s_%d" % (cad_obj.name, i), color=color,) for i, shape in enumerate(cad_obj.shapes)
     ]
 
     if render_mates and cad_obj.mates is not None:
@@ -307,6 +283,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
     - display:           Select display: "sidecar", "cell", "html"
     - tools:             Show the viewer tools like the object tree
+    - parallel:          Use multiprocessing for tessellation of multiple objects
     - timeit:            Show rendering times (default=False)
 
     For example isometric projection can be achieved in two ways:
