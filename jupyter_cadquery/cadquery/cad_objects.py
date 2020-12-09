@@ -213,10 +213,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
     loc = Location()
     render_loc = cad_obj.loc
 
-    if isinstance(cad_obj, MAssembly):
-        color = Color(cad_obj.web_color)
-    else:
-        color = Color(get_rgb(cad_obj.color))
+    color = Color(get_rgb(cad_obj.color))
 
     parent = [
         Part(
