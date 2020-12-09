@@ -30,10 +30,11 @@ class Animation:
         self.root = assembly
         self.tracks = []
 
-    def add_number_track(self, selector, action, times, values):
+    def add_track(self, selector, action, times, values):
         if len(times) != len(values):
             raise AnimationException("times and values arrays need have the same lenght")
 
+        selector = selector.replace("/", "\\")
         group = self.root.find_group(selector)
         if group is None:
             raise AnimationException(f"group '{selector}' not found")
@@ -53,9 +54,7 @@ class Animation:
 
             self.tracks.append(
                 NumberKeyframeTrack(
-                    name=selector + ".position",
-                    times=np.array(times).astype(np.float32),
-                    values=new_values,
+                    name=selector + ".position", times=np.array(times).astype(np.float32), values=new_values,
                 )
             )
 
@@ -83,9 +82,7 @@ class Animation:
 
             self.tracks.append(
                 QuaternionKeyframeTrack(
-                    name=selector + ".quaternion",
-                    times=np.array(times).astype(np.float32),
-                    values=new_values,
+                    name=selector + ".quaternion", times=np.array(times).astype(np.float32), values=new_values,
                 )
             )
 
