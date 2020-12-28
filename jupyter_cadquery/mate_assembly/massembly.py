@@ -2,7 +2,8 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Optional, Union, Tuple, Dict, List, overload
 
-from cadquery import Workplane, Location, Assembly
+from cadquery import Workplane, Location, Assembly, Shape
+from cadquery.assembly import _grammar
 from .mate import Mate
 
 Selector = Tuple[str, Union[str, Tuple[float, float]]]
@@ -82,7 +83,7 @@ class MAssembly(Assembly):
     def mate(self, *args, name: str, origin: bool = False, transforms: Union[Dict, OrderedDict] = None) -> "MAssembly":
         if len(args) == 1:
             query = args[0]
-            id, obj = self._query_workplane(query)
+            id, obj = self.find(query)
             mate = Mate(obj)
         elif len(args) == 2:
             id, mate = args
@@ -99,31 +100,48 @@ class MAssembly(Assembly):
 
         return self
 
-    def _relocate(self, identity):
-        """Relocate all shapes to have its origin at the assembly origin"""
-        if self._origin_mate is not None:
-            self.obj = Workplane(self.obj.val().moved(self._origin_mate.loc.inverse))
-            self.loc = identity
-        for c in self.children:
-            c._relocate(identity)
+    def find(self, q: str) -> Tuple[str, Workplane]:
+        """
+        Execute a selector query on the assembly.
+        The query is expected to be in the following format:
 
-    def relocate(self):
-        """Relocate the assembly so that all its shapes have their origin at the assembly origin"""
-        # relocate all CadQuery objects
-        self._relocate(self.obj.plane.location)  # identity is the orientation of the root workplane
-        # relocate all mates
-        for _, mate_def in self.mates.items():
-            if mate_def.assembly._origin_mate is not None:
-                mate_def.mate = mate_def.mate.moved(mate_def.assembly._origin_mate.loc.inverse)
-        # Reset all _origin_mate values
-        for _, mate_def in self.mates.items():
-            mate_def.assembly._origin_mate = None
+            name[?tag][@kind@args]
+
+        valid example include:
+
+            obj_name @ faces @ >Z
+            obj_name?tag1@faces@>Z
+            obj_name ? tag
+            obj_name
+
+        """
+
+        tmp: Workplane
+        res: Workplane
+
+        query = _grammar.parseString(q, True)
+        name: str = query.name
+
+        obj = self.objects[name].obj
+
+        if isinstance(obj, Workplane) and query.tag:
+            tmp = obj._getTagged(query.tag)
+        elif isinstance(obj, (Workplane, Shape)):
+            tmp = Workplane().add(obj)
+        else:
+            raise ValueError("Workplane or Shape required to define a constraint")
+
+        if query.selector:
+            res = getattr(tmp, query.selector_kind)(query.selector)
+        else:
+            res = tmp
+        return name, res
 
     def assemble(self, object_name: str, target: Union[str, Location]) -> Optional["MAssembly"]:
         """
         Translate and rotate a mate onto a target mate
-        :param mate: name of the mate to be relocated
-        :param target: name of the target mate or a Location object to relocate the mate to
+        :param mate: name of the mate to be assembled
+        :param target: name of the target mate or a Location object to assemble the mate to
         :return: self
         """
         o_mate, o_assy = self.mates[object_name].mate, self.mates[object_name].assembly
