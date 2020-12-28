@@ -177,6 +177,12 @@ def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parents=True)
     return result
 
 
+def _from_vector(vec, obj_id, name="Vector"):
+    tmp = Workplane()
+    obj = tmp.newObject([vec])
+    return _from_vectorlist(obj, obj_id, name)
+
+
 def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
     if cad_obj.vals():
         vectors = cad_obj.vals()
@@ -203,7 +209,7 @@ def _from_wirelist(cad_obj, obj_id, name="Edges", color=None):
 def to_edge(mate, loc=None, scale=1) -> Workplane:
     w = Workplane()
     for d in (mate.x_dir, mate.y_dir, mate.z_dir):
-        edge = Edge.makeLine(mate.pnt, mate.pnt + d * scale)
+        edge = Edge.makeLine(mate.origin, mate.origin + d * scale)
         w.objects.append(edge if loc is None else edge.moved(loc))
 
     return w
@@ -351,6 +357,9 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
 
         elif _is_vertexlist(cad_obj):
             assembly.add_list(_from_vertexlist(cad_obj, obj_id))
+
+        elif isinstance(cad_obj, Vector):
+            assembly.add_list(_from_vector(cad_obj, obj_id))
 
         elif isinstance(cad_obj.val(), Vector):
             assembly.add_list(_from_vectorlist(cad_obj, obj_id))
