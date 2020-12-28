@@ -1,13 +1,13 @@
 from typing import overload, Union, Tuple, cast
 from math import sin, cos, pi
-from cadquery import Workplane, Vector, Location, Plane, Edge
+from cadquery import Workplane, Vector, Location, Plane, Edge, Face
 
 
 class Mate:
     @overload
     def __init__(
         self,
-        pnt: Union[Vector, list, tuple] = None,
+        origin: Union[Vector, list, tuple] = None,
         x_dir: Union[Vector, list, tuple] = None,
         z_dir: Union[Vector, list, tuple] = None,
     ):
@@ -17,26 +17,39 @@ class Mate:
     def __init__(self, workplane: Workplane):
         ...
 
-    def __init__(self, *args):
+    def __init__(self, *args, tol=0.0001):
         if len(args) == 1 and isinstance(args[0], Workplane):
-            plane = args[0]
-            self.pnt = plane.val().Center()
-            self.x_dir = plane.workplane().plane.xDir
-            self.z_dir = plane.workplane().plane.zDir
+            workplane = args[0]
+            self.origin = workplane.val().Center()
+            self.x_dir = workplane.plane.xDir
+            self.z_dir = workplane.plane.zDir
+
+            normal = None
+            val = workplane.val()
+            if val.geomType() in ["CIRCLE", "ELLIPSE"]:
+                normal = val.normal()
+            elif isinstance(val, Face):
+                normal = val.normalAt(val.Center())
+
+            if normal is not None:
+                if abs(abs(self.x_dir.dot(normal)) - 1) < tol:  # x_dir and normal parallel ...
+                    self.x_dir = workplane.plane.zDir  # ... so choose zDir as new x_dir ...
+                self.z_dir = normal  # ... and make normal to z_dir
         else:
             c = lambda v: v if isinstance(v, Vector) else Vector(*v)
-            self.pnt = Vector(0, 0, 0) if len(args) == 0 else c(args[0])
+            self.origin = Vector(0, 0, 0) if len(args) == 0 else c(args[0])
             self.x_dir = Vector(1, 0, 0) if len(args) <= 1 else c(args[1])
             self.z_dir = Vector(0, 0, 1) if len(args) <= 2 else c(args[2])
+
         self.y_dir = self.z_dir.cross(self.x_dir)
 
     @property
     def loc(self):
-        return Location(Plane(self.pnt, self.x_dir, self.z_dir))
+        return Location(Plane(self.origin, self.x_dir, self.z_dir))
 
     def __repr__(self) -> str:
         c = lambda v: f"({v.x:.4f}, {v.y:.4f}, {v.z:.4f})"
-        return f"Mate(pnt={c(self.pnt)}, x_dir={c(self.x_dir)}, z_dir={c(self.z_dir)})"
+        return f"Mate(origin={c(self.origin)}, x_dir={c(self.x_dir)}, z_dir={c(self.z_dir)})"
 
     @staticmethod
     def _rotate(v, axis, angle) -> float:
@@ -82,14 +95,14 @@ class Mate:
         :param axis: the direction to translate
         :param dist: scale of axis
         """
-        self.pnt = self.pnt + axis * dist
+        self.origin = self.origin + axis * dist
 
     def tx(self, dist: float) -> "Mate":
         """
         Translate with a given distance along x axis
         :param dist: distance to translate
         :return: self
-       """
+        """
         self.translate(self.x_dir, dist)
         return self
 
@@ -117,11 +130,12 @@ class Mate:
         :param loc: The Location object to move the mate
         :return: Mate
         """
-        def move(pnt: Vector, vec: Vector, loc: Location) -> Tuple[Vector, Vector]:
-            reloc = cast(Edge, Edge.makeLine(pnt, pnt + vec).moved(loc))
+
+        def move(origin: Vector, vec: Vector, loc: Location) -> Tuple[Vector, Vector]:
+            reloc = cast(Edge, Edge.makeLine(origin, origin + vec).moved(loc))
             v1, v2 = reloc.startPoint(), reloc.endPoint()
             return v1, v2 - v1
 
-        pnt, x_dir = move(self.pnt, self.x_dir, loc)
-        _, z_dir = move(self.pnt, self.z_dir, loc)
-        return Mate(pnt, x_dir, z_dir)
+        origin, x_dir = move(self.origin, self.x_dir, loc)
+        _, z_dir = move(self.origin, self.z_dir, loc)
+        return Mate(origin, x_dir, z_dir)
