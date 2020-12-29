@@ -13,6 +13,7 @@ Selector = Tuple[str, Union[str, Tuple[float, float]]]
 class MateDef:
     mate: Mate
     assembly: "MAssembly"
+    origin: bool
 
 
 class MAssembly(Assembly):
@@ -66,40 +67,6 @@ class MAssembly(Assembly):
         """
         ...
 
-    @overload
-    def mate(
-        self, query: str, name: str, origin: bool = False, transforms: Union[Dict, OrderedDict] = None
-    ) -> "MAssembly":
-        """
-        Add a mate to an assembly
-        :param query: an object assembly
-        :param name: name of the new mate
-        :param transforms: an ordered dict of rx, ry, rz, tx, ty, tz transformations
-        :param origin Whether this mate is the origin of the assembly
-        :return: Mate
-        """
-        ...
-
-    def mate(self, *args, name: str, origin: bool = False, transforms: Union[Dict, OrderedDict] = None) -> "MAssembly":
-        if len(args) == 1:
-            query = args[0]
-            id, obj = self.find(query)
-            mate = Mate(obj)
-        elif len(args) == 2:
-            id, mate = args
-        else:
-            raise RuntimeError("Wrong number of arguments, valid are 'id, mate' or 'query'")
-
-        assembly = self.objects[id]
-        if transforms is not None:
-            for k, v in transforms.items():
-                mate = getattr(mate, k)(v)
-        self.mates[name] = MateDef(mate, assembly)
-        if origin:
-            assembly._origin_mate = mate
-
-        return self
-
     def find(self, q: str) -> Tuple[str, Workplane]:
         """
         Execute a selector query on the assembly.
@@ -136,6 +103,38 @@ class MAssembly(Assembly):
         else:
             res = tmp
         return name, res
+
+    @overload
+    def mate(
+        self, query: str, name: str, origin: bool = False, transforms: Union[Dict, OrderedDict] = None
+    ) -> "MAssembly":
+        """
+        Add a mate to an assembly
+        :param query: an object assembly
+        :param name: name of the new mate
+        :param transforms: an ordered dict of rx, ry, rz, tx, ty, tz transformations
+        :param origin Whether this mate is the origin of the assembly
+        :return: Mate
+        """
+        ...
+
+    def mate(self, *args, name: str, origin: bool = False, transforms: Union[Dict, OrderedDict] = None) -> "MAssembly":
+        if len(args) == 1:
+            query = args[0]
+            id, obj = self.find(query)
+            mate = Mate(obj)
+        elif len(args) == 2:
+            id, mate = args
+        else:
+            raise RuntimeError("Wrong number of arguments, valid are 'id, mate' or 'query'")
+
+        assembly = self.objects[id]
+        if transforms is not None:
+            for k, v in transforms.items():
+                mate = getattr(mate, k)(v)
+        self.mates[name] = MateDef(mate, assembly, origin)
+
+        return self
 
     def assemble(self, object_name: str, target: Union[str, Location]) -> Optional["MAssembly"]:
         """
