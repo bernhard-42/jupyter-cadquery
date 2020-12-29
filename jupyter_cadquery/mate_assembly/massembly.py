@@ -13,6 +13,7 @@ Selector = Tuple[str, Union[str, Tuple[float, float]]]
 class MateDef:
     mate: Mate
     assembly: "MAssembly"
+    origin: bool
 
 
 class MAssembly(Assembly):
@@ -50,6 +51,43 @@ class MAssembly(Assembly):
                 matelist[v].append(k)
 
         print(to_string(self, matelist, ""))
+
+    def find(self, q: str) -> Tuple[str, Workplane]:
+        """
+        Execute a selector query on the assembly.
+        The query is expected to be in the following format:
+
+            name[?tag][@kind@args]
+
+        valid example include:
+
+            obj_name @ faces @ >Z
+            obj_name?tag1@faces@>Z
+            obj_name ? tag
+            obj_name
+
+        """
+
+        tmp: Workplane
+        res: Workplane
+
+        query = _grammar.parseString(q, True)
+        name: str = query.name
+
+        obj = self.objects[name].obj
+
+        if isinstance(obj, Workplane) and query.tag:
+            tmp = obj._getTagged(query.tag)
+        elif isinstance(obj, (Workplane, Shape)):
+            tmp = Workplane().add(obj)
+        else:
+            raise ValueError("Workplane or Shape required to define a constraint")
+
+        if query.selector:
+            res = getattr(tmp, query.selector_kind)(query.selector)
+        else:
+            res = tmp
+        return name, res
 
     @overload
     def mate(
@@ -94,48 +132,9 @@ class MAssembly(Assembly):
         if transforms is not None:
             for k, v in transforms.items():
                 mate = getattr(mate, k)(v)
-        self.mates[name] = MateDef(mate, assembly)
-        if origin:
-            assembly._origin_mate = mate
+        self.mates[name] = MateDef(mate, assembly, origin)
 
         return self
-
-    def find(self, q: str) -> Tuple[str, Workplane]:
-        """
-        Execute a selector query on the assembly.
-        The query is expected to be in the following format:
-
-            name[?tag][@kind@args]
-
-        valid example include:
-
-            obj_name @ faces @ >Z
-            obj_name?tag1@faces@>Z
-            obj_name ? tag
-            obj_name
-
-        """
-
-        tmp: Workplane
-        res: Workplane
-
-        query = _grammar.parseString(q, True)
-        name: str = query.name
-
-        obj = self.objects[name].obj
-
-        if isinstance(obj, Workplane) and query.tag:
-            tmp = obj._getTagged(query.tag)
-        elif isinstance(obj, (Workplane, Shape)):
-            tmp = Workplane().add(obj)
-        else:
-            raise ValueError("Workplane or Shape required to define a constraint")
-
-        if query.selector:
-            res = getattr(tmp, query.selector_kind)(query.selector)
-        else:
-            res = tmp
-        return name, res
 
     def assemble(self, object_name: str, target: Union[str, Location]) -> Optional["MAssembly"]:
         """

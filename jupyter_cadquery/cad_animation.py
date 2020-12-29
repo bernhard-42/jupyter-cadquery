@@ -22,24 +22,24 @@ def _d2r(x):
 def relocate(assy):
     """Relocate the assembly so that all its shapes have their origin at the assembly origin"""
 
-    def _relocate(assy):
-        if assy._origin_mate is not None:
-            assy.obj = Workplane(assy.obj.val().moved(assy._origin_mate.loc.inverse))
+    def _relocate(assy, origins):
+        origin_mate = origins.get(assy.name)
+        if origin_mate is not None:
+            assy.obj = Workplane(assy.obj.val().moved(origin_mate.loc.inverse))
             assy.loc = Location()
         for c in assy.children:
-            _relocate(c)
+            _relocate(c, origins)
+
+    origins = {mate_def.assembly.name: mate_def.mate for mate_def in assy.mates.values() if mate_def.origin}
 
     # relocate all CadQuery objects
-    _relocate(assy)  # identity is the orientation of the root workplane
+    _relocate(assy, origins)
 
     # relocate all mates
-    for _, mate_def in assy.mates.items():
-        if mate_def.assembly._origin_mate is not None:
-            mate_def.mate = mate_def.mate.moved(mate_def.assembly._origin_mate.loc.inverse)
-
-    # Reset all _origin_mate values
-    for _, mate_def in assy.mates.items():
-        mate_def.assembly._origin_mate = None
+    for mate_def in assy.mates.values():
+        origin_mate = origins.get(mate_def.assembly.name)
+        if origin_mate is not None:
+            mate_def.mate = mate_def.mate.moved(origin_mate.loc.inverse)
 
 
 class AnimationException(BaseException):
@@ -78,9 +78,7 @@ class Animation:
 
             self.tracks.append(
                 NumberKeyframeTrack(
-                    name=selector + ".position",
-                    times=np.array(times).astype(np.float32),
-                    values=new_values,
+                    name=selector + ".position", times=np.array(times).astype(np.float32), values=new_values,
                 )
             )
 
@@ -108,9 +106,7 @@ class Animation:
 
             self.tracks.append(
                 QuaternionKeyframeTrack(
-                    name=selector + ".quaternion",
-                    times=np.array(times).astype(np.float32),
-                    values=new_values,
+                    name=selector + ".quaternion", times=np.array(times).astype(np.float32), values=new_values,
                 )
             )
 
