@@ -52,43 +52,6 @@ class MAssembly(Assembly):
 
         print(to_string(self, matelist, ""))
 
-    def find(self, q: str) -> Tuple[str, Workplane]:
-        """
-        Execute a selector query on the assembly.
-        The query is expected to be in the following format:
-
-            name[?tag][@kind@args]
-
-        valid example include:
-
-            obj_name @ faces @ >Z
-            obj_name?tag1@faces@>Z
-            obj_name ? tag
-            obj_name
-
-        """
-
-        tmp: Workplane
-        res: Workplane
-
-        query = _grammar.parseString(q, True)
-        name: str = query.name
-
-        obj = self.objects[name].obj
-
-        if isinstance(obj, Workplane) and query.tag:
-            tmp = obj._getTagged(query.tag)
-        elif isinstance(obj, (Workplane, Shape)):
-            tmp = Workplane().add(obj)
-        else:
-            raise ValueError("Workplane or Shape required to define a constraint")
-
-        if query.selector:
-            res = getattr(tmp, query.selector_kind)(query.selector)
-        else:
-            res = tmp
-        return name, res
-
     @overload
     def mate(
         self, id: str, mate: Mate, name: str, origin: bool = False, transforms: Union[Dict, OrderedDict] = None
@@ -121,7 +84,7 @@ class MAssembly(Assembly):
     def mate(self, *args, name: str, origin: bool = False, transforms: Union[Dict, OrderedDict] = None) -> "MAssembly":
         if len(args) == 1:
             query = args[0]
-            id, obj = self.find(query)
+            id, obj = self._query(query)
             mate = Mate(obj)
         elif len(args) == 2:
             id, mate = args
