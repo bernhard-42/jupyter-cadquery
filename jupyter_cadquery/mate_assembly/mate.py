@@ -1,6 +1,6 @@
 from typing import overload, Union, Tuple, cast
 from math import sin, cos, pi
-from cadquery import Workplane, Vector, Location, Plane, Edge, Face
+from cadquery import Vector, Location, Plane, Edge, Face, Wire, Shape, Vertex
 
 
 class Mate:
@@ -14,27 +14,54 @@ class Mate:
         ...
 
     @overload
-    def __init__(self, workplane: Workplane):
+    def __init__(self, shape: Shape):
         ...
 
-    def __init__(self, *args, tol=0.0001):
-        if len(args) == 1 and isinstance(args[0], Workplane):
-            workplane = args[0]
-            self.origin = workplane.val().Center()
-            self.x_dir = workplane.plane.xDir
-            self.z_dir = workplane.plane.zDir
+    def __init__(self, *args):
+        def sub(v1, v2):
+            if isinstance(v1, Vertex):
+                v1 = Vector(v1.X, v1.Y, v1.Z)
+            if isinstance(v2, Vertex):
+                v2 = Vector(v2.X, v2.Y, v2.Z)
+            return (v1 - v2).normalized()
 
-            normal = None
-            val = workplane.val()
+        if len(args) == 1 and isinstance(args[0], Shape):
+            val = args[0]
+
+            self.origin = val.Center()
+
             if val.geomType() in ["CIRCLE", "ELLIPSE"]:
-                normal = val.normal()
-            elif isinstance(val, Face):
-                normal = val.normalAt(val.Center())
+                self.z_dir = val.normal()
 
-            if normal is not None:
-                if abs(abs(self.x_dir.dot(normal)) - 1) < tol:  # x_dir and normal parallel ...
-                    self.x_dir = workplane.plane.zDir  # ... so choose zDir as new x_dir ...
-                self.z_dir = normal  # ... and make normal to z_dir
+                vertices = val.Vertices()
+                if len(vertices) == 1:  # full circle or ellipse
+                    # Use the vector defined by the circle's/ellipse's vertex and the origin as x direction
+                    self.x_dir = sub(vertices[0], self.origin)
+                else:  # arc
+                    # Use the vector defined by start and end of the arc as x direction
+                    self.x_dir = sub(vertices[1], vertices[0])
+
+            elif isinstance(val, Wire):
+                self.z_dir = val.normal()
+
+                vertices = val.Vertices()
+                if len(vertices) == 1:  # e.g. a single closed spline
+                    # Use the vector defined by the vertex and the origin as x direction
+                    self.x_dir = sub(vertices[0], self.origin)
+                else:
+                    # Use the vector defined by the first two vertices as x direction
+                    self.x_dir = sub(vertices[1], vertices[0])
+
+            elif isinstance(val, Face):
+                self.z_dir = val.normalAt(val.Center())
+
+                # x_dir will be derived from the local coord system of the underlying plane
+                xd = val._geomAdaptor().Position().XDirection()
+                self.x_dir = Vector(xd.X(), xd.Y(), xd.Z())
+
+            else:
+                raise ValueError("Needs a Face, Wire, Circle or an Ellipse")
+
         else:
             c = lambda v: v if isinstance(v, Vector) else Vector(*v)
             self.origin = Vector(0, 0, 0) if len(args) == 0 else c(args[0])
