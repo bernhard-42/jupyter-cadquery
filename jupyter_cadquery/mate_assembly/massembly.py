@@ -19,8 +19,6 @@ class MateDef:
 class MAssembly(Assembly):
     def __init__(self, *args, **kwargs):
         self.mates: Dict[str, MateDef] = {}
-        self._origin_mate: Mate = None
-
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
