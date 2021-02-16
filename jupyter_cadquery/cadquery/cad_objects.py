@@ -15,7 +15,13 @@
 #
 
 import html
-from jupyter_cadquery.mate_assembly.massembly import MAssembly
+
+try:
+    from cadquery_massembly import MAssembly
+
+    HAS_MASSEMBLY = True
+except:
+    HAS_MASSEMBLY = False
 import numpy as np
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import Workplane, Shape, Vector, Vertex, Location, Assembly as CqAssembly
@@ -126,39 +132,20 @@ def _parent(cad_obj, obj_id):
     if cad_obj.parent is not None:
         if isinstance(cad_obj.parent.val(), Vector):
             return _from_vectorlist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Vertex):
             return _from_vertexlist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Edge):
             return _from_edgelist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Wire):
             return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)))]
         else:
-            return [
-                Part(
-                    cad_obj.parent,
-                    "Parent_%d" % obj_id,
-                    show_edges=True,
-                    show_faces=False,
-                )
-            ]
+            return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False,)]
     else:
         return []
 
@@ -222,12 +209,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
     color = Color(get_rgb(cad_obj.color))
 
     parent = [
-        Part(
-            Workplane(shape),
-            "%s_%d" % (cad_obj.name, i),
-            color=color,
-        )
-        for i, shape in enumerate(cad_obj.shapes)
+        Part(Workplane(shape), "%s_%d" % (cad_obj.name, i), color=color,) for i, shape in enumerate(cad_obj.shapes)
     ]
 
     if render_mates and cad_obj.mates is not None:
@@ -284,48 +266,14 @@ def _is_wirelist(cad_obj):
     )
 
 
-def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
-    """Show CAD objects in Jupyter
-
-    Valid keywords:
-    - height:            Height of the CAD view (default=600)
-    - tree_width:        Width of navigation tree part of the view (default=250)
-    - cad_width:         Width of CAD view part of the view (default=800)
-    - bb_factor:         Scale bounding box to ensure compete rendering (default=1.0)
-    - render_shapes:     Render shapes  (default=True)
-    - render_edges:      Render edges  (default=True)
-    - render_mates:      For MAssemblies, whether to rander the mates (default=True)
-    - mate_scale:        For MAssemblies, scale of rendered mates (default=1)
-    - quality:           Tolerance for tessellation (default=0.1)
-    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
-    - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
-    - axes:              Show axes (default=False)
-    - axes0:             Show axes at (0,0,0) (default=False)
-    - grid:              Show grid (default=False)
-    - ortho:             Use orthographic projections (default=True)
-    - transparent:       Show objects transparent (default=False)
-    - position:          Relative camera position that will be scaled (default=(1, 1, 1))
-    - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
-    - zoom:              Zoom factor of view (default=2.5)
-    - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
-    - display:           Select display: "sidecar", "cell", "html"
-    - tools:             Show the viewer tools like the object tree
-    - timeit:            Show rendering times (default=False)
-
-    For example isometric projection can be achieved in two ways:
-    - position = (1, 1, 1)
-    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
-    """
-    render_mates = render_mates or get_default("render_mates")
-    mate_scale = mate_scale or get_default("mate_scale")
-
+def to_assembly(*cad_objs, render_mates=None, mate_scale=None):
     assembly = PartGroup([], "Group")
     obj_id = 0
     for cad_obj in cad_objs:
         if isinstance(cad_obj, (PartGroup, Part, Faces, Edges, Vertices)):
             assembly.add(cad_obj)
 
-        elif isinstance(cad_obj, MAssembly):
+        elif HAS_MASSEMBLY and isinstance(cad_obj, MAssembly):
             assembly.add(from_assembly(cad_obj, cad_obj, render_mates=render_mates, mate_scale=mate_scale))
 
         elif isinstance(cad_obj, CqAssembly):
@@ -371,6 +319,45 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
             raise NotImplementedError("Type:", cad_obj)
 
         obj_id += 1
+    return assembly
+
+
+def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
+    """Show CAD objects in Jupyter
+
+    Valid keywords:
+    - height:            Height of the CAD view (default=600)
+    - tree_width:        Width of navigation tree part of the view (default=250)
+    - cad_width:         Width of CAD view part of the view (default=800)
+    - bb_factor:         Scale bounding box to ensure compete rendering (default=1.0)
+    - render_shapes:     Render shapes  (default=True)
+    - render_edges:      Render edges  (default=True)
+    - render_mates:      For MAssemblies, whether to rander the mates (default=True)
+    - mate_scale:        For MAssemblies, scale of rendered mates (default=1)
+    - quality:           Tolerance for tessellation (default=0.1)
+    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
+    - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
+    - axes:              Show axes (default=False)
+    - axes0:             Show axes at (0,0,0) (default=False)
+    - grid:              Show grid (default=False)
+    - ortho:             Use orthographic projections (default=True)
+    - transparent:       Show objects transparent (default=False)
+    - position:          Relative camera position that will be scaled (default=(1, 1, 1))
+    - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
+    - zoom:              Zoom factor of view (default=2.5)
+    - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
+    - display:           Select display: "sidecar", "cell", "html"
+    - tools:             Show the viewer tools like the object tree
+    - timeit:            Show rendering times (default=False)
+
+    For example isometric projection can be achieved in two ways:
+    - position = (1, 1, 1)
+    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
+    """
+    render_mates = render_mates or get_default("render_mates")
+    mate_scale = mate_scale or get_default("mate_scale")
+
+    assembly = to_assembly(*cad_objs, render_mates=render_mates, mate_scale=mate_scale)
 
     if assembly is None:
         raise ValueError("%s cannot be viewed" % cad_objs)
