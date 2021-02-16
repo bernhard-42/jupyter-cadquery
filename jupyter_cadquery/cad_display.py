@@ -19,27 +19,9 @@ from os.path import join, dirname
 from uuid import uuid4
 from IPython.display import display as ipy_display
 
-from ipywidgets import (
-    Label,
-    Checkbox,
-    Layout,
-    HBox,
-    VBox,
-    Box,
-    FloatSlider,
-    Tab,
-    HTML,
-    Box,
-)
+from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Tab, HTML, Box, Output
 
-from .widgets import (
-    ImageButton,
-    TreeView,
-    UNSELECTED,
-    SELECTED,
-    MIXED,
-    EMPTY,
-)
+from .widgets import ImageButton, TreeView, UNSELECTED, SELECTED, MIXED, EMPTY
 from .cad_view import CadqueryView
 
 
@@ -50,8 +32,8 @@ class Defaults:
     def get_defaults(self):
         return self.defaults
 
-    def get_default(self, key):
-        return self.defaults.get(key)
+    def get_default(self, key, default_value=None):
+        return self.defaults.get(key, default_value)
 
     def set_defaults(self, **kwargs):
         """Set defaults for CAD viewer
@@ -60,7 +42,7 @@ class Defaults:
         - height:            Height of the CAD view (default=600)
         - tree_width:        Width of navigation tree part of the view (default=250)
         - cad_width:         Width of CAD view part of the view (default=800)
-        - bb_factor:         Scale bounding box to ensure compete rendering (default=1.0)
+        - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
         - render_shapes:     Render shapes  (default=True)
         - render_edges:      Render edges  (default=True)
         - render_mates:      Render mates (for MAssemblies)
@@ -100,7 +82,7 @@ class Defaults:
             "height": 600,
             "tree_width": 250,
             "cad_width": 800,
-            "bb_factor": 1.1,
+            "bb_factor": 1.0,
             "render_shapes": True,
             "render_edges": True,
             "render_mates": False,
@@ -127,8 +109,8 @@ def get_defaults():
     return DEFAULTS.get_defaults()
 
 
-def get_default(key):
-    return DEFAULTS.get_default(key)
+def get_default(key, default_value=None):
+    return DEFAULTS.get_default(key, default_value)
 
 
 def set_defaults(**kwargs):
@@ -159,10 +141,7 @@ class Info(object):
         self.html = HTML(
             value="",
             layout=Layout(
-                width=("%dpx" % width),
-                height=("%dpx" % height),
-                border="solid 1px #ddd",
-                overflow="scroll",
+                width=("%dpx" % width), height=("%dpx" % height), border="solid 1px #ddd", overflow="scroll",
             ),
         )
         self.width = width
@@ -333,6 +312,73 @@ class CadqueryDisplay(object):
         self._display = "cell"
         self._tools = True
         self.id = uuid4().hex[:10]
+        self.clean = True
+
+    def _dump_config(self):
+        print("\nCadDisplay:")
+        config = {
+            k: v
+            for k, v in self.__dict__.items()
+            if not k
+            in [
+                "cq_view",
+                "output",
+                "info",
+                "clipping",
+                "tree_clipping",
+                "image_paths",
+                "image_path",
+                "view_controls",
+                "check_controls",
+            ]
+        }
+        for k, v in config.items():
+            print(f"- {k:30s}: {v}")
+
+        print("\nCadView:")
+        config = {
+            k: v
+            for k, v in self.cq_view.__dict__.items()
+            if not k
+            in [
+                "pickable_objects",
+                "scene",
+                "controller",
+                "renderer",
+                "key_lights",
+                "picker",
+                "shapes",
+                "camera",
+                "info",
+                "axes",
+                "grid",
+                "cq_renderer",
+            ]
+        }
+        for k, v in config.items():
+            print(f"- {k:30s}: {v}")
+
+        print("\nCamera:")
+        config = {
+            k: v
+            for k, v in self.cq_view.camera.__dict__["_trait_values"].items()
+            if not k
+            in [
+                "keys",
+                "matrix",
+                "matrixWorldInverse",
+                "modelViewMatrix",
+                "normalMatrix",
+                "matrixWorld",
+                "projectionMatrix",
+                "comm",
+            ]
+            and not k.startswith("_")
+        }
+        for k, v in config.items():
+            print(f"- {k:30s}: {v}")
+
+    # Buttons
 
     def create_button(self, image_name, handler, tooltip):
         button = ImageButton(
@@ -352,21 +398,62 @@ class CadqueryDisplay(object):
         checkbox.add_class("view_%s" % kind)
         return checkbox
 
-    def write(self, *msg):
-        try:
-            self.info.add_text(" ".join([str(m) for m in msg]))
-        except:
-            print(msg)
+    # UI Handler
+
+    def change_view(self, typ, directions):
+        def reset(b):
+            self.cq_view._reset()
+
+        def refit(b):
+            self.cq_view.camera.zoom = self.cq_view.camera_initial_zoom
+            self.cq_view._update()
+
+        def change(b):
+            self.cq_view.camera.position = self.cq_view._add(
+                self.cq_view.bb.center, self.cq_view._scale(directions[typ])
+            )
+            self.cq_view._update()
+
+        if typ == "fit":
+            return refit
+        elif typ == "reset":
+            return reset
+        else:
+            return change
+
+    def bool_or_new(self, val):
+        return val if isinstance(val, bool) else val["new"]
+
+    def toggle_axes(self, change):
+        self.axes = self.bool_or_new(change)
+        self.cq_view.set_axes_visibility(self.axes)
+
+    def toggle_grid(self, change):
+        self.grid = self.bool_or_new(change)
+        self.cq_view.set_grid_visibility(self.grid)
+
+    def toggle_center(self, change):
+        self.axes0 = self.bool_or_new(change)
+        self.cq_view.set_axes_center(self.axes0)
+
+    def toggle_ortho(self, change):
+        self.ortho = self.bool_or_new(change)
+        self.cq_view.toggle_ortho(self.ortho)
+
+    def toggle_transparent(self, change):
+        self.transparent = self.bool_or_new(change)
+        self.cq_view.set_transparent(self.transparent)
+
+    def toggle_black_edges(self, change):
+        self.black_edges = self.bool_or_new(change)
+        self.cq_view.set_black_edges(self.black_edges)
 
     def create(
         self,
-        shapes,
-        mapping,
-        tree,
         render_shapes=None,
         render_edges=None,
         height=None,
-        bb_factor=1.1,
+        bb_factor=None,
         tree_width=None,
         cad_width=None,
         quality=None,
@@ -385,136 +472,92 @@ class CadqueryDisplay(object):
         tools=None,
         timeit=None,
     ):
-        def preset(key, value):
-            return get_default(key) if value is None else value
 
-        height = preset("height", height)
-        tree_width = preset("tree_width", tree_width)
-        cad_width = preset("cad_width", cad_width)
-        bb_factor = preset("bb_factor", bb_factor)
-        render_shapes = preset("render_shapes", render_shapes)
-        render_edges = preset("render_edges", render_edges)
-        quality = preset("quality", quality)
-        angular_tolerance = preset("angular_tolerance", angular_tolerance)
-        edge_accuracy = preset("edge_accuracy", edge_accuracy)
-        axes = preset("axes", axes)
-        axes0 = preset("axes0", axes0)
-        grid = preset("grid", grid)
-        ortho = preset("ortho", ortho)
-        transparent = preset("transparent", transparent)
-        position = preset("position", position)
-        rotation = preset("rotation", rotation)
-        zoom = preset("zoom", zoom)
-        if platform.system() != "Darwin":
-            mac_scrollbar = False
-        else:
-            mac_scrollbar = preset("mac_scrollbar", mac_scrollbar)
-        timeit = preset("timeit", timeit)
-
-        self._display = preset("display", display)
-        self._tools = preset("tools", tools)
-
-        if position is None:
-            position = (1, 1, 1)
-        if rotation is None:
-            rotation = (0, 0, 0)
-
-        self.mapping = mapping
-        self.states = states = {k: v["state"] for k, v in mapping.items()}
-        self.paths = paths = {k: v["path"] for k, v in mapping.items()}
+        self.height = get_default("height", height)
+        self.tree_width = get_default("tree_width", tree_width)
+        self.cad_width = get_default("cad_width", cad_width)
+        self.bb_factor = get_default("bb_factor", bb_factor)
+        self.render_shapes = get_default("render_shapes", render_shapes)
+        self.render_edges = get_default("render_edges", render_edges)
+        self.quality = get_default("quality", quality)
+        self.angular_tolerance = get_default("angular_tolerance", angular_tolerance)
+        self.edge_accuracy = get_default("edge_accuracy", edge_accuracy)
+        self.axes = get_default("axes", axes)
+        self.axes0 = get_default("axes0", axes0)
+        self.grid = get_default("grid", grid)
+        self.ortho = get_default("ortho", ortho)
+        self.transparent = get_default("transparent", transparent)
+        self.position = get_default("position", position)
+        self.rotation = get_default("rotation", rotation)
+        self.zoom = get_default("zoom", zoom)
+        self.mac_scrollbar = (platform.system() == "Darwin") and get_default("mac_scrollbar", mac_scrollbar)
+        timeit = get_default("timeit", timeit)
+        self._display = get_default("display", display)
+        self._tools = get_default("tools", tools)
+        self.black_edges = False
 
         # Output widget
-        output_height = height * 0.4 - 20 + 2
-        self.info = Info(tree_width, output_height - 6)
-
+        output_height = self.height * 0.4 - 20 + 2
+        self.info = Info(self.tree_width, output_height - 6)
         self.info.html.add_class("scroll-area")
-        if mac_scrollbar:
-            self.info.html.add_class("mac-scrollbar")
 
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(
-            shapes,
-            width=cad_width,
-            height=height,
-            bb_factor=bb_factor,
-            quality=quality,
-            edge_accuracy=edge_accuracy,
-            angular_tolerance=angular_tolerance,
-            render_shapes=render_shapes,
-            render_edges=render_edges,
+            width=self.cad_width,
+            height=self.height,
+            bb_factor=self.bb_factor,
+            quality=self.quality,
+            edge_accuracy=self.edge_accuracy,
+            angular_tolerance=self.angular_tolerance,
+            render_shapes=self.render_shapes,
+            render_edges=self.render_edges,
             info=self.info,
+            position=self.position,
+            rotation=self.rotation,
+            zoom=self.zoom,
             timeit=timeit,
         )
 
-        renderer = self.cq_view.render(position, rotation, zoom)
+        renderer = self.cq_view.create()
         renderer.add_class("view_renderer")
         renderer.add_class(f"view_renderer_{self.id}")
 
         # Prepare the CAD view tools
+        # Output area
 
         self.output = Box([self.info.html])
         self.output.layout = Layout(
-            height="%dpx" % output_height,
-            width="%dpx" % tree_width,
-            overflow_y="scroll",
-            overflow_x="scroll",
+            height="%dpx" % output_height, width="%dpx" % self.tree_width, overflow_y="scroll", overflow_x="scroll",
         )
-
         self.output.add_class("view_output")
 
-        bb = self.cq_view.bb
-        clipping = Clipping(self.image_path, self.output, self.cq_view, tree_width)
+        # Clipping tool
+        self.clipping = Clipping(self.image_path, self.output, self.cq_view, self.tree_width)
         for normal in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)):
-            clipping.add_slider(bb.max * 1.2, -bb.max * 1.3, bb.max * 1.2, 0.01, normal)
+            self.clipping.add_slider(1, -1, 1, 0.01, normal)
 
-        # Tree widget to change visibility
-        #       tree_height = height - output_height - 35
-        tree_view = TreeView(
-            image_paths=self.image_paths,
-            tree=tree,
-            state=states,
-            layout=Layout(height="%dpx" % (height * 0.6 - 25), width="%dpx" % (tree_width - 20)),
+        # Empty dummy Tree View
+        tree_view = Output()
+
+        # Tab widget with Tree View and Clipping tools
+        self.tree_clipping = Tab(
+            layout=Layout(height="%dpx" % (self.height * 0.6 + 20), width="%dpx" % self.tree_width)
         )
-        tree_view.add_class("view_tree")
-        tree_view.add_class("scroll-area")
-        if mac_scrollbar:
-            tree_view.add_class("mac-scrollbar")
-
-        tree_view.observe(self.cq_view.change_visibility(paths), "state")
-
-        tab_contents = ["Tree", "Clipping"]
-        tree_clipping = Tab(layout=Layout(height="%dpx" % (height * 0.6 + 20), width="%dpx" % tree_width))
-        tree_clipping.children = [tree_view, clipping.create()]
-        for i in range(len(tab_contents)):
-            tree_clipping.set_title(i, tab_contents[i])
-        tree_clipping.add_class("tab-content-no-padding")
+        self.tree_clipping.children = [tree_view, self.clipping.create()]
+        for i, c in enumerate(["Tree", "Clipping"]):
+            self.tree_clipping.set_title(i, c)
+        self.tree_clipping.add_class("tab-content-no-padding")
 
         # Check controls to swith orto, grid and axis
         self.check_controls = [
-            self.create_checkbox("axes", "Axes", axes, self.cq_view.toggle_axes),
-            self.create_checkbox("grid", "Grid", grid, self.cq_view.toggle_grid),
-            self.create_checkbox("zero", "@ 0", axes0, self.cq_view.toggle_center),
-            self.create_checkbox("ortho", "Ortho", ortho, self.cq_view.toggle_ortho),
-            self.create_checkbox(
-                "transparent",
-                "Transparency",
-                transparent,
-                self.cq_view.toggle_transparent,
-            ),
-            self.create_checkbox("black_edges", "Black Edges", False, self.cq_view.toggle_black_edges),
+            self.create_checkbox("axes", "Axes", self.axes, self.toggle_axes),
+            self.create_checkbox("grid", "Grid", self.grid, self.toggle_grid),
+            self.create_checkbox("zero", "@ 0", self.axes0, self.toggle_center),
+            self.create_checkbox("ortho", "Ortho", self.ortho, self.toggle_ortho),
+            self.create_checkbox("transparent", "Transparency", self.transparent, self.toggle_transparent,),
+            self.create_checkbox("black_edges", "Black Edges", False, self.toggle_black_edges),
         ]
         self.check_controls[-2].add_class("indent")
-
-        # Set initial state
-        self.cq_view.toggle_ortho(ortho)
-        self.cq_view.toggle_axes(axes)
-        self.cq_view.toggle_center(axes0)
-        self.cq_view.toggle_grid(grid)
-        self.cq_view.toggle_transparent(transparent)
-
-        for obj, vals in states.items():
-            for i, val in enumerate(vals):
-                self.cq_view.set_visibility(paths[obj], i, val)
 
         # Buttons to switch camera position
         self.view_controls = []
@@ -525,7 +568,7 @@ class CadqueryDisplay(object):
                 tooltip = "Reset view"
             else:
                 tooltip = "Change view to %s" % typ
-            button = self.create_button(typ, self.cq_view.change_view(typ, CadqueryDisplay.directions), tooltip)
+            button = self.create_button(typ, self.change_view(typ, CadqueryDisplay.directions), tooltip)
             self.view_controls.append(button)
 
         # only show pure renderer
@@ -534,10 +577,62 @@ class CadqueryDisplay(object):
         else:
             return HBox(
                 [
-                    VBox([HBox(self.check_controls[:-2]), tree_clipping, self.output]),
+                    VBox([HBox(self.check_controls[:-2]), self.tree_clipping, self.output]),
                     VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer]),
                 ]
             )
+
+    def add_shapes(self, shapes, mapping, tree, reset=True):
+        self.clear()
+        self.states = {k: v["state"] for k, v in mapping.items()}
+        self.paths = {k: v["path"] for k, v in mapping.items()}
+
+        self.cq_view.add_shapes(shapes, reset=reset)
+
+        bb = self.cq_view.bb
+        for i in (1, 3, 5):
+            self.clipping.sliders[i].min = -bb.max * 1.2
+            self.clipping.sliders[i].max = bb.max * 1.2
+            self.clipping.sliders[i].value = bb.max * 1.2
+
+        # Tree widget to change visibility
+        tree_view = TreeView(
+            image_paths=self.image_paths,
+            tree=tree,
+            state=self.states,
+            layout=Layout(height="%dpx" % (self.height * 0.6 - 25), width="%dpx" % (self.tree_width - 20)),
+        )
+        tree_view.add_class("view_tree")
+        tree_view.add_class("scroll-area")
+        if self.mac_scrollbar:
+            tree_view.add_class("mac-scrollbar")
+
+        tree_view.observe(self.cq_view.change_visibility(self.paths), "state")
+        self.tree_clipping.children = [tree_view, self.tree_clipping.children[1]]
+
+        # Set initial state
+
+        for obj, vals in self.states.items():
+            for i, val in enumerate(vals):
+                self.cq_view.set_visibility(self.paths[obj], i, val)
+
+        self.toggle_axes(self.axes)
+        self.toggle_center(self.axes0)
+        self.toggle_grid(self.grid)
+        self.toggle_transparent(self.transparent)
+        self.toggle_black_edges(self.black_edges)
+        self.toggle_ortho(self.ortho)
+
+        self.clean = False
+
+    def clear(self):
+        if not self.clean:
+            self.cq_view.clear()
+
+            # clear tree
+            self.tree_clipping.children = [Output(), self.tree_clipping.children[1]]
+
+            self.clean = True
 
     def display(self, widget):
         if self._display == "cell" or SIDECAR is None:

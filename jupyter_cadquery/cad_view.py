@@ -48,20 +48,21 @@ from .cad_renderer import CadqueryRenderer
 class CadqueryView(object):
     def __init__(
         self,
-        shapes,
         width=600,
         height=400,
-        bb_factor=1.1,
+        bb_factor=1.0,
         quality=0.1,
         angular_tolerance=0.1,
         edge_accuracy=0.01,
         render_edges=True,
         render_shapes=True,
         info=None,
+        position=None,
+        rotation=None,
+        zoom=None,
         timeit=False,
     ):
 
-        self.shapes = shapes
         self.width = width
         self.height = height
         self.quality = quality
@@ -71,6 +72,9 @@ class CadqueryView(object):
         self.render_edges = render_edges
         self.render_shapes = render_shapes
         self.info = info
+        self.position = position
+        self.rotation = rotation
+        self.zoom = zoom
         self.timeit = timeit
 
         self.pick_color = Color("LightGreen")
@@ -95,6 +99,9 @@ class CadqueryView(object):
         self.scene = None
         self.controller = None
         self.renderer = None
+
+        self.camera_position = None
+        self.zoom = None
 
         self.savestate = None
 
@@ -132,73 +139,17 @@ class CadqueryView(object):
         self.controller.exec_three_obj_method("update")
         pass
 
+    def _fix_camera(self):
+        zoom = self.camera.zoom
+        # force the camera to zoom correctly. Seems to be a bug.
+        self.camera.zoom = zoom + 1e-6
+        self.camera.zoom = zoom
+
     def _reset(self):
         self.camera.rotation, self.controller.target = self.savestate
         self.camera.position = self._add(self.bb.center, self._scale((1, 1, 1)))
         self.camera.zoom = self.camera_initial_zoom
         self._update()
-
-    # UI Handler
-
-    def change_view(self, typ, directions):
-        def reset(b):
-            self._reset()
-
-        def refit(b):
-            self.camera.zoom = self.camera_initial_zoom
-            self._update()
-
-        def change(b):
-            self.camera.position = self._add(self.bb.center, self._scale(directions[typ]))
-            self._update()
-
-        if typ == "fit":
-            return refit
-        elif typ == "reset":
-            return reset
-        else:
-            return change
-
-    def bool_or_new(self, val):
-        return val if isinstance(val, bool) else val["new"]
-
-    def toggle_axes(self, change):
-        self.axes.set_visibility(self.bool_or_new(change))
-
-    def toggle_grid(self, change):
-        self.grid.set_visibility(self.bool_or_new(change))
-
-    def toggle_center(self, change):
-        self.grid.set_center(self.bool_or_new(change))
-        self.axes.set_center(self.bool_or_new(change))
-
-    def toggle_ortho(self, change):
-        self.camera.mode = "orthographic" if self.bool_or_new(change) else "perspective"
-
-    def toggle_transparent(self, change):
-        def toggle(group, value):
-            for obj in group.children:
-                if isinstance(obj, Group):
-                    toggle(obj, value)
-                else:
-                    if isinstance(obj, Mesh):
-                        obj.material.transparent = value
-
-        value = self.bool_or_new(change)
-        toggle(self.pickable_objects, value)
-
-    def toggle_black_edges(self, change):
-        def toggle(group, value):
-            for obj in group.children:
-                if isinstance(obj, Group):
-                    toggle(obj, value)
-                else:
-                    if isinstance(obj, LineSegments2):
-                        if obj.material.linewidth == 1:
-                            obj.material.color = "#000" if value else self.default_edge_color.web_color
-
-        value = self.bool_or_new(change)
-        toggle(self.pickable_objects, value)
 
     def _get_group(self, group_index):
         try:
@@ -208,6 +159,42 @@ class CadqueryView(object):
             return group
         except:
             return None
+
+    def set_axes_visibility(self, value):
+        self.axes.set_visibility(value)
+
+    def set_grid_visibility(self, value):
+        self.grid.set_visibility(value)
+
+    def set_axes_center(self, value):
+        self.grid.set_center(value)
+        self.axes.set_center(value)
+
+    def toggle_ortho(self, value):
+        self.camera.mode = "orthographic" if value else "perspective"
+
+    def set_transparent(self, value):
+        def toggle(group, value):
+            for obj in group.children:
+                if isinstance(obj, Group):
+                    toggle(obj, value)
+                else:
+                    if isinstance(obj, Mesh):
+                        obj.material.transparent = value
+
+        toggle(self.pickable_objects, value)
+
+    def set_black_edges(self, value):
+        def toggle(group, value):
+            for obj in group.children:
+                if isinstance(obj, Group):
+                    toggle(obj, value)
+                else:
+                    if isinstance(obj, LineSegments2):
+                        if obj.material.linewidth == 1:
+                            obj.material.color = "#000" if value else self.default_edge_color.web_color
+
+        toggle(self.pickable_objects, value)
 
     def set_visibility(self, ind, i, state):
         feature = self.features[i]
@@ -274,7 +261,49 @@ class CadqueryView(object):
     def is_transparent(self):
         return self.pickable_objects.children[0].material.transparent
 
-    def render(self, position=None, rotation=None, zoom=2.5):
+    def create(self):
+        self.cq_renderer = CadqueryRenderer(
+            quality=self.quality,
+            angular_tolerance=self.angular_tolerance,
+            edge_accuracy=self.edge_accuracy,
+            render_edges=self.render_edges,
+            render_shapes=self.render_shapes,
+            default_mesh_color=self.default_mesh_color,
+            default_edge_color=self.default_edge_color,
+            timeit=self.timeit,
+        )
+
+        # Set up camera
+        self.camera = CombinedCamera(
+            position=(1.0, 1.0, 1.0),
+            width=self.width,
+            height=self.height,
+            far=100,
+            orthoFar=100,
+            up=(0.0, 0.0, 1.0),
+        )
+        # needs to be an extra step to take effect
+        self.toggle_ortho(True)
+
+        # Set up scene
+        self.scene = Scene(children=[self.camera, AmbientLight(intensity=1.0)])
+
+        # Set up Controllers
+        camera_target = (0.0, 0.0, 0.0)
+        self.controller = OrbitControls(controlling=self.camera, target=camera_target, target0=camera_target)
+
+        # Create Renderer instance
+        self.renderer = Renderer(
+            scene=self.scene,
+            camera=self.camera,
+            controls=[self.controller],
+            antialias=True,
+            width=self.width,
+            height=self.height,
+        )
+        return self.renderer
+
+    def add_shapes(self, shapes, position=None, rotation=None, zoom=2.5, reset=True):
         def all_shapes(shapes, loc=None):
             loc = shapes["loc"] if loc is None else loc * shapes["loc"]
             result = []
@@ -289,99 +318,65 @@ class CadqueryView(object):
                     result += all_shapes(shape, loc)
             return result
 
-        position = position or (1, 1, 1)
-        rotation = rotation or (0, 0, 0)
+        self.shapes = shapes
 
-        self.camera_initial_zoom = zoom
+        # Render Shapes
+        self.pickable_objects, self.pick_mapping = self.cq_renderer.render(self.shapes)
 
-        cq_renderer = CadqueryRenderer(
-            quality=self.quality,
-            angular_tolerance=self.angular_tolerance,
-            edge_accuracy=self.edge_accuracy,
-            render_edges=self.render_edges,
-            render_shapes=self.render_shapes,
-            default_mesh_color=self.default_mesh_color,
-            default_edge_color=self.default_edge_color,
-            timeit=self.timeit,
-        )
-        self.pickable_objects, self.pick_mapping = cq_renderer.render(self.shapes)
+        # Get bounding box
+        self.bb = self.get_bounding_box(all_shapes(self.shapes))
+        bb_max = self.bb.max_dist_from_center()
+        orbit_radius = 4 * self.bb_factor * bb_max
 
-        # Get the overall bounding box
+        # Calculate camera postion
+        if position is None and rotation is None:  # no new defaults
+            if reset or self.camera_position is None:  # no existing position
+                self.camera_position = self._add(self.bb.center, self._scale((1, 1, 1)))
+        else:
+            position = rotate(position or (1, 1, 1), *(rotation or (0, 0, 0)))
+            self.camera_position = self._add(self.bb.center, self._scale(position))
 
-        self.bb = BoundingBox(all_shapes(self.shapes))
-        if self.bb.is_empty():
-            # add origin to increase bounding box to also show origin
-            self.bb = BoundingBox([[Vertex.makeVertex(0, 0, 0).wrapped]] + [shape["shape"] for shape in self.shapes])
-            if self.bb.is_empty():
-                # looks like only one vertex in origin is to be shown
-                self.bb = BoundingBox(
-                    [[Vertex.makeVertex(0.1, 0.1, 0.1).wrapped]] + [shape["shape"] for shape in self.shapes]
-                )
+        if reset or self.zoom is None:
+            self.zoom = zoom
 
-        bb_max = self.bb_factor * self.bb.max_dist_from_center()
-        orbit_radius = 2 * bb_max
-
-        # Set up camera
-        camera_target = self.bb.center
-        camera_up = (0.0, 0.0, 1.0)
-
-        if rotation != (0, 0, 0):
-            position = rotate(position, *rotation)
-
-        camera_position = self._add(
-            self.bb.center,
-            self._scale([1, 1, 1] if position is None else self._scale(position)),
-        )
-
-        self.camera = CombinedCamera(
-            position=camera_position,
-            width=self.width,
-            height=self.height,
-            far=10 * orbit_radius,
-            orthoFar=10 * orbit_radius,
-        )
-        self.camera.up = camera_up
-
-        self.camera.mode = "orthographic"
-        self.camera.position = camera_position
-
-        # Set up lights in every of the 8 corners of the global bounding box
-        positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
-        key_lights = [DirectionalLight(color="white", position=position, intensity=0.12) for position in positions]
-        ambient_light = AmbientLight(intensity=1.0)
-
-        # Set up Helpers
-        self.axes = Axes(bb_center=self.bb.center, length=bb_max)
+        # Set up Helpers relative to bounding box
+        xy_max = max(self.bb.xmax, self.bb.ymax) * 1.2
         self.grid = Grid(
             bb_center=self.bb.center,
-            maximum=bb_max,
+            maximum=xy_max,
             colorCenterLine="#aaa",
             colorGrid="#ddd",
         )
+        self.grid.set_visibility(False)
 
-        # Set up scene
-        environment = self.axes.axes + key_lights + [ambient_light, self.grid.grid, self.camera]
-        self.scene = Scene(children=environment + [self.pickable_objects])
+        self.axes = Axes(bb_center=self.bb.center, length=self.grid.grid.size / 2)
+        self.axes.set_visibility(False)
 
-        # Set up Controllers
-        self.controller = OrbitControls(controlling=self.camera, target=camera_target, target0=camera_target)
+        # Set up the controller relative to bounding box
+        self.controller.target = self.bb.center
+        self.controller.target0 = self.bb.center
 
-        # Update controller to instantiate camera position
-        self.camera.zoom = zoom
-        self._update()
+        # Set up lights in every of the 8 corners of the global bounding box
+        positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
+        self.key_lights = [
+            DirectionalLight(color="white", position=position, intensity=0.12) for position in positions
+        ]
 
+        # Set up Picker
         self.picker = Picker(controlling=self.pickable_objects, event="dblclick")
         self.picker.observe(self.pick)
+        self.renderer.controls = self.renderer.controls + [self.picker]
 
-        # Create Renderer instance
-        self.renderer = Renderer(
-            scene=self.scene,
-            camera=self.camera,
-            controls=[self.controller, self.picker],
-            antialias=True,
-            width=self.width,
-            height=self.height,
-        )
+        # Set up camera
+        self.update_camera(self.camera_position, self.zoom, orbit_radius)
+
+        # Add objects to scene
+        self._fix_camera()
+        self.add_to_scene()
+
+        # needs to be done after setup of camera
+        self.grid.set_rotation((math.pi / 2.0, 0, 0, "XYZ"))
+        self.grid.set_position((0, 0, 0))
 
         self.renderer.localClippingEnabled = True
         self.renderer.clippingPlanes = [
@@ -390,13 +385,44 @@ class CadqueryView(object):
             Plane((0, 0, 1), self.grid.size / 2),
         ]
 
-        # needs to be done after setup of camera
-        self.grid.set_rotation((math.pi / 2.0, 0, 0, "XYZ"))
-        self.grid.set_position((0, 0, 0))
-
         self.savestate = (self.camera.rotation, self.controller.target)
 
         return self.renderer
+
+    def get_bounding_box(self, shapes):
+        bb = BoundingBox(shapes)
+        if bb.is_empty():
+            # add origin to increase bounding box to also show origin
+            bb = BoundingBox([[Vertex.makeVertex(0, 0, 0).wrapped]] + [shape["shape"] for shape in self.shapes])
+            if bb.is_empty():
+                # looks like only one vertex in origin is to be shown
+                bb = BoundingBox(
+                    [[Vertex.makeVertex(0.1, 0.1, 0.1).wrapped]] + [shape["shape"] for shape in self.shapes]
+                )
+        return bb
+
+    def update_camera(self, position, zoom, orbit_radius):
+        self.camera.position = position
+        self.camera.zoom = zoom
+        self.camera.far = 10 * orbit_radius
+        self.camera.orthoFar = 10 * orbit_radius
+        self._update()
+
+    def add_to_scene(self):
+        self.scene.add(self.key_lights)
+        self.scene.add(self.axes.axes)
+        self.scene.add(self.grid.grid)
+        self.scene.add(self.pickable_objects)
+
+    def clear(self):
+        # save camera position and zoom in case we want to keep it for the object
+        self.zoom = self.camera.zoom
+        self.camera_position = self.camera.position
+
+        self.scene.remove(self.key_lights)
+        self.scene.remove(self.axes.axes)
+        self.scene.remove(self.grid.grid)
+        self.scene.remove(self.pickable_objects)
 
     @property
     def root_group(self):

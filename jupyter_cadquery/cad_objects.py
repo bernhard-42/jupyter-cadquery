@@ -236,10 +236,10 @@ def _show(assembly, **kwargs):
     shapes = assembly.collect_mapped_shapes(mapping)
 
     d = CadqueryDisplay()
-    widget = d.create(shapes=shapes, mapping=mapping, tree=assembly.to_nav_dict(), **kwargs)
+    widget = d.create(**kwargs)
+    d.display(widget)
+    d.add_shapes(shapes=shapes, mapping=mapping, tree=assembly.to_nav_dict())
 
     d.info.ready_msg(d.cq_view.grid.step)
-
-    d.display(widget)
 
     return d
