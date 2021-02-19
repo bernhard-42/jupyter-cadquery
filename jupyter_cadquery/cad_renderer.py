@@ -307,6 +307,7 @@ class CadqueryRenderer(object):
                 if shape_mesh is not None:
                     shape_mesh.name = shape["name"]
                     shape_mesh.ind = {"group": (*current, ind), "shape": shape["ind"]}
+                    shape_mesh.visible = False
                     group.add(shape_mesh)
                     self._mapping[shape["ind"]]["mesh"] = (*current, ind)
                     ind += 1
@@ -320,6 +321,7 @@ class CadqueryRenderer(object):
                         edge.ind = {"group": (*current, ind, j), "shape": shape["ind"]}
                         edge_group.add(edge)
                     group.add(edge_group)
+                    edge_group.visible = False
                     self._mapping[shape["ind"]]["edges"] = (*current, ind)
                     ind += 1
 
