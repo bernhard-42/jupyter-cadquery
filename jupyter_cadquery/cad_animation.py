@@ -55,7 +55,9 @@ class Animation:
 
             self.tracks.append(
                 NumberKeyframeTrack(
-                    name=selector + ".position", times=np.array(times).astype(np.float32), values=new_values,
+                    name=selector + ".position",
+                    times=np.array(times).astype(np.float32),
+                    values=new_values,
                 )
             )
 
@@ -83,7 +85,9 @@ class Animation:
 
             self.tracks.append(
                 QuaternionKeyframeTrack(
-                    name=selector + ".quaternion", times=np.array(times).astype(np.float32), values=new_values,
+                    name=selector + ".quaternion",
+                    times=np.array(times).astype(np.float32),
+                    values=new_values,
                 )
             )
 

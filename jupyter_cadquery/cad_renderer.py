@@ -61,7 +61,10 @@ class RenderCache:
         self.objects = {}
 
     def tessellate(
-        self, compound, quality=0.1, angular_tolerance=0.1,
+        self,
+        compound,
+        quality=0.1,
+        angular_tolerance=0.1,
     ):
 
         hash = compound.HashCode(HASH_CODE_MAX)
@@ -212,7 +215,7 @@ class CadqueryRenderer(object):
 
             # Compute the tesselation and build mesh
             start_tesselation_time = self._start_timer()
-            shape_geometry = RENDER_CACHE.tessellate(shape, self.quality, self.angular_tolerance,)
+            shape_geometry = RENDER_CACHE.tessellate(shape, self.quality, self.angular_tolerance)
 
             shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
             # Do not cache building the mesh. Might lead to unpredictable results
@@ -254,7 +257,8 @@ class CadqueryRenderer(object):
 
             if isinstance(edge_color, (list, tuple)):
                 lines = LineSegmentsGeometry(
-                    positions=edge_list, colors=[[color.percentage] * 2 for color in edge_color],
+                    positions=edge_list,
+                    colors=[[color.percentage] * 2 for color in edge_color],
                 )
                 mat = LineMaterial(linewidth=edge_width, vertexColors="VertexColors")
                 edge_lines = [IndexedLineSegments2(lines, mat)]
@@ -287,10 +291,18 @@ class CadqueryRenderer(object):
 
                 # Assume that all are edges when first element is an edge
                 if is_edge(shape["shape"][0]):
-                    options = dict(edges=shape["shape"], edge_color=shape["color"], edge_width=3, render_edges=True,)
+                    options = dict(
+                        edges=shape["shape"],
+                        edge_color=shape["color"],
+                        edge_width=3,
+                        render_edges=True,
+                    )
                 elif is_vertex(shape["shape"][0]):
                     options = dict(
-                        vertices=shape["shape"], vertex_color=shape["color"], vertex_width=6, render_edges=False,
+                        vertices=shape["shape"],
+                        vertex_color=shape["color"],
+                        vertex_width=6,
+                        render_edges=False,
                     )
                 else:
                     # shape has only 1 object

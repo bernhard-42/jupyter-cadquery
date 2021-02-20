@@ -414,10 +414,7 @@ def reset_replay():
     warn_format = warnings.formatwarning
     warnings.formatwarning = warning_on_one_line
     warnings.simplefilter("always", RuntimeWarning)
-    warnings.warn(
-        "jupyter_cadquery replay is enabled, turn off with disable_replay()",
-        RuntimeWarning,
-    )
+    warnings.warn("jupyter_cadquery replay is enabled, turn off with disable_replay()", RuntimeWarning)
     warnings.formatwarning = warn_format
 
     _CTX.clear()

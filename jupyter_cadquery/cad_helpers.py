@@ -68,10 +68,7 @@ class Grid(Helpers):
         self.step = nice_tick
         self.size = axis_end - axis_start
         self.grid = GridHelper(
-            self.size,
-            int(self.size / self.step),
-            colorCenterLine=colorCenterLine,
-            colorGrid=colorGrid,
+            self.size, int(self.size / self.step), colorCenterLine=colorCenterLine, colorGrid=colorGrid
         )
         self.set_center(True)
 
@@ -113,9 +110,7 @@ class Grid(Helpers):
 
         return axis_start, axis_end, nice_tick
 
-    def get_position(
-        self,
-    ):
+    def get_position(self):
         return self.grid.position
 
     def set_position(self, position):

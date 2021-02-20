@@ -141,7 +141,10 @@ class Info(object):
         self.html = HTML(
             value="",
             layout=Layout(
-                width=("%dpx" % width), height=("%dpx" % height), border="solid 1px #ddd", overflow="scroll",
+                width=("%dpx" % width),
+                height=("%dpx" % height),
+                border="solid 1px #ddd",
+                overflow="scroll",
             ),
         )
         self.width = width
@@ -531,7 +534,10 @@ class CadqueryDisplay(object):
 
         self.output = Box([self.info.html])
         self.output.layout = Layout(
-            height="%dpx" % output_height, width="%dpx" % self.tree_width, overflow_y="scroll", overflow_x="scroll",
+            height="%dpx" % output_height,
+            width="%dpx" % self.tree_width,
+            overflow_y="scroll",
+            overflow_x="scroll",
         )
         self.output.add_class("view_output")
 
@@ -559,7 +565,12 @@ class CadqueryDisplay(object):
             self.create_checkbox("grid", "Grid", self.grid, self.toggle_grid),
             self.create_checkbox("zero", "@ 0", self.axes0, self.toggle_center),
             self.create_checkbox("ortho", "Ortho", self.ortho, self.toggle_ortho),
-            self.create_checkbox("transparent", "Transparency", self.transparent, self.toggle_transparent,),
+            self.create_checkbox(
+                "transparent",
+                "Transparency",
+                self.transparent,
+                self.toggle_transparent,
+            ),
             self.create_checkbox("black_edges", "Black Edges", False, self.toggle_black_edges),
         ]
         self.check_controls[-2].add_class("indent")
