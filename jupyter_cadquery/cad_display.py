@@ -448,6 +448,10 @@ class CadqueryDisplay(object):
         self.black_edges = self.bool_or_new(change)
         self.cq_view.set_black_edges(self.black_edges)
 
+    def toggle_clipping(self, change):
+        if change["name"] == "selected_index":
+            self.cq_view.set_clipping(change["new"])
+
     def create(
         self,
         render_shapes=None,
@@ -533,7 +537,7 @@ class CadqueryDisplay(object):
 
         # Clipping tool
         self.clipping = Clipping(self.image_path, self.output, self.cq_view, self.tree_width)
-        for normal in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)):
+        for normal in ((-1.0, 0.0, 0.0), (0.0, -1.0, 0.0), (0.0, 0.0, -1.0)):
             self.clipping.add_slider(1, -1, 1, 0.01, normal)
 
         # Empty dummy Tree View
@@ -546,6 +550,7 @@ class CadqueryDisplay(object):
         self.tree_clipping.children = [tree_view, self.clipping.create()]
         for i, c in enumerate(["Tree", "Clipping"]):
             self.tree_clipping.set_title(i, c)
+        self.tree_clipping.observe(self.toggle_clipping)
         self.tree_clipping.add_class("tab-content-no-padding")
 
         # Check controls to swith orto, grid and axis
@@ -589,11 +594,17 @@ class CadqueryDisplay(object):
 
         self.cq_view.add_shapes(shapes, reset=reset)
 
+        def set_slider(i, s_min, s_max):
+            s_min = -0.02 if abs(s_min) < 1e-4 else s_min * self.bb_factor
+            s_max = 0.02 if abs(s_max) < 1e-4 else s_max * self.bb_factor
+            self.clipping.sliders[i].min = s_min
+            self.clipping.sliders[i].max = s_max
+            self.clipping.sliders[i].value = s_max
+
         bb = self.cq_view.bb
-        for i in (1, 3, 5):
-            self.clipping.sliders[i].min = -bb.max * 1.2
-            self.clipping.sliders[i].max = bb.max * 1.2
-            self.clipping.sliders[i].value = bb.max * 1.2
+        set_slider(1, bb.xmin, bb.xmax)
+        set_slider(3, bb.ymin, bb.ymax)
+        set_slider(5, bb.zmin, bb.zmax)
 
         # Tree widget to change visibility
         tree_view = TreeView(

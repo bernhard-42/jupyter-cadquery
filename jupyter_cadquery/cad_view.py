@@ -40,7 +40,7 @@ with warnings.catch_warnings():
 
 from .widgets import state_diff
 from .cad_helpers import Grid, Axes
-from .ocp_utils import BoundingBox
+from .ocp_utils import BoundingBox, is_compound
 from .utils import rotate, Color
 from .cad_renderer import CadqueryRenderer
 
@@ -50,7 +50,7 @@ class CadqueryView(object):
         self,
         width=600,
         height=400,
-        bb_factor=1.0,
+        bb_factor=1.01,
         quality=0.1,
         angular_tolerance=0.1,
         edge_accuracy=0.01,
@@ -132,7 +132,7 @@ class CadqueryView(object):
         return self._norm(self._sub(self.camera.position, self.bb.center))
 
     def set_plane(self, i):
-        plane = self.renderer.clippingPlanes[i]
+        plane = self.clippingPlanes[i]
         plane.normal = self._minus(self.direction())
 
     def _update(self):
@@ -212,6 +212,12 @@ class CadqueryView(object):
 
         return f
 
+    def set_clipping(self, tab):
+        if tab == 0:
+            self.renderer.clippingPlanes = []
+        else:
+            self.renderer.clippingPlanes = self.clippingPlanes
+
     def _get_shape(self, shape_index):
         shape = self.shapes
         try:
@@ -249,7 +255,7 @@ class CadqueryView(object):
 
     def clip(self, index):
         def f(change):
-            self.renderer.clippingPlanes[index].constant = change["new"]
+            self.clippingPlanes[index].constant = change["new"]
 
         return f
 
@@ -309,11 +315,13 @@ class CadqueryView(object):
             result = []
             for shape in shapes["parts"]:
                 if shape.get("parts") is None:
-                    if loc is None:
-                        result.append(shape["shape"])
-                    else:
-                        reloc_shape = [Shape(s).located(loc).wrapped for s in shape["shape"]]
-                        result.append(reloc_shape)
+                    compounds = [c for c in shape["shape"] if is_compound(c)]
+                    if compounds:
+                        if loc is None:
+                            result.append(shape["shape"])
+                        else:
+                            reloc_shape = [Shape(s).moved(loc).wrapped for s in compounds]
+                            result.append(reloc_shape)
                 else:
                     result += all_shapes(shape, loc)
             return result
@@ -379,10 +387,11 @@ class CadqueryView(object):
         self.grid.set_position((0, 0, 0))
 
         self.renderer.localClippingEnabled = True
-        self.renderer.clippingPlanes = [
-            Plane((1, 0, 0), self.grid.size / 2),
-            Plane((0, 1, 0), self.grid.size / 2),
-            Plane((0, 0, 1), self.grid.size / 2),
+        self.renderer.clippingPlanes = []  # turn off when not in clipping view
+        self.clippingPlanes = [
+            Plane((-1, 0, 0), 0.02 if abs(self.bb.xmax) < 1e-4 else self.bb.xmax * self.bb_factor),
+            Plane((0, -1, 0), 0.02 if abs(self.bb.ymax) < 1e-4 else self.bb.ymax * self.bb_factor),
+            Plane((0, 0, -1), 0.02 if abs(self.bb.zmax) < 1e-4 else self.bb.zmax * self.bb_factor),
         ]
 
         self.savestate = (self.camera.rotation, self.controller.target)
