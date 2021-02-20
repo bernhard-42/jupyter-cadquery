@@ -27,6 +27,8 @@ import cadquery as cq
 from cadquery import Compound
 from jupyter_cadquery.cadquery import Part, show
 from jupyter_cadquery.cadquery.cqparts import is_cqparts_part, convert_cqparts
+from jupyter_cadquery.cad_display import CadqueryDisplay
+from .cad_objects import to_assembly
 
 #
 # The Runtime part
@@ -229,7 +231,9 @@ class Replay(object):
         self.debug = debug
         self.cad_width = cad_width
         self.height = height
-        self.view = None
+        self.display = CadqueryDisplay()
+        widget = self.display.create(height=height, cad_width=cad_width)
+        self.display.display(widget)
 
     def format_steps(self, raw_steps):
         def to_code(step, results):
@@ -332,59 +336,16 @@ class Replay(object):
 
         return stack
 
-    def select(self, indexes):
-        with self.debug_output:
-            self.indexes = indexes
-            cad_objs = [self.stack[i][1] for i in self.indexes]
-
-            # Save state
-            axes = True if self.view is None else self.view.cq_view.axes.get_visibility()
-            grid = True if self.view is None else self.view.cq_view.grid.get_visibility()
-            axes0 = True if self.view is None else self.view.cq_view.axes.is_center()
-            ortho = True if self.view is None else self.view.cq_view.is_ortho()
-            transparent = False if self.view is None else self.view.cq_view.is_transparent()
-            rotation = None if self.view is None else self.view.cq_view.camera.rotation
-            zoom = 2.5 if self.view is None else self.view.cq_view.camera.zoom
-            position = None if self.view is None else self.view.cq_view.camera.position
-            # substract center out of position to be prepared for _scale function
-
-            if position is not None:
-                position = self.view.cq_view._sub(position, self.view.cq_view.bb.center)
-            if rotation is not None and len(rotation) == 4:
-                rotation = rotation[:3]
-
-            # Show new view
-            self.view = self.show(
-                cad_objs,
-                position,
-                rotation,
-                zoom,
-                axes,
-                grid,
-                axes0,
-                ortho,
-                transparent,
-            )
-
     def select_handler(self, change):
         with self.debug_output:
             if change["name"] == "index":
                 self.select(change["new"])
 
-    def show(
-        self,
-        cad_objs,
-        position,
-        rotation,
-        zoom,
-        axes=True,
-        grid=True,
-        axes0=True,
-        ortho=True,
-        transparent=True,
-    ):
-
+    def select(self, indexes):
         self.debug_output.clear_output()
+        with self.debug_output:
+            self.indexes = indexes
+            cad_objs = [self.stack[i][1] for i in self.indexes]
 
         # Add hidden result to start with final size and allow for comparison
         if not isinstance(self.stack[-1][1].val(), cq.Vector):
@@ -392,21 +353,13 @@ class Replay(object):
             objs = [result] + cad_objs
         else:
             objs = cad_objs
+
         with self.debug_output:
-            return show(
-                *objs,
-                transparent=transparent,
-                axes=axes,
-                grid=grid,
-                axes0=axes0,
-                ortho=ortho,
-                cad_width=self.cad_width,
-                height=self.height,
-                # show_parents=(len(cad_objs) == 1),
-                position=position,
-                rotation=rotation,
-                zoom=zoom
-            )
+            assembly = to_assembly(*objs)
+            mapping = assembly.to_state()
+            shapes = assembly.collect_mapped_shapes(mapping)
+            tree = tree = assembly.to_nav_dict()
+            self.display.add_shapes(shapes=shapes, mapping=mapping, tree=tree, reset=False)
 
 
 def replay(cad_obj, index=-1, debug=False, cad_width=600, height=600):
