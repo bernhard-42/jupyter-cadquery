@@ -348,7 +348,7 @@ class CadqueryView(object):
             self.zoom = zoom
 
         # Set up Helpers relative to bounding box
-        xy_max = max(self.bb.xmax, self.bb.ymax) * 1.2
+        xy_max = max(abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax)) * 1.2
         self.grid = Grid(
             bb_center=self.bb.center,
             maximum=xy_max,
