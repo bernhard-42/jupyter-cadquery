@@ -69,6 +69,7 @@ class CadqueryView(object):
         self.bb_factor = bb_factor
         self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
+        self.optimal_bb = optimal_bb
         self.render_edges = render_edges
         self.render_shapes = render_shapes
         self.info = info
@@ -76,6 +77,8 @@ class CadqueryView(object):
         self.rotation = rotation
         self.zoom = zoom
         self.timeit = timeit
+
+        self.all_shapes = None
 
         self.pick_color = Color("LightGreen")
         self.default_mesh_color = Color((232, 176, 36))
@@ -315,7 +318,7 @@ class CadqueryView(object):
             result = []
             for shape in shapes["parts"]:
                 if shape.get("parts") is None:
-                    compounds = [c for c in shape["shape"] if is_compound(c)]
+                    compounds = [c for c in shape["shape"] if is_compound(c) or is_solid(c) or is_shape(c)]
                     if compounds:
                         if loc is None:
                             result.append(shape["shape"])
@@ -327,6 +330,7 @@ class CadqueryView(object):
             return result
 
         self.shapes = shapes
+        self.all_shapes = all_shapes(shapes)
 
         # Render Shapes
         self.pickable_objects, self.pick_mapping = self.cq_renderer.render(self.shapes)
