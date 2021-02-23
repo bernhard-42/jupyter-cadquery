@@ -178,14 +178,6 @@ class CadqueryRenderer(object):
 
         self.timeit = timeit
 
-    def _start_timer(self):
-        if self.timeit:
-            return time.time()
-
-    def _stop_timer(self, msg, start):
-        if self.timeit:
-            print("%20s: %7.2f sec" % (msg, time.time() - start))
-
     def render_shape(
         self,
         shape=None,
@@ -354,8 +346,6 @@ class CadqueryRenderer(object):
         return group
 
     def render(self, shapes):
-        start_render_time = self._start_timer()
         self._mapping = {}
         rendered_objects = self._render(shapes, (), "")
-        self._stop_timer("overall render time", start_render_time)
         return rendered_objects, self._mapping
