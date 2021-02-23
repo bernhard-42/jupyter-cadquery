@@ -243,6 +243,14 @@ def is_compound(topods_shape):
     return isinstance(topods_shape, TopoDS_Compound)
 
 
+def is_solid(topods_shape):
+    return isinstance(topods_shape, TopoDS_Solid)
+
+
+def is_shape(topods_shape):
+    return isinstance(topods_shape, TopoDS_Shape)
+
+
 def _objects(shape, shape_type):
     HASH_CODE_MAX = 2147483647
     out = {}  # using dict to prevent duplicates
