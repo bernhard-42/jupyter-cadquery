@@ -694,7 +694,6 @@ class CadqueryDisplay(object):
             SIDECAR.clear_output(True)
             with SIDECAR:
                 ipy_display(widget)
-            print("Done, using side car '%s'" % SIDECAR.title)
 
     @property
     def root_group(self):
