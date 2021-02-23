@@ -635,8 +635,9 @@ class CadqueryDisplay(object):
         def set_slider(i, s_min, s_max):
             s_min = -0.02 if abs(s_min) < 1e-4 else s_min * self.bb_factor
             s_max = 0.02 if abs(s_max) < 1e-4 else s_max * self.bb_factor
-            self.clipping.sliders[i].min = s_min
-            self.clipping.sliders[i].max = s_max
+            self.clipping.sliders[i].max = 2 ** 31  #  first increase max to avoid traitlet error that min > max
+            self.clipping.sliders[i].min = s_min  # set min which now is always < max
+            self.clipping.sliders[i].max = s_max  # correct max
             self.clipping.sliders[i].value = s_max
 
         bb = self.cq_view.bb
