@@ -53,6 +53,7 @@ class Defaults:
         - quality:           Tolerance for tessellation (default=0.1)
         - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
         - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
+        - optimal_bb:        Use optimal bounding box (default=True)
         - axes:              Show axes (default=False)
         - axes0:             Show axes at (0,0,0) (default=False)
         - grid:              Show grid (default=False)
@@ -93,6 +94,7 @@ class Defaults:
             "quality": 0.1,
             "edge_accuracy": 0.01,
             "angular_tolerance": 0.1,
+            "optimal_bb": True,
             "axes": False,
             "axes0": False,
             "grid": False,

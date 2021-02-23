@@ -40,8 +40,8 @@ with warnings.catch_warnings():
 
 from .widgets import state_diff
 from .cad_helpers import Grid, Axes
-from .ocp_utils import BoundingBox, is_compound
-from .utils import rotate, Color
+from .ocp_utils import BoundingBox, is_compound, is_shape, is_solid
+from .utils import rotate, Color, Timer
 from .cad_renderer import CadqueryRenderer
 
 
@@ -54,6 +54,7 @@ class CadqueryView(object):
         quality=0.1,
         angular_tolerance=0.1,
         edge_accuracy=0.01,
+        optimal_bb=True,
         render_edges=True,
         render_shapes=True,
         info=None,
