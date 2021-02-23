@@ -480,28 +480,31 @@ class CadqueryDisplay(object):
         tools=None,
         timeit=None,
     ):
+        def preset(key, value):
+            return get_default(key) if value is None else value
 
-        self.height = get_default("height", height)
-        self.tree_width = get_default("tree_width", tree_width)
-        self.cad_width = get_default("cad_width", cad_width)
-        self.bb_factor = get_default("bb_factor", bb_factor)
-        self.render_shapes = get_default("render_shapes", render_shapes)
-        self.render_edges = get_default("render_edges", render_edges)
-        self.quality = get_default("quality", quality)
-        self.angular_tolerance = get_default("angular_tolerance", angular_tolerance)
-        self.edge_accuracy = get_default("edge_accuracy", edge_accuracy)
-        self.axes = get_default("axes", axes)
-        self.axes0 = get_default("axes0", axes0)
-        self.grid = get_default("grid", grid)
-        self.ortho = get_default("ortho", ortho)
-        self.transparent = get_default("transparent", transparent)
-        self.position = get_default("position", position)
-        self.rotation = get_default("rotation", rotation)
-        self.zoom = get_default("zoom", zoom)
-        self.mac_scrollbar = (platform.system() == "Darwin") and get_default("mac_scrollbar", mac_scrollbar)
-        timeit = get_default("timeit", timeit)
-        self._display = get_default("display", display)
-        self._tools = get_default("tools", tools)
+        self.height = preset("height", height)
+        self.tree_width = preset("tree_width", tree_width)
+        self.cad_width = preset("cad_width", cad_width)
+        self.bb_factor = preset("bb_factor", bb_factor)
+        self.render_shapes = preset("render_shapes", render_shapes)
+        self.render_edges = preset("render_edges", render_edges)
+        self.quality = preset("quality", quality)
+        self.angular_tolerance = preset("angular_tolerance", angular_tolerance)
+        self.optimal_bb = preset("optimal_bb", optimal_bb)
+        self.edge_accuracy = preset("edge_accuracy", edge_accuracy)
+        self.axes = preset("axes", axes)
+        self.axes0 = preset("axes0", axes0)
+        self.grid = preset("grid", grid)
+        self.ortho = preset("ortho", ortho)
+        self.transparent = preset("transparent", transparent)
+        self.position = preset("position", position)
+        self.rotation = preset("rotation", rotation)
+        self.zoom = preset("zoom", zoom)
+        self.mac_scrollbar = (platform.system() == "Darwin") and preset("mac_scrollbar", mac_scrollbar)
+        self.timeit = preset("timeit", timeit)
+        self._display = preset("display", display)
+        self._tools = preset("tools", tools)
         self.black_edges = False
 
         # Output widget
