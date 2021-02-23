@@ -204,7 +204,7 @@ class CadqueryRenderer(object):
         points = None
         shape_mesh = None
 
-        start_render_time = self._start_timer()
+        render_timer = Timer(self.timeit, "| | shape render time")
         if shape is not None:
             if mesh_color is None:
                 mesh_color = self.default_mesh_color
@@ -214,14 +214,14 @@ class CadqueryRenderer(object):
                 vertex_color = self.default_edge_color  # same as edge_color
 
             # Compute the tesselation and build mesh
-            start_tesselation_time = self._start_timer()
+            tesselation_timer = Timer(self.timeit, "| | | build mesh time")
             shape_geometry = RENDER_CACHE.tessellate(shape, self.quality, self.angular_tolerance)
 
             shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
             # Do not cache building the mesh. Might lead to unpredictable results
             shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
-            self._stop_timer("build mesh time", start_tesselation_time)
+            tesselation_timer.stop()
 
             if render_edges:
                 edges = get_edges(shape)
@@ -243,12 +243,12 @@ class CadqueryRenderer(object):
             points = IndexedPoints(geometry=geom, material=mat)
 
         if edges is not None:
-            start_discretize_time = self._start_timer()
+            discretize_timer = Timer(self.timeit, "| | | discretize time")
             edge_list = [discretize_edge(edge, self.edge_accuracy) for edge in edges]
-            self._stop_timer("discretize time", start_discretize_time)
+            discretize_timer.stop()
 
         if edge_list is not None:
-            start_discretize_time = self._start_timer()
+            discretize_timer = Timer(self.timeit, "| | | edge list")
             edge_list = flatten(list(map(explode, edge_list)))
             if isinstance(edge_color, (list, tuple)):
                 if len(edge_list) != len(edge_color):
@@ -266,9 +266,9 @@ class CadqueryRenderer(object):
                 lines = LineSegmentsGeometry(positions=edge_list)
                 mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
                 edge_lines = [IndexedLineSegments2(lines, mat)]
-            self._stop_timer("edge list", start_discretize_time)
+            discretize_timer.stop()
 
-        self._stop_timer("shape render time", start_render_time)
+        render_timer.stop()
 
         return shape_mesh, edge_lines, points
 

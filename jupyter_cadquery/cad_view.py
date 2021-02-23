@@ -333,10 +333,16 @@ class CadqueryView(object):
         self.all_shapes = all_shapes(shapes)
 
         # Render Shapes
+        render_timer = Timer(self.timeit, "| overall render time")
         self.pickable_objects, self.pick_mapping = self.cq_renderer.render(self.shapes)
+        render_timer.stop()
 
+        bb_timer = Timer(self.timeit, "| create bounding box")
         # Get bounding box
-        self.bb = self.get_bounding_box(all_shapes(self.shapes))
+        self.bb = self.get_bounding_box(self.all_shapes)
+        bb_timer.stop()
+
+        configure_timer = Timer(self.timeit, "| configure view")
         bb_max = self.bb.max_dist_from_center()
         orbit_radius = 4 * self.bb_factor * bb_max
 
@@ -399,11 +405,11 @@ class CadqueryView(object):
         ]
 
         self.savestate = (self.camera.rotation, self.controller.target)
-
+        configure_timer.stop()
         return self.renderer
 
     def get_bounding_box(self, shapes):
-        bb = BoundingBox(shapes)
+        bb = BoundingBox(shapes, optimal=self.optimal_bb)
         if bb.is_empty():
             # add origin to increase bounding box to also show origin
             bb = BoundingBox([[Vertex.makeVertex(0, 0, 0).wrapped]] + [shape["shape"] for shape in self.shapes])

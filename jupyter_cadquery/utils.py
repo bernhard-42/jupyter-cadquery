@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import time
 from webcolors import name_to_rgb, hex_to_rgb, rgb_to_hex
 
 
@@ -141,3 +142,14 @@ def tree_find_single_selector(tree, selector):
         if result is not None:
             return result
     return None
+
+
+class Timer:
+    def __init__(self, timeit, activity):
+        self.timeit = timeit
+        self.activity = activity
+        self.start = time.time()
+
+    def stop(self):
+        if self.timeit:
+            print("%-20s %7.2f sec" % (self.activity + ":", time.time() - self.start))

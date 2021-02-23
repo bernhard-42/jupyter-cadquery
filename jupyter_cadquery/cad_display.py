@@ -527,7 +527,7 @@ class CadqueryDisplay(object):
             position=self.position,
             rotation=self.rotation,
             zoom=self.zoom,
-            timeit=timeit,
+            timeit=self.timeit,
         )
 
         renderer = self.cq_view.create()
@@ -608,7 +608,11 @@ class CadqueryDisplay(object):
         self.states = {k: v["state"] for k, v in mapping.items()}
         self.paths = {k: v["path"] for k, v in mapping.items()}
 
+        add_shapes_timer = Timer(self.timeit, "add shapes")
         self.cq_view.add_shapes(shapes, reset=reset)
+        add_shapes_timer.stop()
+
+        configure_display_timer = Timer(self.timeit, "configure display")
 
         def set_slider(i, s_min, s_max):
             s_min = -0.02 if abs(s_min) < 1e-4 else s_min * self.bb_factor
@@ -651,6 +655,9 @@ class CadqueryDisplay(object):
         self.toggle_ortho(self.ortho)
 
         self.clean = False
+        configure_display_timer.stop()
+        if SIDECAR is not None:
+            print("Done, using side car '%s'" % SIDECAR.title)
 
     def clear(self):
         if not self.clean:
