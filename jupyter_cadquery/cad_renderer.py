@@ -48,7 +48,10 @@ from .utils import (
     flatten,
     Color,
     tree_find_single_selector,
+    Timer,
 )
+
+from cadquery.occ_impl.shapes import Compound
 
 HASH_CODE_MAX = 2147483647
 
@@ -305,9 +308,9 @@ class CadqueryRenderer(object):
                         render_edges=False,
                     )
                 else:
-                    # shape has only 1 object
+                    # Creatge a Compound out of all shapes
                     options = dict(
-                        shape=shape["shape"][0],
+                        shape=Compound._makeCompound(shape["shape"]),
                         mesh_color=shape["color"],
                         render_shapes=self.render_shapes,
                         render_edges=self.render_edges,
