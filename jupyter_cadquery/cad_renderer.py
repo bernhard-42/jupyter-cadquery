@@ -53,24 +53,24 @@ from .utils import (
 
 from cadquery.occ_impl.shapes import Compound
 
-HASH_CODE_MAX = 2147483647
+# HASH_CODE_MAX = 2147483647
 
 
 class RenderCache:
     def __init__(self):
         self.objects = {}
+        self.use_cache = True
 
     def reset_cache(self):
         self.objects = {}
 
-    def tessellate(
-        self,
-        compound,
-        quality=0.1,
-        angular_tolerance=0.1,
-    ):
+    def toggle_cache(self):
+        self.use_cache = not self.use_cache
+        print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
 
-        hash = compound.HashCode(HASH_CODE_MAX)
+    def tessellate(self, compound, quality=0.1, angular_tolerance=0.1, debug=False):
+
+        hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
         if self.objects.get(hash) is None:
             np_vertices, np_triangles, np_normals = tessellate(compound, quality, angular_tolerance)
 
@@ -84,13 +84,18 @@ class RenderCache:
                     "normal": BufferAttribute(np_normals),
                 }
             )
-
+            if debug:
+                print(f"| | | (Caching {hash})")
             self.objects[hash] = shape_geometry
+        else:
+            if debug:
+                print(f"| | | (Taking {hash} from cache)")
         return self.objects[hash]
 
 
 RENDER_CACHE = RenderCache()
 reset_cache = RENDER_CACHE.reset_cache
+toggle_cache = RENDER_CACHE.toggle_cache
 
 
 def material(color, transparent=False, opacity=1.0):
@@ -210,7 +215,7 @@ class CadqueryRenderer(object):
 
             # Compute the tesselation and build mesh
             tesselation_timer = Timer(self.timeit, "| | | build mesh time")
-            shape_geometry = RENDER_CACHE.tessellate(shape, self.quality, self.angular_tolerance)
+            shape_geometry = RENDER_CACHE.tessellate(shape, self.quality, self.angular_tolerance, self.timeit)
 
             shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
             # Do not cache building the mesh. Might lead to unpredictable results
@@ -276,6 +281,9 @@ class CadqueryRenderer(object):
         group.name = name if prefix == "" else f"{prefix}\\{name}"
         group.ind = current
 
+        if self.timeit:
+            print(f"| | Object: {name}")
+
         if shapes["loc"] is not None:
             group.position, group.quaternion = tq(shapes["loc"])
 
@@ -302,7 +310,7 @@ class CadqueryRenderer(object):
                 else:
                     # Creatge a Compound out of all shapes
                     options = dict(
-                        shape=Compound._makeCompound(shape["shape"]),
+                        shape=Compound._makeCompound(shape["shape"]) if len(shape["shape"]) > 1 else shape["shape"][0],
                         mesh_color=shape["color"],
                         render_shapes=self.render_shapes,
                         render_edges=self.render_edges,
@@ -346,6 +354,10 @@ class CadqueryRenderer(object):
         return group
 
     def render(self, shapes):
+        # Since ids are only unique during lifetime of the objects reset the cache for 
+        # each call. The cache will only speed up assemblies with multiple same parts
+        RENDER_CACHE.reset_cache()
+
         self._mapping = {}
         rendered_objects = self._render(shapes, (), "")
         return rendered_objects, self._mapping
