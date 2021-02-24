@@ -12,8 +12,8 @@ dependencies:
   - sidecar=0.4.0
   - ipywidgets=7.5.1
   - pythreejs>=2.2.1,<2.3
-  - cadquery=master
+  - cadquery=2.1
   - pip:
     - webcolors==1.11.1
-    - git+https://github.com/bernhard-42/cadquery.git@assembly-hierarchy
+    - git+https://github.com/bernhard-42/cadquery-massembly.git
     - git+https://github.com/bernhard-42/jupyter-cadquery.git  # jupyter_cadquery==2.0.0-beta3
