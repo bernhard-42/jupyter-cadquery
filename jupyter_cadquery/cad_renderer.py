@@ -347,17 +347,18 @@ class CadqueryRenderer(object):
                     self._mapping[shape["ind"]]["mesh"] = (*current, ind)
                     ind += 1
 
+                self.progress.update()
             else:
                 ind = len(group.children)
                 group.add(self._render(shape, (*current, ind), group.name))
 
         return group
 
-    def render(self, shapes):
+    def render(self, shapes, progress):
         # Since ids are only unique during lifetime of the objects reset the cache for 
         # each call. The cache will only speed up assemblies with multiple same parts
         RENDER_CACHE.reset_cache()
-
+        self.progress = progress
         self._mapping = {}
         rendered_objects = self._render(shapes, (), "")
         return rendered_objects, self._mapping

@@ -2,6 +2,7 @@ import math
 import numpy as np
 import time
 from webcolors import name_to_rgb, hex_to_rgb, rgb_to_hex
+import ipywidgets as widgets
 
 
 class Color:
@@ -153,3 +154,13 @@ class Timer:
     def stop(self):
         if self.timeit:
             print("%-20s %7.2f sec" % (self.activity + ":", time.time() - self.start))
+
+
+class Progress:
+    def __init__(self, max_):
+        self.max = max_
+        self.progress = widgets.IntProgress(0, 0, max_, layout=widgets.Layout(width="95%"))
+
+    def update(self):
+        if self.progress.value < self.max:
+            self.progress.value += 1

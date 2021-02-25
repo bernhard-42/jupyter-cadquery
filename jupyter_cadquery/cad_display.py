@@ -17,16 +17,17 @@
 import platform
 from os.path import join, dirname
 from uuid import uuid4
+from IPython.core.display import ProgressBar
 from IPython.display import display as ipy_display
 
-from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Tab, HTML, Box, Output
+from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Tab, HTML, Box, Output, IntProgress
 
 from .widgets import ImageButton, TreeView, UNSELECTED, SELECTED, MIXED, EMPTY
 import cadquery
 from .cad_view import CadqueryView
-from .utils import Timer
+from .utils import Timer, Progress
 from ._version import __version__
-
+from .ocp_utils import is_compound, is_shape, is_solid
 
 class Defaults:
     def __init__(self):
@@ -568,13 +569,13 @@ class CadqueryDisplay(object):
             self.clipping.add_slider(1, -1, 1, 0.01, normal)
 
         # Empty dummy Tree View
-        tree_view = Output()
+        self.tree_view = Output()
 
         # Tab widget with Tree View and Clipping tools
         self.tree_clipping = Tab(
             layout=Layout(height="%dpx" % (self.height * 0.6 + 20), width="%dpx" % self.tree_width)
         )
-        self.tree_clipping.children = [tree_view, self.clipping.create()]
+        self.tree_clipping.children = [self.tree_view, self.clipping.create()]
         for i, c in enumerate(["Tree", "Clipping"]):
             self.tree_clipping.set_title(i, c)
         self.tree_clipping.observe(self.toggle_clipping)
@@ -622,12 +623,27 @@ class CadqueryDisplay(object):
             )
 
     def add_shapes(self, shapes, mapping, tree, reset=True):
+        def count_shapes(shapes):
+            count = 0
+            for shape in shapes["parts"]:
+                if shape.get("parts") is None:
+                    count += 1
+                else:
+                    count += count_shapes(shape)
+            return count
+
         self.clear()
         self.states = {k: v["state"] for k, v in mapping.items()}
         self.paths = {k: v["path"] for k, v in mapping.items()}
 
+        self.tree_view = Output()
+        self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
+        self.progress = Progress(count_shapes(shapes) + 3)
+        with self.tree_view:
+            ipy_display(self.progress.progress)
+
         add_shapes_timer = Timer(self.timeit, "add shapes")
-        self.cq_view.add_shapes(shapes, reset=reset)
+        self.cq_view.add_shapes(shapes, self.progress, reset=reset)
         add_shapes_timer.stop()
 
         configure_display_timer = Timer(self.timeit, "configure display")
@@ -646,19 +662,19 @@ class CadqueryDisplay(object):
         set_slider(5, bb.zmin, bb.zmax)
 
         # Tree widget to change visibility
-        tree_view = TreeView(
+        self.tree_view = TreeView(
             image_paths=self.image_paths,
             tree=tree,
             state=self.states,
             layout=Layout(height="%dpx" % (self.height * 0.6 - 25), width="%dpx" % (self.tree_width - 20)),
         )
-        tree_view.add_class("view_tree")
-        tree_view.add_class("scroll-area")
+        self.tree_view.add_class("view_tree")
+        self.tree_view.add_class("scroll-area")
         if self.mac_scrollbar:
-            tree_view.add_class("mac-scrollbar")
+            self.tree_view.add_class("mac-scrollbar")
 
-        tree_view.observe(self.cq_view.change_visibility(self.paths), "state")
-        self.tree_clipping.children = [tree_view, self.tree_clipping.children[1]]
+        self.tree_view.observe(self.cq_view.change_visibility(self.paths), "state")
+        self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
 
         # Set initial state
 

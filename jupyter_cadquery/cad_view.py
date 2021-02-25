@@ -313,7 +313,7 @@ class CadqueryView(object):
         )
         return self.renderer
 
-    def add_shapes(self, shapes, position=None, rotation=None, zoom=2.5, reset=True):
+    def add_shapes(self, shapes, progress, position=None, rotation=None, zoom=2.5, reset=True):
         def all_shapes(shapes, loc=None):
             loc = shapes["loc"] if loc is None else loc * shapes["loc"]
             result = []
@@ -335,13 +335,15 @@ class CadqueryView(object):
 
         # Render Shapes
         render_timer = Timer(self.timeit, "| overall render time")
-        self.pickable_objects, self.pick_mapping = self.cq_renderer.render(self.shapes)
+        self.pickable_objects, self.pick_mapping = self.cq_renderer.render(self.shapes, progress)
         render_timer.stop()
+        progress.update()
 
         bb_timer = Timer(self.timeit, "| create bounding box")
         # Get bounding box
         self.bb = self.get_bounding_box(self.all_shapes)
         bb_timer.stop()
+        progress.update()
 
         configure_timer = Timer(self.timeit, "| configure view")
         bb_max = self.bb.max_dist_from_center()
@@ -407,6 +409,8 @@ class CadqueryView(object):
 
         self.savestate = (self.camera.rotation, self.controller.target)
         configure_timer.stop()
+        progress.update()
+
         return self.renderer
 
     def get_bounding_box(self, shapes):
