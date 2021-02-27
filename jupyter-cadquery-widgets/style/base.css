@@ -1,25 +1,30 @@
 .scroll-area {
-  overflow: scroll !important;
-  border: unset !important;
+    overflow: scroll !important;
+    border: unset !important;
 }
 
 .mac-scrollbar::-webkit-scrollbar {
-    width: 5px!important;
-    height: 5px!important;
+    width: 5px !important;
+    height: 5px !important;
 }
+
 .mac-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2)!important;
-    border-radius: 100px!important;
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    border-radius: 100px !important;
 }
+
 .mac-scrollbar::-webkit-scrollbar-track {
-    background-color: transparent!important;
+    background-color: transparent !important;
 }
+
 .mac-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.4)!important;
+    background: rgba(0, 0, 0, 0.4) !important;
 }
+
 .mac-scrollbar::-webkit-scrollbar-thumb:active {
-    background: #181818!important;
+    background: #181818 !important;
 }
+
 .mac-scrollbar .widget-html-content {
     overflow-x: visible;
     overflow-y: visible;
@@ -65,11 +70,11 @@
 }
 
 .view_transparent {
-  width: 125px !important;
+    width: 125px !important;
 }
 
 .view_black_edges {
-  width: 105px !important;
+    width: 105px !important;
 }
 
 .view_button {
@@ -92,9 +97,12 @@
 
 .caret {
     cursor: pointer;
-    -webkit-user-select: none; /* Safari 3.1+ */
-    -moz-user-select: none;    /* Firefox 2+ */
-    -ms-user-select: none;     /* IE 10+ */
+    -webkit-user-select: none;
+    /* Safari 3.1+ */
+    -moz-user-select: none;
+    /* Firefox 2+ */
+    -ms-user-select: none;
+    /* IE 10+ */
     user-select: none;
 }
 
@@ -107,8 +115,10 @@
 }
 
 .caret-down::before {
-    -ms-transform: rotate(90deg);     /* IE 9 */
-    -webkit-transform: rotate(90deg); /* Safari */
+    -ms-transform: rotate(90deg);
+    /* IE 9 */
+    -webkit-transform: rotate(90deg);
+    /* Safari */
     transform: rotate(90deg);
 }
 
@@ -133,6 +143,7 @@
     padding-right: 2px;
     vertical-align: middle;
 }
+
 .indent {
     padding-left: 12px;
 }
@@ -148,9 +159,9 @@
 }
 
 .small_table {
-  line-height: 14px;
+    line-height: 14px;
 }
 
 .monospace select {
-  font-family: monospace;
+    font-family: monospace;
 }
