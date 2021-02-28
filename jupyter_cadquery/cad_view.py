@@ -38,7 +38,7 @@ with warnings.catch_warnings():
     )
 
 
-from .widgets import state_diff
+from jupyter_cadquery_widgets.widgets import state_diff
 from .cad_helpers import Grid, Axes
 from .ocp_utils import BoundingBox, is_compound, is_shape, is_solid
 from .utils import rotate, Color, Timer

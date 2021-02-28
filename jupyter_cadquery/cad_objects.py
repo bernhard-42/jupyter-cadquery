@@ -17,7 +17,7 @@
 from cadquery import Compound
 
 from jupyter_cadquery.cad_display import CadqueryDisplay, get_default
-from jupyter_cadquery.widgets import UNSELECTED, SELECTED, EMPTY
+from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
 from jupyter_cadquery.utils import Color
 
 PART_ID = 0
