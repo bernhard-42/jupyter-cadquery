@@ -26,6 +26,5 @@ def get_version(version):
     return VersionInfo(major, minor, patch, release, build)
 
 
-__widget_version__ = "2.0.0.rc0"  # ENSURE THIS IS THE CORRECT VERSION OF jupyter-cadquery-widgets
-__version__ = "2.0.0-beta4"  # DO NOT EDIT THIS DIRECTLY!  It is managed by bumpversion
+__version__ = "2.0.0-rc0"  # DO NOT EDIT THIS DIRECTLY!  It is managed by bumpversion
 __version_info__ = get_version(__version__)
