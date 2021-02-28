@@ -26,6 +26,7 @@ setup_args = {
             glob("jupyter_cadquery/icons/*.png"),
         ),
     ],
+    "python_requires": ">=3.6",
     "install_requires": [
         "jupyterlab~=3.0",
         "ipywidgets~=7.6",
