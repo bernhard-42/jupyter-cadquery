@@ -4,14 +4,18 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 **Notes:** 
 
-- The extension relies on *CadQuery 2.0* with *PythonOCC* and will not run with the *FreeCAD* version of *CadQuery*.
-- The latest development version 
-    - deprecates jupyter-cadquery's `Assembly` and has renamed it to `PartGroup` (no semantic change). `Assembly` can still be used with warnings at the moment.
-    - Comes with its own `MAssembly`, meaning "Mate base Assembly" which is derived from `cadquery.Assembly` but similar to `cqparts` or FrreCad's `Assembly4` works with mates to connect instead of constraints and a numerical solver.
-    - Comes with an animation system to simulate models
+- `jupyter-cadquery` relies on *CadQuery 2.1* with *OCP* and will not run with the *FreeCAD* version of *CadQuery*.
+- The latest release (jupyter-cadquery v2.0.0-rc1)
+    - Uses JupyterLab 3.0 which has a new extension deployment system which simplifies the installation of `jupyter-cadquery` drastically (see below)
+    - It supports the new [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
+    - Splits UI and shape rendering and shows a progress bar during rendering, especially useful for large assembblies
+    - If you install `cadquery-massembly` (see below) then the class `MAssembly` (meaning "Mate base Assembly") is available, which is derived from `cadquery.Assembly` but similar to `cqparts` or FreeCad's `Assembly4` works with mates to manually connect instead of constraints and a numerical solver.
+    - Comes with an animation system to simulate models built with `MAssembly`
 
-        ![Sidecar](screenshots/hexapod-crawling.gif)
+        ![Animated Hexapod in Sidecar](screenshots/hexapod-crawling.gif)
 
+    - Deprecates jupyter-cadquery's `Assembly` (too many assemblies in the meantime) and has renamed it to `PartGroup` (no semantic change). `Assembly` can still be used with warnings at the moment.
+    - Does not test or change the `cqparts` support since the project doesn't seem to be acrtive any more
 
 ## Quick use via Binder
 
@@ -27,7 +31,7 @@ The screenshot shows one of the official cadquery examples in *replay* mode with
 
 ### a) Key features:
 
-- Support for *CadQuery*, *CQParts* and *PythonOCC*
+- Support for *CadQuery* and *OCP*
 - Auto display of *CadQuery* shapes
 - Viewer features
     - Jupyterlab sidecar support
@@ -36,6 +40,9 @@ The screenshot shows one of the official cadquery examples in *replay* mode with
     - Clipping with max 3 clipping planes (of free orientation)
     - Transparency mode
     - Double click on shapes shows bounding box info
+- Assemblies
+    - Supports [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
+    - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of models
 - Visual debugging by
     - displaying selected *CadQuery* faces and edges
     - replaying steps of the rendered object
@@ -81,7 +88,7 @@ show(a1, grid=False)  # overwrite grid default value
 
 - **Create a conda environment with Jupyterlab:**
 
-    - If you don't have already create a new conda environment with CadQuery 2.1
+    - If you don't have it already, create a new conda environment with CadQuery 2.1
 
         ```bash
         conda create -n cq21-jl3 -c conda-forge -c cadquery python=3.8 cadquery
@@ -94,7 +101,7 @@ show(a1, grid=False)  # overwrite grid default value
         pip install jupyter-cadquery==2.0.0-rc1
         ```
 
-- ** Install cadquery-massembly (Optional)**
+- **Install cadquery-massembly (Optional)**
 
     - If you want to use that manual assembly in cadquery, install it via
 
@@ -114,21 +121,11 @@ show(a1, grid=False)  # overwrite grid default value
 
 - Run the docker container (jupyter in the container will start in `/home/cq`)
 
-    - Stable version:
-
-        ```bash
-        WORKDIR=/tmp/jupyter
-        mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
-        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:1.0.0
-        ```
-
-    - Latest development version:
-
-        ```bash
-        WORKDIR=/tmp/jupyter
-        mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
-        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-rc1
-        ```
+    ```bash
+    WORKDIR=/tmp/jupyter
+    mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
+    docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.0.0-rc1
+    ```
 
     **Notes:** 
     - To start with examples, you can 
@@ -152,37 +149,46 @@ show(a1, grid=False)  # overwrite grid default value
 
 - `show(cad_objs, **kwargs)`
 
-    kwargs:
-
+    args:
     - `cad_objs`: Comma separated list of cadquery objects; **Note**: For OCC only one object is supported
-    - `height` (default=`600`): Height of the CAD view
-    - `tree_width` (default=`250`): Width of the object tree view
-    - `cad_width` (default=`800`): Width of the CAD view
-    - `quality` (default=`0.5`): Rendering quality (mesh quality)
-    - `edge_accuracy` (default=`0.5`) Precision of edge discretisation
-    - `axes` (default=`False`): Show X, Y and Z axis
-    - `axes0` (default=`True`): Show axes at (0,0,0) or mass center
-    - `grid` (default=`False`): Show grid
-    - `ortho` (default=`True`): View in orthographic or perspective mode
-    - `transparent` (default=`False`): View cadquery objects in transparent mode
-    - `position` (default=`(1, 1, 1)`): Relative camera position that will be scaled 
-    - `rotation` (default=`(0, 0, 0)`): z, y and y rotation angles to apply to position vector
-    - `zoom` (default=`2.5`): Zoom factor of view 
-    - `mac_scrollbar` (default=`True`): On macos patch scrollbar behaviour
-    - `sidecar` (default=`None`): Use sidecar (False for none). Can be set globally with `set_sidecar`
-    - `timeit` (default=`False`): Show rendering times
-    
+
+    kwargs:
+    - `height`: Height of the CAD view (default=600)
+    - `tree_width`: Width of navigation tree part of the view (default=250)
+    - `cad_width`: Width of CAD view part of the view (default=800)
+    - `bb_factor`: Scale bounding box to ensure compete rendering (default=1.0)
+    - `render_shapes`: Render shapes  (default=True)
+    - `render_edges`: Render edges  (default=True)
+    - `render_mates`: For MAssemblies, whether to rander the mates (default=True)
+    - `mate_scale`: For MAssemblies, scale of rendered mates (default=1)
+    - `quality`: Tolerance for tessellation (default=0.1)
+    - `angular_tolerance`: Angular tolerance for building the mesh for tessellation (default=0.1)
+    - `edge_accuracy`: Presicion of edge discretizaion (default=0.01)
+    - `optimal_bb`: Use optimal bounding box (default=True)
+    - `axes`: Show axes (default=False)
+    - `axes0`: Show axes at (0,0,0) (default=False)
+    - `grid`: Show grid (default=False)
+    - `ortho`: Use orthographic projections (default=True)
+    - `transparent`: Show objects transparent (default=False)
+    - `position`: Relative camera position that will be scaled (default=(1, 1, 1))
+    - `rotation`: z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
+    - `zoom`: Zoom factor of view (default=2.5)
+    - `mac_scrollbar`: Prettify scrollbasrs on Macs (default=True)
+    - `display`: Select display: "sidecar", "cell", "html"
+    - `tools`: Show the viewer tools like the object tree
+    - `timeit`: Show rendering times (default=False)
+
     For example isometric projection can be achieved in two ways:
-    - position = (1, 1, 1)
-    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0) 
+    - `position = (1, 1, 1)`
+    - `position = (0, 0, 1)` and `rotation = (45, 35.264389682, 0)` 
     
 ### b) Manage default values
 
 - `set_defaults(**kwargs)`
 
     kwargs: 
-    
     - see `show`
+
 - `get_defaults()`
 - `reset_defaults()`
 
