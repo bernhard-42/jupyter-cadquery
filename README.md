@@ -17,10 +17,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 Click on the icon to start *jupyter-cadquery* on binder:
 
-
-- Stable version: [![Binder: Stable version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v1.0.0?urlpath=lab&filepath=examples%2Fcadquery.ipynb)
-
-- Latest development version: [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.0.0-rc1?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.0.0-rc1?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Overview
 
