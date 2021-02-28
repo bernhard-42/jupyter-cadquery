@@ -53,11 +53,7 @@ upload:
 docker:
 	@rm -fr docker/examples
 	@cp -R examples docker/
-	@rm -f docker/environment.yml docker/labextensions.txt
-	@cp environment.yml labextensions.txt docker/
-	@grep -v bernhard-42 environment.yml > docker/environment-common.yml
 	@cd docker && docker build -t bwalter42/jupyter_cadquery:$(CURRENT_VERSION) .
-	@rm -f docker/environment.yml docker/environment-common.yml docker/labextensions.txt
 	@rm -fr docker/examples
 
 upload_docker: 

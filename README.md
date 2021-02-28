@@ -88,6 +88,7 @@ show(a1, grid=False)  # overwrite grid default value
 
         ```bash
         conda create -n cq21-jl3 -c conda-forge -c cadquery python=3.8 cadquery
+        conda activate cq21-jl3
         ```
 
     - Install jupyter-cadquery
@@ -96,6 +97,15 @@ show(a1, grid=False)  # overwrite grid default value
         pip install jupyter-cadquery==2.0.0-rc1
         ```
 
+- ** Install cadquery-massembly (Optional)**
+
+    - If you want to use that manual assembly in cadquery, install it via
+
+        ```bash
+        pip install git+https://github.com/bernhard-42/cadquery-massembly
+        ```
+
+    
 - **Run jupyter-cadquery**
 
     ```bash
@@ -138,8 +148,6 @@ show(a1, grid=False)  # overwrite grid default value
 - [Faces-Edges-Vertices demo](doc/faces-edges-vertices.md)
 - [Replay demo](doc/replay.md) (*experimental*)
 - [OCC demo](doc/occ.md)
-- [CQParts demo](doc/cqparts.md)
-
 
 ## Usage
 
