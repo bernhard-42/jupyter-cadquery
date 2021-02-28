@@ -84,38 +84,22 @@ show(a1, grid=False)  # overwrite grid default value
 
 - **Create a conda environment with Jupyterlab:**
 
-    - Download the environment definition files:
-
-        - The latest stable:
-        
-            ```bash
-            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/environment.yml
-            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v1.0.0/labextensions.txt
-            ```
-
-        - The latest development version:
-
-            ```bash
-            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0-beta3/environment.yml
-            wget https://raw.githubusercontent.com/bernhard-42/jupyter-cadquery/v2.0.0-beta3/labextensions.txt
-            ```
-
-    - Create the conda environment and install the Jupyter labextensions
+    - If you don't have already create a new conda environment with CadQuery 2.1
 
         ```bash
-        conda env create -f ./environment.yml -n cq2-jl
-        conda activate cq2-jl
-
-        jupyter-labextension install --no-build $(cat labextensions.txt)
-        jupyter lab build --dev-build=False --minimize=False
+        conda create -n cq21-jl3 -c conda-forge -c cadquery python=3.8 cadquery
         ```
 
-        Note, `jupyter-labextension list` should now show green "enabled OK" for “*@jupyter-widgets/jupyterlab-manager*, *@jupyter-widgets/jupyterlab-sidecar*, *jupyter-threejs*, *jupyter_cadquery* and *jupyterlab-datawidgets*
+    - Install jupyter-cadquery
+
+        ```bash
+        pip install jupyter-cadquery==2.0.0-beta4
+        ```
 
 - **Run jupyter-cadquery**
 
     ```bash
-    conda activate cq2-jl
+    conda activate cq21-jl3
     jupyter lab
     ```
 
