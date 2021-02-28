@@ -37,7 +37,7 @@ dist:
 release:
 	git add .
 	git status
-	git commit -m "Latest release: $(CURRENT_VERSION)"
+	git commit -m "Latest release: $(CURRENT_VERSION)" && echo ""
 	git tag -a v$(CURRENT_VERSION) -m "Latest release: $(CURRENT_VERSION)"
 
 install: dist
