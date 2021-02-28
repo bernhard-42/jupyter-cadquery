@@ -1,0 +1,10 @@
+channels:
+  - defaults
+  - cadquery
+  - conda-forge
+dependencies:
+  - python=3.8
+  - cadquery=2.1
+  - pip:
+    - jupyter-cadquery==2.0.0rc1
+    - git+https://github.com/bernhard-42/cadquery-massembly
