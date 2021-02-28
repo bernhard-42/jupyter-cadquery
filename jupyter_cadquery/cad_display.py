@@ -22,12 +22,13 @@ from IPython.display import display as ipy_display
 
 from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Tab, HTML, Box, Output, IntProgress
 
-from .widgets import ImageButton, TreeView, UNSELECTED, SELECTED, MIXED, EMPTY
+from jupyter_cadquery_widgets.widgets import ImageButton, TreeView, UNSELECTED, SELECTED, MIXED, EMPTY
 import cadquery
 from .cad_view import CadqueryView
 from .utils import Timer, Progress
 from ._version import __version__
 from .ocp_utils import is_compound, is_shape, is_solid
+
 
 class Defaults:
     def __init__(self):
