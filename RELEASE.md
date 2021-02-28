@@ -2,43 +2,6 @@
 
 ## Release process
 
-### 1 Labextension
-
-In case the jupyter labextions has been changed:
-
-1. Commit changes
-
-2. Bump version of *jupyter_cadquery_*
-
-    - A new release candidate with rc0
-
-      ```bash
-      make bump_ext part=premajor|preminor|prepatch
-      ```
-
-    - A new build
-
-      ```bash
-      make bump_ext part=prerelease
-      ```
-
-    - A new release without release candidate
-
-      ```bash
-      make bump_ext version=major.minor.patch
-      ```
-
-3. Deploy to npmjs.com
-
-    ```bash
-    make upload_ext
-    ```
-
-4. Process with **Python package** since labextensions.txt is changed!
-
-
-### 2 Python package
-
 In case the jupyter labextions and/or the python code has been changed:
 
 1. Run tests
