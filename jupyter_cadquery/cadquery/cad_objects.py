@@ -24,7 +24,7 @@ except:
     HAS_MASSEMBLY = False
 import numpy as np
 from cadquery.occ_impl.shapes import Face, Edge, Wire
-from cadquery import Workplane, Shape, Vector, Vertex, Location, Assembly as CqAssembly
+from cadquery import Workplane, Shape, Compound, Vector, Vertex, Location, Assembly as CqAssembly
 
 from jupyter_cadquery.cad_objects import (
     _PartGroup,
@@ -308,6 +308,9 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=None):
 
         elif isinstance(cad_obj, Vector):
             assembly.add_list(_from_vector(cad_obj, obj_id))
+
+        elif isinstance(cad_obj, (Shape, Compound)):
+            assembly.add(_from_workplane(Workplane(cad_obj), obj_id))
 
         elif isinstance(cad_obj.val(), Vector):
             assembly.add_list(_from_vectorlist(cad_obj, obj_id))
