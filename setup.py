@@ -16,7 +16,7 @@ LONG_DESCRIPTION = "An extension to render cadquery objects in JupyterLab via py
 
 setup_args = {
     "name": "jupyter_cadquery",
-    "version": "2.0.0-rc1",
+    "version": "2.0.0-rc2",
     "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
     "long_description": LONG_DESCRIPTION,
     "include_package_data": True,
@@ -33,13 +33,13 @@ setup_args = {
         "webcolors==1.11.1",
         "notebook~=6.2",
         "sidecar==0.5.0",
-        "jupyter-cadquery-widgets~=2.0",
+        "jupyter-cadquery-widgets~=2.0.2",
         "pythreejs~=2.3",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"}
     },
-    "packages": find_packages(exclude=("jupyter_cadquery_widgets",)),
+    "packages": find_packages(),
     "zip_safe": False,
     "author": "Bernhard Walter",
     "author_email": "b_walter@arcor.de",

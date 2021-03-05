@@ -7,5 +7,5 @@ dependencies:
   - pip=21.0
   - cadquery=2.1
   - pip:
-    - jupyter-cadquery==2.0.0rc1
+    - jupyter-cadquery==2.0.0rc2
     - git+https://github.com/bernhard-42/cadquery-massembly
