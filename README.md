@@ -98,7 +98,7 @@ show(a1, grid=False)  # overwrite grid default value
     - Install jupyter-cadquery
 
         ```bash
-        pip install jupyter-cadquery==2.0.0-rc2
+        pip install jupyter-cadquery==2.0.0rc2
         ```
 
 - **Install cadquery-massembly (Optional)**
