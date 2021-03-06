@@ -75,7 +75,7 @@ class _Part(_CADObject):
 
     def to_nav_dict(self):
         if isinstance(self.color, (tuple, list)):
-            color = (c.web_color for c in self.color)
+            color = [c.web_color for c in self.color]
         else:
             color = self.color.web_color
         return {
