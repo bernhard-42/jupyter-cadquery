@@ -2,10 +2,11 @@
 
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
-**Notes:** 
 
-- `jupyter-cadquery` relies on *CadQuery 2.1* with *OCP* and will not run with the *FreeCAD* version of *CadQuery*.
-- The latest release (jupyter-cadquery v2.0.0)
+## New Relase v2.0.0 (06.03.2021)
+
+- **New features**
+    - *jupyter-cadquery* supports the latest *CadQuery 2.1* with *OCP* (note, it will not run with the *FreeCAD* version of *CadQuery*).
     - Uses JupyterLab 3.0 which has a new extension deployment system which simplifies the installation of `jupyter-cadquery` drastically (see below)
     - It supports the new [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
     - Splits UI and shape rendering and shows a progress bar during rendering, especially useful for large assembblies
@@ -14,8 +15,9 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
         ![Animated Hexapod in Sidecar](screenshots/hexapod-crawling.gif)
 
-    - Deprecates jupyter-cadquery's `Assembly` (too many assemblies in the meantime) and has renamed it to `PartGroup` (no semantic change). `Assembly` can still be used with warnings at the moment.
-    - Does not test or change the `cqparts` support since the project doesn't seem to be acrtive any more
+- **Changes**
+    - Deprecates *jupyter-cadquery*'s `Assembly` (too many assemblies in the meantime) and has renamed it to `PartGroup` (no semantic change). `Assembly` can still be used with warnings at the moment.
+    - Does not test or change the `cqparts` support since the project doesn't seem to be active any more
 
 ## Quick use via Binder
 
