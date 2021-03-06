@@ -25,8 +25,6 @@ Click on the icon to start *jupyter-cadquery* on binder:
 
 ## Overview
 
-The screenshot shows one of the official cadquery examples in *replay* mode with more than one build step being selected and visualized
-
 ![Overview](screenshots/0_intro.png)
 
 ### a) Key features:
