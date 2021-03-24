@@ -571,10 +571,11 @@ class CadqueryDisplay(object):
 
         # Empty dummy Tree View
         self.tree_view = Output()
+        self.progress = Progress(3, self.tree_width)
 
         # Tab widget with Tree View and Clipping tools
         self.tree_clipping = Tab(
-            layout=Layout(height="%dpx" % (self.height * 0.6 + 20), width="%dpx" % self.tree_width)
+            layout=Layout(height="%dpx" % (int(self.height * 0.6) + 17), width="%dpx" % self.tree_width)
         )
         self.tree_clipping.children = [self.tree_view, self.clipping.create()]
         for i, c in enumerate(["Tree", "Clipping"]):
@@ -618,7 +619,7 @@ class CadqueryDisplay(object):
         else:
             return HBox(
                 [
-                    VBox([HBox(self.check_controls[:-2]), self.tree_clipping, self.output]),
+                    VBox([HBox(self.check_controls[:-2]), self.tree_clipping, self.progress.progress, self.output]),
                     VBox([HBox(self.view_controls + self.check_controls[-2:]), renderer]),
                 ]
             )
@@ -639,9 +640,8 @@ class CadqueryDisplay(object):
 
         self.tree_view = Output()
         self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
-        self.progress = Progress(count_shapes(shapes) + 3)
-        with self.tree_view:
-            ipy_display(self.progress.progress)
+        self.progress.progress.value = 0
+        self.progress.reset(count_shapes(shapes) + 1)
 
         add_shapes_timer = Timer(self.timeit, "add shapes")
         self.cq_view.add_shapes(shapes, self.progress, reset=reset)
@@ -667,7 +667,7 @@ class CadqueryDisplay(object):
             image_paths=self.image_paths,
             tree=tree,
             state=self.states,
-            layout=Layout(height="%dpx" % (self.height * 0.6 - 25), width="%dpx" % (self.tree_width - 20)),
+            layout=Layout(height="%dpx" % (self.height * 0.6 - 30), width="%dpx" % (self.tree_width - 20)),
         )
         self.tree_view.add_class("view_tree")
         self.tree_view.add_class("scroll-area")
