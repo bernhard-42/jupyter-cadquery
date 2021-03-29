@@ -36,10 +36,30 @@ from OCP.TopLoc import TopLoc_Location
 from OCP.StlAPI import StlAPI_Writer
 
 from cadquery.occ_impl.shapes import downcast
-from .utils import distance
+from .utils import distance, Timer
 
 from cadquery.occ_impl.shapes import Compound, Shape
 from cadquery.occ_impl.geom import BoundBox
+
+
+class FastBoundingBox:
+    def __init__(self, xmin, xmax, ymin, ymax, zmin, zmax):
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        self.zmin = zmin
+        self.zmax = zmax
+
+    @classmethod
+    def compute(cls, shape):
+        bbox = Bnd_Box()
+        BRepBndLib.Add_s(shape, bbox, True)
+        XMin, YMin, ZMin, XMax, YMax, ZMax = bbox.Get()
+        return cls(XMin, XMax, YMin, YMax, ZMin, ZMax)
+
+    def max(self):
+        return max(abs(self.xmax - self.xmin), abs(self.ymax - self.ymin), abs(self.zmax - self.zmin))
 
 
 class BoundingBox(object):
@@ -98,15 +118,15 @@ class BoundingBox(object):
 # Tessellate and discretize functions
 
 
-def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
+def tessellate(shape, tolerance: float, angularTolerance: float = 0.1, debug=False):
 
+    mesh = Timer(debug, "| | | | Incremental mesh")
     # Remove previous mesh data
     BRepTools.Clean_s(shape)
 
-    triangulated = BRepTools.Triangulation_s(shape, tolerance)
-    if not triangulated:
-        # this will add mesh data to the shape and prevent calculating an exact bounding box after this call
-        BRepMesh_IncrementalMesh(shape, tolerance, True, angularTolerance)
+    # this will add mesh data to the shape and prevent calculating an exact bounding box after this call
+    BRepMesh_IncrementalMesh(shape, tolerance, True, angularTolerance, True)
+    mesh.stop()
 
     vertices = []
     triangles = []
@@ -114,6 +134,7 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
 
     offset = 0
 
+    values = Timer(debug, "| | | | nodes, normals")
     for face in get_faces(shape):
         loc = TopLoc_Location()
         poly = BRep_Tool.Triangulation_s(face, loc)
@@ -122,41 +143,40 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1):
         reverse = face.Orientation() == TopAbs_Orientation.TopAbs_REVERSED
         internal = face.Orientation() == TopAbs_Orientation.TopAbs_INTERNAL
 
+        if poly is None:
+            continue
+
         # add vertices
-        if poly is not None:
-            vertices += [(v.X(), v.Y(), v.Z()) for v in (v.Transformed(Trsf) for v in poly.Nodes())]
+        vertices += [(v.X(), v.Y(), v.Z()) for v in (v.Transformed(Trsf) for v in poly.Nodes())]
 
-            # add triangles
-            triangles += [
-                (
-                    t.Value(1) + offset - 1,
-                    t.Value(3 if reverse else 2) + offset - 1,
-                    t.Value(2 if reverse else 3) + offset - 1,
-                )
-                for t in poly.Triangles()
-            ]
+        # add triangles
+        triangles += [
+            (
+                t.Value(1) + offset - 1,
+                t.Value(3 if reverse else 2) + offset - 1,
+                t.Value(2 if reverse else 3) + offset - 1,
+            )
+            for t in poly.Triangles()
+        ]
 
-            # add normals
-            if poly.HasUVNodes():
-                prop = BRepGProp_Face(face)
-                uvnodes = poly.UVNodes()
-                for uvnode in uvnodes:
-                    p = gp_Pnt()
-                    n = gp_Vec()
-                    prop.Normal(uvnode.X(), uvnode.Y(), p, n)
+        # add normals
+        if poly.HasUVNodes():
+            prop = BRepGProp_Face(face)
+            uvnodes = poly.UVNodes()
+            for uvnode in uvnodes:
+                p = gp_Pnt()
+                n = gp_Vec()
+                prop.Normal(uvnode.X(), uvnode.Y(), p, n)
 
-                    if n.SquareMagnitude() > 0:
-                        n.Normalize()
-                    if internal:
-                        n.Reverse()
+                if n.SquareMagnitude() > 0:
+                    n.Normalize()
+                if internal:
+                    n.Reverse()
 
-                    normals.append((n.X(), n.Y(), n.Z()))
+                normals.append((n.X(), n.Y(), n.Z()))
 
-            offset += poly.NbNodes()
-
-    if not triangulated:
-        # Remove the mesh data again
-        BRepTools.Clean_s(shape)
+        offset += poly.NbNodes()
+    values.stop()
 
     return (
         np.asarray(vertices, dtype=np.float32),
@@ -206,7 +226,7 @@ def discretize_edge(a_topods_edge, deflection=0.1, algorithm="QuasiUniformDeflec
 # Export STL
 
 
-def write_stl_file(compound, filename, tolerance=1e-3, angular_tolerance=1e-1):
+def write_stl_file(compound, filename, tolerance=None, angular_tolerance=None):
 
     # Remove previous mesh data
     BRepTools.Clean_s(compound)

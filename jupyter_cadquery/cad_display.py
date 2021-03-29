@@ -52,9 +52,9 @@ class Defaults:
         - render_edges:      Render edges  (default=True)
         - render_mates:      Render mates (for MAssemblies)
         - mate_scale:        Scale of rendered mates (for MAssemblies)
-        - quality:           Tolerance for tessellation (default=0.1)
-        - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
-        - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
+        - quality:           Tolerance for tessellation (default=None)
+        - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=None)
+        - edge_accuracy:     Presicion of edge discretizaion (default=None)
         - optimal_bb:        Use optimal bounding box (default=True)
         - axes:              Show axes (default=False)
         - axes0:             Show axes at (0,0,0) (default=False)
@@ -75,7 +75,7 @@ class Defaults:
         """
 
         for k, v in kwargs.items():
-            if self.get_default(k) is None:
+            if self.get_default(k, "") == "":
                 print("Paramater %s is not a valid argument for show()" % k)
             else:
                 if k == "zoom" and v == 1.0:
@@ -93,9 +93,9 @@ class Defaults:
             "render_edges": True,
             "render_mates": False,
             "mate_scale": 1,
-            "quality": 0.1,
-            "edge_accuracy": 0.01,
-            "angular_tolerance": 0.1,
+            "quality": None,
+            "edge_accuracy": None,
+            "angular_tolerance": None,
             "optimal_bb": True,
             "axes": False,
             "axes0": False,
@@ -203,6 +203,15 @@ class Info(object):
         """
             % tick_size
         )
+        self.add_html(html)
+
+    def quality_msg(self, quality, edge_accuracy):
+        html = f"""
+        <table>
+            <tr class="small_table"> <td>quality</td>       <td>{quality:6.4f}</td>  </tr>
+            <tr class="small_table"> <td>edge_accuracy</td> <td>{edge_accuracy:6.4f}</td>   </tr>
+        </table>
+        """
         self.add_html(html)
 
     def bb_info(self, name, bb):

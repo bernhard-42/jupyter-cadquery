@@ -20,7 +20,6 @@ setup_args = {
     "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
     "long_description": LONG_DESCRIPTION,
     "include_package_data": True,
-    "data_files": [(glob("jupyter_cadquery/icons/*.png"),),],
     "python_requires": ">=3.6",
     "install_requires": [
         "ipywidgets~=7.6",
@@ -39,7 +38,11 @@ setup_args = {
     "author": "Bernhard Walter",
     "author_email": "b_walter@arcor.de",
     "url": "https://github.com/bernhard-42/jupyter-cadquery",
-    "keywords": ["ipython", "jupyter", "widgets",],
+    "keywords": [
+        "ipython",
+        "jupyter",
+        "widgets",
+    ],
     "classifiers": [
         "Development Status :: 4 - Beta",
         "Framework :: IPython",

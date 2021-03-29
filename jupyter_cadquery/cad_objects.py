@@ -229,7 +229,7 @@ class _PartGroup(_CADObject):
 
 def _show(assembly, **kwargs):
     for k in kwargs:
-        if get_default(k) is None:
+        if get_default(k, "") == "":
             raise KeyError("Paramater %s is not a valid argument for show()" % k)
 
     mapping = assembly.to_state()

@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import math
 import numpy as np
 import time
 from uuid import uuid4
@@ -52,8 +53,7 @@ from .utils import (
 )
 
 from cadquery.occ_impl.shapes import Compound
-
-# HASH_CODE_MAX = 2147483647
+from .ocp_utils import FastBoundingBox
 
 
 class RenderCache:
@@ -68,11 +68,11 @@ class RenderCache:
         self.use_cache = not self.use_cache
         print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
 
-    def tessellate(self, compound, quality=0.1, angular_tolerance=0.1, debug=False):
+    def tessellate(self, compound, quality=None, angular_tolerance=None, debug=False):
 
         hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
         if self.objects.get(hash) is None:
-            np_vertices, np_triangles, np_normals = tessellate(compound, quality, angular_tolerance)
+            np_vertices, np_triangles, np_normals = tessellate(compound, quality, angular_tolerance, debug)
 
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
@@ -163,14 +163,15 @@ class IndexedLineSegments2(LineSegments2):
 class CadqueryRenderer(object):
     def __init__(
         self,
-        quality=0.1,
-        angular_tolerance=0.1,
+        quality=None,
+        angular_tolerance=None,
         render_edges=True,
         render_shapes=True,
-        edge_accuracy=0.01,
+        edge_accuracy=None,
         default_mesh_color=None,
         default_edge_color=None,
         timeit=False,
+        info=None,
     ):
         self.quality = quality
         self.angular_tolerance = angular_tolerance
@@ -182,6 +183,14 @@ class CadqueryRenderer(object):
         self.default_edge_color = Color(default_edge_color or (128, 128, 128))
 
         self.timeit = timeit
+        self.info = info
+
+    @staticmethod
+    def compute_quality(shape):
+        bbmax = FastBoundingBox.compute(shape).max()
+        # + 1 to avoid negative values for objects < 1
+        quality = math.log2(bbmax + 1) / 10
+        return quality
 
     def render_shape(
         self,
@@ -198,6 +207,10 @@ class CadqueryRenderer(object):
         transparent=False,
         opacity=1.0,
     ):
+        quality = CadqueryRenderer.compute_quality(shape) if self.quality is None else self.quality
+        angular_tolerance = quality * 0.5 if self.angular_tolerance is None else self.angular_tolerance
+        edge_accuracy = quality * 0.05 if self.edge_accuracy is None else self.edge_accuracy
+        self.info.quality_msg(quality, edge_accuracy)
 
         edge_list = None
         edge_lines = None
@@ -215,7 +228,7 @@ class CadqueryRenderer(object):
 
             # Compute the tesselation and build mesh
             tesselation_timer = Timer(self.timeit, "| | | build mesh time")
-            shape_geometry = RENDER_CACHE.tessellate(shape, self.quality, self.angular_tolerance, self.timeit)
+            shape_geometry = RENDER_CACHE.tessellate(shape, quality, angular_tolerance, self.timeit)
 
             shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
             # Do not cache building the mesh. Might lead to unpredictable results
@@ -244,7 +257,7 @@ class CadqueryRenderer(object):
 
         if edges is not None:
             discretize_timer = Timer(self.timeit, "| | | discretize time")
-            edge_list = [discretize_edge(edge, self.edge_accuracy) for edge in edges]
+            edge_list = [discretize_edge(edge, edge_accuracy) for edge in edges]
             discretize_timer.stop()
 
         if edge_list is not None:
@@ -355,7 +368,7 @@ class CadqueryRenderer(object):
         return group
 
     def render(self, shapes, progress):
-        # Since ids are only unique during lifetime of the objects reset the cache for 
+        # Since ids are only unique during lifetime of the objects reset the cache for
         # each call. The cache will only speed up assemblies with multiple same parts
         RENDER_CACHE.reset_cache()
         self.progress = progress

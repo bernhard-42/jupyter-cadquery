@@ -132,20 +132,39 @@ def _parent(cad_obj, obj_id):
     if cad_obj.parent is not None:
         if isinstance(cad_obj.parent.val(), Vector):
             return _from_vectorlist(
-                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
+                cad_obj.parent,
+                obj_id,
+                name="Parent",
+                color=Color((0.8, 0.8, 0.8)),
+                show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Vertex):
             return _from_vertexlist(
-                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
+                cad_obj.parent,
+                obj_id,
+                name="Parent",
+                color=Color((0.8, 0.8, 0.8)),
+                show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Edge):
             return _from_edgelist(
-                cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)), show_parents=False,
+                cad_obj.parent,
+                obj_id,
+                name="Parent",
+                color=Color((0.8, 0.8, 0.8)),
+                show_parents=False,
             )
         elif isinstance(cad_obj.parent.val(), Wire):
             return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)))]
         else:
-            return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False,)]
+            return [
+                Part(
+                    cad_obj.parent,
+                    "Parent_%d" % obj_id,
+                    show_edges=True,
+                    show_faces=False,
+                )
+            ]
     else:
         return []
 
@@ -209,7 +228,12 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
     color = Color(get_rgb(cad_obj.color))
 
     parent = [
-        Part(Workplane(shape), "%s_%d" % (cad_obj.name, i), color=color,) for i, shape in enumerate(cad_obj.shapes)
+        Part(
+            Workplane(shape),
+            "%s_%d" % (cad_obj.name, i),
+            color=color,
+        )
+        for i, shape in enumerate(cad_obj.shapes)
     ]
 
     if render_mates and cad_obj.mates is not None:
@@ -337,9 +361,9 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - render_edges:      Render edges  (default=True)
     - render_mates:      For MAssemblies, whether to rander the mates (default=True)
     - mate_scale:        For MAssemblies, scale of rendered mates (default=1)
-    - quality:           Tolerance for tessellation (default=0.1)
-    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=0.1)
-    - edge_accuracy:     Presicion of edge discretizaion (default=0.01)
+    - quality:           Tolerance for tessellation (default=None)
+    - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=None)
+    - edge_accuracy:     Presicion of edge discretizaion (default=None)
     - optimal_bb:        Use optimal bounding box (default=True)
     - axes:              Show axes (default=False)
     - axes0:             Show axes at (0,0,0) (default=False)

@@ -51,9 +51,9 @@ class CadqueryView(object):
         width=600,
         height=400,
         bb_factor=1.01,
-        quality=0.1,
-        angular_tolerance=0.1,
-        edge_accuracy=0.01,
+        quality=None,
+        angular_tolerance=None,
+        edge_accuracy=None,
         optimal_bb=True,
         render_edges=True,
         render_shapes=True,
@@ -281,6 +281,7 @@ class CadqueryView(object):
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             timeit=self.timeit,
+            info=self.info,
         )
 
         # Set up camera
