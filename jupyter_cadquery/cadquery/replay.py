@@ -421,7 +421,7 @@ def reset_replay():
     _CTX.new()
 
 
-def enable_replay(debug=False):
+def enable_replay(warning=True, debug=False):
     global DEBUG, REPLAY
 
     DEBUG = debug
@@ -429,15 +429,17 @@ def enable_replay(debug=False):
     print("\nEnabling jupyter_cadquery replay")
     cq.Workplane.__getattribute__ = _add_context
 
-    ip = get_ipython()
-    if not "reset_replay" in [f.__name__ for f in ip.events.callbacks["pre_run_cell"]]:
-        ip.events.register("pre_run_cell", reset_replay)
+    if warning:
+        print("Note: To get rid of this warning, use 'enable_replay(False)'")
+        ip = get_ipython()
+        if not "reset_replay" in [f.__name__ for f in ip.events.callbacks["pre_run_cell"]]:
+            ip.events.register("pre_run_cell", reset_replay)
     REPLAY = True
 
 
 def disable_replay():
     global REPLAY
-    print("Removing replay from cadquery.Workplane (will show a final RuntimeWarning)")
+    print("Removing replay from cadquery.Workplane (will show a final RuntimeWarning if not suppressed)")
     cq.Workplane.__getattribute__ = object.__getattribute__
 
     ip = get_ipython()
