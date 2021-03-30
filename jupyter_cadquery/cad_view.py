@@ -281,7 +281,6 @@ class CadqueryView(object):
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             timeit=self.timeit,
-            info=self.info,
         )
 
         # Set up camera
