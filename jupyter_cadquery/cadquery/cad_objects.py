@@ -364,7 +364,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - quality:           Tolerance for tessellation (default=None)
     - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=None)
     - edge_accuracy:     Presicion of edge discretizaion (default=None)
-    - optimal_bb:        Use optimal bounding box (default=True)
+    - optimal_bb:        Use optimal bounding box (default=False)
     - axes:              Show axes (default=False)
     - axes0:             Show axes at (0,0,0) (default=False)
     - grid:              Show grid (default=False)

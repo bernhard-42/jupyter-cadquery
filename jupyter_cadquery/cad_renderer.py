@@ -53,7 +53,7 @@ from .utils import (
 )
 
 from cadquery.occ_impl.shapes import Compound
-from .ocp_utils import FastBoundingBox
+from .ocp_utils import BoundingBox
 
 
 class RenderCache:
@@ -187,7 +187,7 @@ class CadqueryRenderer(object):
 
     @staticmethod
     def compute_quality(shape):
-        bbmax = FastBoundingBox.compute(shape).max()
+        bbmax = BoundingBox([[shape]]).max
         # + 1 to avoid negative values for objects < 1
         quality = math.log2(bbmax + 1) / 10
         return quality

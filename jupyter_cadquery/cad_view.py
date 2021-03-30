@@ -54,7 +54,7 @@ class CadqueryView(object):
         quality=None,
         angular_tolerance=None,
         edge_accuracy=None,
-        optimal_bb=True,
+        optimal_bb=False,
         render_edges=True,
         render_shapes=True,
         info=None,

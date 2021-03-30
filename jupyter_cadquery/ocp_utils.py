@@ -42,43 +42,21 @@ from cadquery.occ_impl.shapes import Compound, Shape
 from cadquery.occ_impl.geom import BoundBox
 
 
-class FastBoundingBox:
-    def __init__(self, xmin, xmax, ymin, ymax, zmin, zmax):
-        self.xmin = xmin
-        self.xmax = xmax
-        self.ymin = ymin
-        self.ymax = ymax
-        self.zmin = zmin
-        self.zmax = zmax
-
-    @classmethod
-    def compute(cls, shape):
-        bbox = Bnd_Box()
-        BRepBndLib.Add_s(shape, bbox, True)
-        XMin, YMin, ZMin, XMax, YMax, ZMax = bbox.Get()
-        return cls(XMin, XMax, YMin, YMax, ZMin, ZMax)
-
-    def max(self):
-        return max(abs(self.xmax - self.xmin), abs(self.ymax - self.ymin), abs(self.zmax - self.zmin))
-
-
 class BoundingBox(object):
-    def __init__(self, objects, tol=1e-5, optimal=False):
-        compound = Compound._makeCompound([Compound._makeCompound(s) for s in objects])
-        bb = BoundBox._fromTopoDS(compound, tol=tol, optimal=optimal)
-        self.xmin = 0 if bb is None else bb.xmin
-        self.xmax = 0 if bb is None else bb.xmax
-        self.xlen = 0 if bb is None else bb.xlen
-        self.ymin = 0 if bb is None else bb.ymin
-        self.ymax = 0 if bb is None else bb.ymax
-        self.ylen = 0 if bb is None else bb.ylen
-        self.zmin = 0 if bb is None else bb.zmin
-        self.zmax = 0 if bb is None else bb.zmax
-        self.zlen = 0 if bb is None else bb.zlen
-        self.center = (0, 0, 0) if bb is None else bb.center.toTuple()
-        self.diagonal_length = 0 if bb is None else bb.DiagonalLength
-
-        self.max = max([abs(c) for c in (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)])
+    def __init__(self, objects, optimal=False, tol=1e-5):
+        self.optimal = optimal
+        self.tol = tol
+        bbox = reduce(self._opt, [self.bbox(obj) for obj in objects])
+        self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
+        self.xsize = self.xmax - self.xmin
+        self.ysize = self.ymax - self.ymin
+        self.zsize = self.zmax - self.zmin
+        self.center = (
+            self.xmin + self.xsize / 2.0,
+            self.ymin + self.ysize / 2.0,
+            self.zmin + self.zsize / 2.0,
+        )
+        self.max = reduce(lambda a, b: max(abs(a), abs(b)), bbox)
 
     def max_dist_from_center(self):
         return max(
@@ -96,6 +74,29 @@ class BoundingBox(object):
             ]
         )
 
+    def _opt(self, b1, b2):
+        return (
+            min(b1[0], b2[0]),
+            max(b1[1], b2[1]),
+            min(b1[2], b2[2]),
+            max(b1[3], b2[3]),
+            min(b1[4], b2[4]),
+            max(b1[5], b2[5]),
+        )
+
+    def _bounding_box(self, obj, tol=1e-5):
+        bbox = Bnd_Box()
+        if self.optimal:
+            BRepBndLib.AddOptimal_s(obj, bbox)
+        else:
+            BRepBndLib.Add_s(obj, bbox)
+        values = bbox.Get()
+        return (values[0], values[3], values[1], values[4], values[2], values[5])
+
+    def bbox(self, objects):
+        bb = reduce(self._opt, [self._bounding_box(obj) for obj in objects])
+        return bb
+
     def is_empty(self, eps=0.01):
         return (
             (abs(self.xmax - self.xmin) < 0.01)
@@ -104,14 +105,13 @@ class BoundingBox(object):
         )
 
     def __repr__(self):
-        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f), c(%f, %f, %f)]" % (
+        return "[x(%f .. %f), y(%f .. %f), z(%f .. %f)]" % (
             self.xmin,
             self.xmax,
             self.ymin,
             self.ymax,
             self.zmin,
             self.zmax,
-            *self.center,
         )
 
 
@@ -177,6 +177,9 @@ def tessellate(shape, tolerance: float, angularTolerance: float = 0.1, debug=Fal
 
         offset += poly.NbNodes()
     values.stop()
+
+    # Remove mesh data again
+    BRepTools.Clean_s(shape)
 
     return (
         np.asarray(vertices, dtype=np.float32),

@@ -96,7 +96,7 @@ class Defaults:
             "quality": None,
             "edge_accuracy": None,
             "angular_tolerance": None,
-            "optimal_bb": True,
+            "optimal_bb": False,
             "axes": False,
             "axes0": False,
             "grid": False,
