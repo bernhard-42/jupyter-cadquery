@@ -17,17 +17,15 @@
 import platform
 from os.path import join, dirname
 from uuid import uuid4
-from IPython.core.display import ProgressBar
 from IPython.display import display as ipy_display
 
-from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Tab, HTML, Box, Output, IntProgress
+from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Tab, HTML, Box, Output
 
 from jupyter_cadquery_widgets.widgets import ImageButton, TreeView, UNSELECTED, SELECTED, MIXED, EMPTY
 import cadquery
 from .cad_view import CadqueryView
 from .utils import Timer, Progress
 from ._version import __version__
-from .ocp_utils import is_compound, is_shape, is_solid
 
 
 class Defaults:
@@ -52,10 +50,13 @@ class Defaults:
         - render_edges:      Render edges  (default=True)
         - render_mates:      Render mates (for MAssemblies)
         - mate_scale:        Scale of rendered mates (for MAssemblies)
-        - quality:           Tolerance for tessellation (default=None)
-        - angular_tolerance: Angular tolerance for building the mesh for tessellation (default=None)
+        - quality:           Linear deflection for tessellation (default=None)
+                             If None, uses: (xlen + ylen + zlen) / 300 * deviation)
+        - deviation:         Deviation from default for linear deflection value ((default=0.5)
+        - angular_tolerance: Angular deflection in radians for tessellation (default=0.5)
         - edge_accuracy:     Presicion of edge discretizaion (default=None)
-        - optimal_bb:        Use optimal bounding box (default=True)
+                             If None, uses: quality / 100
+        - optimal_bb:        Use optimal bounding box (default=False)
         - axes:              Show axes (default=False)
         - axes0:             Show axes at (0,0,0) (default=False)
         - grid:              Show grid (default=False)
@@ -94,8 +95,9 @@ class Defaults:
             "render_mates": False,
             "mate_scale": 1,
             "quality": None,
+            "deviation": 0.5,
+            "angular_tolerance": 0.3,
             "edge_accuracy": None,
-            "angular_tolerance": None,
             "optimal_bb": False,
             "axes": False,
             "axes0": False,
@@ -203,15 +205,6 @@ class Info(object):
         """
             % tick_size
         )
-        self.add_html(html)
-
-    def quality_msg(self, quality, edge_accuracy):
-        html = f"""
-        <table>
-            <tr class="small_table"> <td>quality</td>       <td>{quality:6.4f}</td>  </tr>
-            <tr class="small_table"> <td>edge_accuracy</td> <td>{edge_accuracy:6.4f}</td>   </tr>
-        </table>
-        """
         self.add_html(html)
 
     def bb_info(self, name, bb):
@@ -491,8 +484,9 @@ class CadqueryDisplay(object):
         tree_width=None,
         cad_width=None,
         quality=None,
-        angular_tolerance=None,
-        optimal_bb=None,
+        deviation=0.5,
+        angular_tolerance=0.3,
+        optimal_bb=False,
         edge_accuracy=None,
         axes=None,
         axes0=None,
@@ -517,6 +511,7 @@ class CadqueryDisplay(object):
         self.render_shapes = preset("render_shapes", render_shapes)
         self.render_edges = preset("render_edges", render_edges)
         self.quality = preset("quality", quality)
+        self.deviation = preset("deviation", deviation)
         self.angular_tolerance = preset("angular_tolerance", angular_tolerance)
         self.optimal_bb = preset("optimal_bb", optimal_bb)
         self.edge_accuracy = preset("edge_accuracy", edge_accuracy)
@@ -545,6 +540,7 @@ class CadqueryDisplay(object):
             height=self.height,
             bb_factor=self.bb_factor,
             quality=self.quality,
+            deviation=self.deviation,
             edge_accuracy=self.edge_accuracy,
             angular_tolerance=self.angular_tolerance,
             optimal_bb=self.optimal_bb,

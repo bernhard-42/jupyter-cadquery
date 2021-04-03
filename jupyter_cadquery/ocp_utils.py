@@ -1,3 +1,4 @@
+from array import array
 import itertools
 from functools import reduce
 import numpy as np
@@ -41,6 +42,8 @@ from .utils import distance, Timer
 from cadquery.occ_impl.shapes import Compound, Shape
 from cadquery.occ_impl.geom import BoundBox
 
+HASH_CODE_MAX = 2147483647
+
 
 class BoundingBox(object):
     def __init__(self, objects, optimal=False, tol=1e-5):
@@ -48,6 +51,9 @@ class BoundingBox(object):
         self.tol = tol
         bbox = reduce(self._opt, [self.bbox(obj) for obj in objects])
         self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
+        self._calc()
+
+    def _calc(self):
         self.xsize = self.xmax - self.xmin
         self.ysize = self.ymax - self.ymin
         self.zsize = self.zmax - self.zmin
@@ -56,7 +62,7 @@ class BoundingBox(object):
             self.ymin + self.ysize / 2.0,
             self.zmin + self.zsize / 2.0,
         )
-        self.max = reduce(lambda a, b: max(abs(a), abs(b)), bbox)
+        self.max = max([abs(x) for x in (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)])
 
     def max_dist_from_center(self):
         return max(
@@ -84,9 +90,19 @@ class BoundingBox(object):
             max(b1[5], b2[5]),
         )
 
+    def update(self, bb):
+        self.xmin = min(bb.xmin, self.xmin)
+        self.xmax = max(bb.xmax, self.xmax)
+        self.ymin = min(bb.ymin, self.ymin)
+        self.ymax = max(bb.ymax, self.ymax)
+        self.zmin = min(bb.zmin, self.zmin)
+        self.zmax = max(bb.zmax, self.zmax)
+        self._calc()
+
     def _bounding_box(self, obj, tol=1e-5):
         bbox = Bnd_Box()
         if self.optimal:
+            BRepTools.Clean_s(obj)
             BRepBndLib.AddOptimal_s(obj, bbox)
         else:
             BRepBndLib.Add_s(obj, bbox)
@@ -118,112 +134,103 @@ class BoundingBox(object):
 # Tessellate and discretize functions
 
 
-def tessellate(shape, tolerance: float, angularTolerance: float = 0.1, debug=False):
-
+def tessellate(shape, quality: float, angular_tolerance: float = 0.1, debug=False):
     mesh = Timer(debug, "| | | | Incremental mesh")
     # Remove previous mesh data
     BRepTools.Clean_s(shape)
-
-    # this will add mesh data to the shape and prevent calculating an exact bounding box after this call
-    BRepMesh_IncrementalMesh(shape, tolerance, True, angularTolerance, True)
+    BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, True)
     mesh.stop()
 
-    vertices = []
-    triangles = []
-    normals = []
+    vertices = array("f")
+    triangles = array("f")
+    normals = array("f")
 
-    offset = 0
+    # global buffers
+    p_buf = gp_Pnt()
+    n_buf = gp_Vec()
+    loc_buf = TopLoc_Location()
+
+    offset = -1
+
+    # every line below is selected for performance. Do not introduce functions to "beautify" the code
 
     values = Timer(debug, "| | | | nodes, normals")
     for face in get_faces(shape):
-        loc = TopLoc_Location()
-        poly = BRep_Tool.Triangulation_s(face, loc)
-        Trsf = loc.Transformation()
+        if face.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
+            i1, i2 = 2, 1
+        else:
+            i1, i2 = 1, 2
 
-        reverse = face.Orientation() == TopAbs_Orientation.TopAbs_REVERSED
         internal = face.Orientation() == TopAbs_Orientation.TopAbs_INTERNAL
 
-        if poly is None:
-            continue
+        poly = BRep_Tool.Triangulation_s(face, loc_buf)
+        if poly is not None:
+            Trsf = loc_buf.Transformation()
 
-        # add vertices
-        vertices += [(v.X(), v.Y(), v.Z()) for v in (v.Transformed(Trsf) for v in poly.Nodes())]
+            # add vertices
+            # [node.Transformed(Trsf).Coord() for node in poly.Nodes()] is 5-8 times slower!
+            items = poly.Nodes()
+            coords = [items.Value(i).Transformed(Trsf).Coord() for i in range(items.Lower(), items.Upper() + 1)]
+            flat = []
+            for coord in coords:
+                flat += coord
+            vertices.extend(flat)
 
-        # add triangles
-        triangles += [
-            (
-                t.Value(1) + offset - 1,
-                t.Value(3 if reverse else 2) + offset - 1,
-                t.Value(2 if reverse else 3) + offset - 1,
-            )
-            for t in poly.Triangles()
-        ]
+            # add triangles
+            items = poly.Triangles()
+            coords = [items.Value(i).Get() for i in range(items.Lower(), items.Upper() + 1)]
+            flat = []
+            for coord in coords:
+                flat += (coord[0] + offset, coord[i1] + offset, coord[i2] + offset)
+            triangles.extend(flat)
 
-        # add normals
-        if poly.HasUVNodes():
-            prop = BRepGProp_Face(face)
-            uvnodes = poly.UVNodes()
-            for uvnode in uvnodes:
-                p = gp_Pnt()
-                n = gp_Vec()
-                prop.Normal(uvnode.X(), uvnode.Y(), p, n)
+            # add normals
+            if poly.HasUVNodes():
+                prop = BRepGProp_Face(face)
+                items = poly.UVNodes()
 
-                if n.SquareMagnitude() > 0:
-                    n.Normalize()
-                if internal:
-                    n.Reverse()
+                def extract(uv0, uv1):
+                    prop.Normal(uv0, uv1, p_buf, n_buf)
+                    return n_buf.Reverse().Coord() if internal else n_buf.Coord()
 
-                normals.append((n.X(), n.Y(), n.Z()))
+                uvs = [items.Value(i).Coord() for i in range(items.Lower(), items.Upper() + 1)]
+                flat = []
+                for uv1, uv2 in uvs:
+                    flat += extract(uv1, uv2)
+                normals.extend(flat)
 
-        offset += poly.NbNodes()
+            offset += poly.NbNodes()
+
     values.stop()
 
     # Remove mesh data again
     BRepTools.Clean_s(shape)
 
     return (
-        np.asarray(vertices, dtype=np.float32),
+        np.asarray(vertices, dtype=np.float32).reshape(-1, 3),
         np.asarray(triangles, dtype=np.uint32),
-        np.asarray(normals, dtype=np.float32),
+        np.asarray(normals, dtype=np.float32).reshape(-1, 3),
     )
 
 
-# Source pythonocc-core: Extend/TopologyUtils.py
-def discretize_edge(a_topods_edge, deflection=0.1, algorithm="QuasiUniformDeflection"):
-    """Take a TopoDS_Edge and returns a list of points
-    The more deflection is small, the more the discretization is precise,
-    i.e. the more points you get in the returned points
-    algorithm: to choose in ["UniformAbscissa", "QuasiUniformDeflection"]
-    """
-    if not is_edge(a_topods_edge):
-        raise AssertionError("You must provide a TopoDS_Edge to the discretize_edge function.")
-    if a_topods_edge.IsNull():
-        print("Warning : TopoDS_Edge is null. discretize_edge will return an empty list of points.")
-        return []
-    curve_adaptator = BRepAdaptor_Curve(a_topods_edge)
-    first = curve_adaptator.FirstParameter()
-    last = curve_adaptator.LastParameter()
+def discretize_edge(edge, deflection=0.1):
+    curve_adaptator = BRepAdaptor_Curve(edge)
 
-    if algorithm == "QuasiUniformDeflection":
-        discretizer = GCPnts_QuasiUniformDeflection()
-    elif algorithm == "UniformAbscissa":
-        discretizer = GCPnts_UniformAbscissa()
-    elif algorithm == "UniformDeflection":
-        discretizer = GCPnts_UniformDeflection()
-    else:
-        raise AssertionError("Unknown algorithm")
-    discretizer.Initialize(curve_adaptator, deflection, first, last)
+    discretizer = GCPnts_QuasiUniformDeflection()
+    discretizer.Initialize(
+        curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
+    )
 
     if not discretizer.IsDone():
         raise AssertionError("Discretizer not done.")
-    if not discretizer.NbPoints() > 0:
-        raise AssertionError("Discretizer nb points not > 0.")
 
-    points = []
-    for i in range(1, discretizer.NbPoints() + 1):
-        p = curve_adaptator.Value(discretizer.Parameter(i))
-        points.append(p.Coord())
-    return points
+    points = [curve_adaptator.Value(discretizer.Parameter(i)).Coord() for i in range(1, discretizer.NbPoints() + 1)]
+
+    # return tuples representing the single lines of the eged
+    edges = []
+    for i in range(len(points) - 1):
+        edges.append((points[i], points[i + 1]))
+    return edges
 
 
 # Export STL
@@ -274,26 +281,24 @@ def is_shape(topods_shape):
     return isinstance(topods_shape, TopoDS_Shape)
 
 
-def _objects(shape, shape_type):
-    HASH_CODE_MAX = 2147483647
-    out = {}  # using dict to prevent duplicates
-
-    explorer = TopExp_Explorer(shape, shape_type)
-
+def _get_topo(shape, topo):
+    explorer = TopExp_Explorer(shape, topo)
+    hashes = {}
     while explorer.More():
         item = explorer.Current()
-        out[item.HashCode(HASH_CODE_MAX)] = downcast(item)
+        hash = item.HashCode(HASH_CODE_MAX)
+        if hashes.get(hash) is None:
+            hashes[hash] = True
+            yield downcast(item)
         explorer.Next()
-
-    return list(out.values())
 
 
 def get_faces(shape):
-    return _objects(shape, TopAbs_FACE)
+    return _get_topo(shape, TopAbs_FACE)
 
 
 def get_edges(shape):
-    return _objects(shape, TopAbs_EDGE)
+    return _get_topo(shape, TopAbs_EDGE)
 
 
 def get_point(vertex):

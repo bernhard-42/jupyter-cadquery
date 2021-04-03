@@ -14,10 +14,7 @@
 # limitations under the License.
 #
 
-import math
 import numpy as np
-import time
-from uuid import uuid4
 import warnings
 
 with warnings.catch_warnings():
@@ -80,7 +77,7 @@ class RenderCache:
             shape_geometry = BufferGeometry(
                 attributes={
                     "position": BufferAttribute(np_vertices),
-                    "index": BufferAttribute(np_triangles.ravel()),
+                    "index": BufferAttribute(np_triangles),
                     "normal": BufferAttribute(np_normals),
                 }
             )
@@ -164,33 +161,30 @@ class CadqueryRenderer(object):
     def __init__(
         self,
         quality=None,
-        angular_tolerance=None,
+        deviation=0.5,
+        angular_tolerance=0.3,
         render_edges=True,
         render_shapes=True,
         edge_accuracy=None,
         default_mesh_color=None,
         default_edge_color=None,
         timeit=False,
-        info=None,
     ):
         self.quality = quality
         self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
         self.render_shapes = render_shapes
-
+        self.deviation = deviation
         self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
         self.default_edge_color = Color(default_edge_color or (128, 128, 128))
 
         self.timeit = timeit
-        self.info = info
 
-    @staticmethod
-    def compute_quality(shape):
-        bbmax = BoundingBox([[shape]]).max
-        # + 1 to avoid negative values for objects < 1
-        quality = math.log2(bbmax + 1) / 10
-        return quality
+    def compute_quality(self, shape):
+        # based on non-optimal bounding box without mesh
+        bb = BoundingBox([[shape]], optimal=False)
+        return (bb.xsize + bb.ysize + bb.zsize) / 300 * self.deviation
 
     def render_shape(
         self,
@@ -207,18 +201,21 @@ class CadqueryRenderer(object):
         transparent=False,
         opacity=1.0,
     ):
-        quality = CadqueryRenderer.compute_quality(shape) if self.quality is None else self.quality
-        angular_tolerance = quality * 0.5 if self.angular_tolerance is None else self.angular_tolerance
-        edge_accuracy = quality * 0.05 if self.edge_accuracy is None else self.edge_accuracy
-        self.info.quality_msg(quality, edge_accuracy)
 
         edge_list = None
         edge_lines = None
         points = None
         shape_mesh = None
 
+        edge_accuracy = None
+
         render_timer = Timer(self.timeit, "| | shape render time")
         if shape is not None:
+            quality = self.quality if self.quality is not None else self.compute_quality(shape)
+            edge_accuracy = self.edge_accuracy if self.edge_accuracy is not None else (quality * 0.02 * self.deviation)
+            if self.timeit:
+                print(f"| | | (quality: {quality:8.6f}, edge_accuracy: {edge_accuracy:8.6f})")
+
             if mesh_color is None:
                 mesh_color = self.default_mesh_color
             if edge_color is None:
@@ -228,7 +225,7 @@ class CadqueryRenderer(object):
 
             # Compute the tesselation and build mesh
             tesselation_timer = Timer(self.timeit, "| | | build mesh time")
-            shape_geometry = RENDER_CACHE.tessellate(shape, quality, angular_tolerance, self.timeit)
+            shape_geometry = RENDER_CACHE.tessellate(shape, quality, self.angular_tolerance, self.timeit)
 
             shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
             # Do not cache building the mesh. Might lead to unpredictable results
@@ -256,13 +253,19 @@ class CadqueryRenderer(object):
             points = IndexedPoints(geometry=geom, material=mat)
 
         if edges is not None:
+            if edge_accuracy is None:  # take over from shape meshing
+                edge_accuracy = self.edge_accuracy if self.edge_accuracy is not None else 0.01 * self.deviation
+
             discretize_timer = Timer(self.timeit, "| | | discretize time")
-            edge_list = [discretize_edge(edge, edge_accuracy) for edge in edges]
+            edge_list = []
+            for edge in edges:
+                edge_list += discretize_edge(edge, edge_accuracy)
+            edge_list = np.asarray(edge_list, dtype="float32")
             discretize_timer.stop()
+            if self.timeit:
+                print(f"| | | (edge_accuracy: {edge_accuracy:8.6f})")
 
         if edge_list is not None:
-            discretize_timer = Timer(self.timeit, "| | | edge list")
-            edge_list = flatten(list(map(explode, edge_list)))
             if isinstance(edge_color, (list, tuple)):
                 if len(edge_list) != len(edge_color):
                     print("warning: color list and edge list have different length, using first color for all edges")
@@ -279,7 +282,6 @@ class CadqueryRenderer(object):
                 lines = LineSegmentsGeometry(positions=edge_list)
                 mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
                 edge_lines = [IndexedLineSegments2(lines, mat)]
-            discretize_timer.stop()
 
         render_timer.stop()
 
