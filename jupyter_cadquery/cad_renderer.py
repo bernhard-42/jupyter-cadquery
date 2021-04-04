@@ -32,18 +32,16 @@ with warnings.catch_warnings():
     )
 
 from .cad_helpers import CustomMaterial
+from .tessellator import Tessellator
 from .ocp_utils import (
     is_vertex,
     is_edge,
     discretize_edge,
     get_edges,
     get_point,
-    tessellate,
     tq,
 )
 from .utils import (
-    explode,
-    flatten,
     Color,
     tree_find_single_selector,
     Timer,
@@ -65,11 +63,25 @@ class RenderCache:
         self.use_cache = not self.use_cache
         print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
 
-    def tessellate(self, compound, quality=None, angular_tolerance=None, debug=False):
+    def tessellate(
+        self, compound, quality=None, angular_tolerance=None, render_shapes=True, render_edges=True, debug=False
+    ):
 
         hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
         if self.objects.get(hash) is None:
-            np_vertices, np_triangles, np_normals = tessellate(compound, quality, angular_tolerance, debug)
+            tess = Tessellator()
+            tess.compute(
+                compound,
+                quality=quality,
+                angular_tolerance=angular_tolerance,
+                tessellate=render_shapes,
+                compute_edges=render_edges,
+                debug=debug,
+            )
+            np_vertices = tess.get_vertices()
+            np_triangles = tess.get_triangles()
+            np_normals = tess.get_normals()
+            np_edges = tess.get_edges() if render_edges else None
 
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
@@ -83,7 +95,7 @@ class RenderCache:
             )
             if debug:
                 print(f"| | | (Caching {hash})")
-            self.objects[hash] = shape_geometry
+            self.objects[hash] = (shape_geometry, np_edges)
         else:
             if debug:
                 print(f"| | | (Taking {hash} from cache)")
@@ -216,31 +228,30 @@ class CadqueryRenderer(object):
             if self.timeit:
                 print(f"| | | (quality: {quality:8.6f}, edge_accuracy: {edge_accuracy:8.6f})")
 
-            if mesh_color is None:
-                mesh_color = self.default_mesh_color
-            if edge_color is None:
-                edge_color = self.default_edge_color
-            if vertex_color is None:
-                vertex_color = self.default_edge_color  # same as edge_color
-
             # Compute the tesselation and build mesh
             tesselation_timer = Timer(self.timeit, "| | | build mesh time")
-            shape_geometry = RENDER_CACHE.tessellate(shape, quality, self.angular_tolerance, self.timeit)
-
-            shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
-            # Do not cache building the mesh. Might lead to unpredictable results
-            shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
+            shape_geometry, edge_list = RENDER_CACHE.tessellate(
+                shape,
+                quality=quality,
+                angular_tolerance=self.angular_tolerance,
+                render_shapes=render_shapes,
+                render_edges=render_edges,
+                debug=self.timeit,
+            )
+            shape_mesh = None
+            if render_shapes:
+                if mesh_color is None:
+                    mesh_color = self.default_mesh_color
+                shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
+                # Do not cache building the mesh. Might lead to unpredictable results
+                shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
             tesselation_timer.stop()
 
-            if render_edges:
-                edges = get_edges(shape)
-
-            # unset shape_mesh again
-            if not render_shapes:
-                shape_mesh = None
-
         if vertices is not None:
+            if vertex_color is None:
+                vertex_color = self.default_edge_color  # same as edge_color
+
             vertices_list = []
             for vertex in vertices:
                 vertices_list.append(get_point(vertex))
@@ -266,6 +277,9 @@ class CadqueryRenderer(object):
                 print(f"| | | (edge_accuracy: {edge_accuracy:8.6f})")
 
         if edge_list is not None:
+            if edge_color is None:
+                edge_color = self.default_edge_color
+
             if isinstance(edge_color, (list, tuple)):
                 if len(edge_list) != len(edge_color):
                     print("warning: color list and edge list have different length, using first color for all edges")

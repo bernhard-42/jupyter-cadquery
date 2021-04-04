@@ -1,46 +1,29 @@
-from array import array
 import itertools
 from functools import reduce
 import numpy as np
-
-from OCP.gp import gp_Vec, gp_Pnt
 
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.BRepBndLib import BRepBndLib
-from OCP.BRepGProp import BRepGProp_Face
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.BRepTools import BRepTools
 
-from OCP.GCPnts import (
-    GCPnts_QuasiUniformDeflection,
-    GCPnts_UniformAbscissa,
-    GCPnts_UniformDeflection,
-)
+from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
 from OCP.TopAbs import (
-    TopAbs_ShapeEnum,
-    TopAbs_Orientation,
     TopAbs_VERTEX,
     TopAbs_EDGE,
     TopAbs_FACE,
 )
-from OCP.TopLoc import TopLoc_Location
-from OCP.TopoDS import TopoDS, TopoDS_Shape, TopoDS_Compound, TopoDS_Solid
+from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound, TopoDS_Solid
 from OCP.TopAbs import TopAbs_FACE
-
 from OCP.TopExp import TopExp_Explorer
-
-from OCP.TopLoc import TopLoc_Location
 
 from OCP.StlAPI import StlAPI_Writer
 
 from cadquery.occ_impl.shapes import downcast
-from .utils import distance, Timer
-
-from cadquery.occ_impl.shapes import Compound, Shape
-from cadquery.occ_impl.geom import BoundBox
+from .utils import distance
 
 HASH_CODE_MAX = 2147483647
 
@@ -129,88 +112,6 @@ class BoundingBox(object):
             self.zmin,
             self.zmax,
         )
-
-
-# Tessellate and discretize functions
-
-
-def tessellate(shape, quality: float, angular_tolerance: float = 0.1, debug=False):
-    mesh = Timer(debug, "| | | | Incremental mesh")
-    # Remove previous mesh data
-    BRepTools.Clean_s(shape)
-    BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, True)
-    mesh.stop()
-
-    vertices = array("f")
-    triangles = array("f")
-    normals = array("f")
-
-    # global buffers
-    p_buf = gp_Pnt()
-    n_buf = gp_Vec()
-    loc_buf = TopLoc_Location()
-
-    offset = -1
-
-    # every line below is selected for performance. Do not introduce functions to "beautify" the code
-
-    values = Timer(debug, "| | | | nodes, normals")
-    for face in get_faces(shape):
-        if face.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
-            i1, i2 = 2, 1
-        else:
-            i1, i2 = 1, 2
-
-        internal = face.Orientation() == TopAbs_Orientation.TopAbs_INTERNAL
-
-        poly = BRep_Tool.Triangulation_s(face, loc_buf)
-        if poly is not None:
-            Trsf = loc_buf.Transformation()
-
-            # add vertices
-            # [node.Transformed(Trsf).Coord() for node in poly.Nodes()] is 5-8 times slower!
-            items = poly.Nodes()
-            coords = [items.Value(i).Transformed(Trsf).Coord() for i in range(items.Lower(), items.Upper() + 1)]
-            flat = []
-            for coord in coords:
-                flat += coord
-            vertices.extend(flat)
-
-            # add triangles
-            items = poly.Triangles()
-            coords = [items.Value(i).Get() for i in range(items.Lower(), items.Upper() + 1)]
-            flat = []
-            for coord in coords:
-                flat += (coord[0] + offset, coord[i1] + offset, coord[i2] + offset)
-            triangles.extend(flat)
-
-            # add normals
-            if poly.HasUVNodes():
-                prop = BRepGProp_Face(face)
-                items = poly.UVNodes()
-
-                def extract(uv0, uv1):
-                    prop.Normal(uv0, uv1, p_buf, n_buf)
-                    return n_buf.Reverse().Coord() if internal else n_buf.Coord()
-
-                uvs = [items.Value(i).Coord() for i in range(items.Lower(), items.Upper() + 1)]
-                flat = []
-                for uv1, uv2 in uvs:
-                    flat += extract(uv1, uv2)
-                normals.extend(flat)
-
-            offset += poly.NbNodes()
-
-    values.stop()
-
-    # Remove mesh data again
-    BRepTools.Clean_s(shape)
-
-    return (
-        np.asarray(vertices, dtype=np.float32).reshape(-1, 3),
-        np.asarray(triangles, dtype=np.uint32),
-        np.asarray(normals, dtype=np.float32).reshape(-1, 3),
-    )
 
 
 def discretize_edge(edge, deflection=0.1):
