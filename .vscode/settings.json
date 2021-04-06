@@ -3,5 +3,6 @@
     "python.formatting.blackArgs": [
         "--line-length",
         "119"
-    ]
+    ],
+    "python.pythonPath": "/opt/miniconda/envs/cq/bin/python"
 }
