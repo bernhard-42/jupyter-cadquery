@@ -3,7 +3,15 @@
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
 
-## New Relase v2.1.0rc0 (06.03.2021)
+## New Relase Candidate v2.1.0rc0 "Performance Release" (06.04.2021)
+- **New features**
+    - Complete new tessellator class. Significantly faster (for a 15MB STEP file it reduced the rendering time from 3 min to <10 sec)
+    - Mesh quality is calculated as in FreeCad (sum of bounding box x-, y-, z-widths divided by 300 times deviation paramter)
+
+- **Changes**
+    - Pan speed is adapted to object size sum of bounding box x-, y-, z-widths divided by 300)
+    - Replay warnings can be suppressed now (`replay(warning=False)`)
+## New Relase v2.0.0 (06.03.2021)
 
 - **New features**
     - *jupyter-cadquery* supports the latest *CadQuery 2.1* with *OCP* (note, it will not run with the *FreeCAD* version of *CadQuery*).
@@ -150,33 +158,34 @@ show(a1, grid=False)  # overwrite grid default value
 - `show(cad_objs, **kwargs)`
 
     args:
-    - `cad_objs`: Comma separated list of cadquery objects; **Note**: For OCC only one object is supported
+    - `cad_objs`: Comma separated list of cadquery objects; **Note**: For OCP objects only one object is supported
 
     kwargs:
-    - `height`: Height of the CAD view (default=600)
-    - `tree_width`: Width of navigation tree part of the view (default=250)
-    - `cad_width`: Width of CAD view part of the view (default=800)
-    - `bb_factor`: Scale bounding box to ensure compete rendering (default=1.0)
-    - `render_shapes`: Render shapes  (default=True)
-    - `render_edges`: Render edges  (default=True)
-    - `render_mates`: For MAssemblies, whether to rander the mates (default=True)
-    - `mate_scale`: For MAssemblies, scale of rendered mates (default=1)
-    - `quality`: Tolerance for tessellation (default=0.1)
-    - `angular_tolerance`: Angular tolerance for building the mesh for tessellation (default=0.1)
-    - `edge_accuracy`: Presicion of edge discretizaion (default=0.01)
-    - `optimal_bb`: Use optimal bounding box (default=True)
-    - `axes`: Show axes (default=False)
-    - `axes0`: Show axes at (0,0,0) (default=False)
-    - `grid`: Show grid (default=False)
-    - `ortho`: Use orthographic projections (default=True)
-    - `transparent`: Show objects transparent (default=False)
-    - `position`: Relative camera position that will be scaled (default=(1, 1, 1))
-    - `rotation`: z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
-    - `zoom`: Zoom factor of view (default=2.5)
-    - `mac_scrollbar`: Prettify scrollbasrs on Macs (default=True)
-    - `display`: Select display: "sidecar", "cell", "html"
-    - `tools`: Show the viewer tools like the object tree
-    - `timeit`: Show rendering times (default=False)
+    - `height`:            Height of the CAD view (default=600)
+    - `tree_width`:        Width of navigation tree part of the view (default=250)
+    - `cad_width`:         Width of CAD view part of the view (default=800)
+    - `bb_factor`:         Scale bounding box to ensure compete rendering (default=1.5)
+    - `render_shapes`:     Render shapes  (default=True)
+    - `render_edges`:      Render edges  (default=True)
+    - `render_mates`:      Render mates (for MAssemblies)
+    - `mate_scale`:        Scale of rendered mates (for MAssemblies)
+    - `quality`:           Linear deflection for tessellation (default=None). If None, uses bounding box as in (xlen + ylen + zlen) / 300 * deviation)
+    - `deviation`:         Deviation from default for linear deflection value ((default=0.5)
+    - `angular_tolerance`: Angular deflection in radians for tessellation (default=0.3)
+    - `edge_accuracy`:     Presicion of edge discretizaion (default=None). If None, uses: quality / 100
+    - `optimal_bb`:        Use optimal bounding box (default=False)
+    - `axes`:              Show axes (default=False)
+    - `axes0`:             Show axes at (0,0,0) (default=False)
+    - `grid`:              Show grid (default=False)
+    - `ortho`:             Use orthographic projections (default=True)
+    - `transparent`:       Show objects transparent (default=False)
+    - `position`:          Relative camera position that will be scaled (default=(1, 1, 1))
+    - `rotation`:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
+    - `zoom`:              Zoom factor of view (default=2.5)
+    - `mac_scrollbar`:     Prettify scrollbasrs on Macs (default=True)
+    - `display`:           Select display: "sidecar", "cell", "html"
+    - `tools`:             Show the viewer tools like the object tree
+    - `timeit`:            Show rendering times (default=False)
 
     For example isometric projection can be achieved in two ways:
     - `position = (1, 1, 1)`
@@ -280,9 +289,9 @@ Notes:
 
 ## Credits
 
-- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas and some of the code in [cad_view._render_shape](jupyter_cadquery/cad_view.py) are derived/taken from his `jupyter_renderer.py`
+- Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas are derived/taken from his `jupyter_renderer.py`
 - Dave Cowden for [CadQuery](https://github.com/dcowden/cadquery)
-- Adam Urbańczyk for the OCC version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
+- Adam Urbańczyk for the OCP version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
 ## Known issues
 
