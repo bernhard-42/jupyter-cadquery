@@ -226,7 +226,7 @@ class CadqueryRenderer(object):
             quality = self.quality if self.quality is not None else self.compute_quality(shape)
             edge_accuracy = self.edge_accuracy if self.edge_accuracy is not None else (quality * 0.02 * self.deviation)
             if self.timeit:
-                print(f"| | | (quality: {quality:8.6f}, edge_accuracy: {edge_accuracy:8.6f})")
+                print(f"| | | (quality: {quality:8.6f}, angular_tolerance: {self.angular_tolerance:8.6f})")
 
             # Compute the tesselation and build mesh
             tesselation_timer = Timer(self.timeit, "| | | build mesh time")
