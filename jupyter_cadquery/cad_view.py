@@ -379,6 +379,7 @@ class CadqueryView(object):
         # Set up the controller relative to bounding box
         self.controller.target = self.bb.center
         self.controller.target0 = self.bb.center
+        self.controller.panSpeed = (self.bb.xsize + self.bb.ysize + self.bb.zsize) / 300
 
         # Set up lights in every of the 8 corners of the global bounding box
         positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
