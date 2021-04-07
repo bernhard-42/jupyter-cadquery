@@ -88,7 +88,7 @@ class CadqueryView(object):
         self.default_edge_color = Color((128, 128, 128))
 
         self.camera_distance_factor = 6
-        self.camera_initial_zoom = 2.5
+        self.camera_initial_zoom = zoom
 
         self.features = ["mesh", "edges"]
 
@@ -107,9 +107,8 @@ class CadqueryView(object):
         self.renderer = None
 
         self.camera_position = None
-        self.zoom = None
 
-        self.savestate = None
+        self.savestate = ((0, 0, 0, "XYZ"), (0, 0, 0))
 
     def get_transparent(self):
         # if one object is transparent, all are
@@ -316,7 +315,7 @@ class CadqueryView(object):
         )
         return self.renderer
 
-    def add_shapes(self, shapes, progress, position=None, rotation=None, zoom=2.5, reset=True):
+    def add_shapes(self, shapes, progress, position=None, rotation=None, zoom=None, reset=True):
         def all_shapes(shapes, loc=None):
             loc = shapes["loc"] if loc is None else loc * shapes["loc"]
             result = []
@@ -352,16 +351,19 @@ class CadqueryView(object):
         bb_max = self.bb.max_dist_from_center()
         orbit_radius = 4 * self.bb_factor * bb_max
 
+        if reset:
+            self._reset()
+
         # Calculate camera postion
         if position is None and rotation is None:  # no new defaults
-            if reset or self.camera_position is None:  # no existing position
+            if self.camera_position is None:  # no existing position
                 self.camera_position = self._add(self.bb.center, self._scale((1, 1, 1)))
         else:
             position = rotate(position or (1, 1, 1), *(rotation or (0, 0, 0)))
             self.camera_position = self._add(self.bb.center, self._scale(position))
 
-        if reset or self.zoom is None:
-            self.zoom = zoom
+        if self.zoom is None:
+            self.zoom = self.camera_initial_zoom
 
         # Set up Helpers relative to bounding box
         xy_max = max(abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax)) * 1.2
