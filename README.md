@@ -3,7 +3,7 @@
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
 
-## New Relase Candidate v2.1.0 "Performance Release" (06.04.2021)
+## New Relase Candidate v2.1.0 "Performance Release" (07.04.2021)
 - **New features**
     - Complete new tessellator class. Significantly faster (for a 15MB STEP file it reduced the rendering time from 3 min to <10 sec)
     - Mesh quality is calculated as in FreeCad (sum of bounding box x-, y-, z-widths divided by 300 times deviation paramter)
