@@ -1,2 +1,0 @@
-jupyter-labextension install --no-build 
-jupyter lab build --dev-build=False --minimize=False
