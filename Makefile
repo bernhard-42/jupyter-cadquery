@@ -30,6 +30,7 @@ endif
 # Dist commands
 
 dist:
+	@rm dist/*
 	@python setup.py sdist bdist_wheel
 	@echo "jupyter-labextension install --no-build $(shell cat labextensions.txt | xargs)" > postBuild
 	@echo "jupyter lab build --dev-build=False --minimize=False" >> postBuild

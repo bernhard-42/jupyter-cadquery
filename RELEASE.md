@@ -61,6 +61,18 @@ In case the jupyter labextions and/or the python code has been changed:
     make upload
     ```
 
+7. Create Docker container
+
+    ```bash
+    make docker
+    ```
+
+7. Upload Docker container
+
+    ```bash
+    make upload_docker
+    ```
+
 ### 3 Push changes
 
 1. Push repo and tag
