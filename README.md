@@ -3,7 +3,7 @@
 An extension to render cadquery objects in JupyterLab via *[pythreejs](https://pythreejs.readthedocs.io/en/stable/)*.
 
 
-## New Relase Candidate v2.1.0rc1 "Performance Release" (06.04.2021)
+## New Relase Candidate v2.1.0 "Performance Release" (06.04.2021)
 - **New features**
     - Complete new tessellator class. Significantly faster (for a 15MB STEP file it reduced the rendering time from 3 min to <10 sec)
     - Mesh quality is calculated as in FreeCad (sum of bounding box x-, y-, z-widths divided by 300 times deviation paramter)
@@ -31,7 +31,7 @@ An extension to render cadquery objects in JupyterLab via *[pythreejs](https://p
 
 Click on the icon to start *jupyter-cadquery* on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.1.0rc1?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.1.0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Overview
 
@@ -106,7 +106,7 @@ show(a1, grid=False)  # overwrite grid default value
     - Install jupyter-cadquery (note, matplotlib is only used for the examples)
 
         ```bash
-        pip install jupyter-cadquery==2.1.0rc1 matplotlib
+        pip install jupyter-cadquery==2.1.0 matplotlib
         ```
 
 - **Install cadquery-massembly (Optional)**
@@ -131,12 +131,12 @@ show(a1, grid=False)  # overwrite grid default value
     ```bash
     WORKDIR=/tmp/jupyter
     mkdir -p "$WORKDIR"  # this has to exists, otherwise an access error will occur
-    docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.1.0rc1
+    docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.1.0
     ```
 
     **Notes:** 
     - To start with examples, you can 
-        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.1.0rc1` or
+        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.1.0` or
         - copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
     - If you want to change the Dockerfile, `make docker` will create a new docker image
 

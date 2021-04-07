@@ -8,5 +8,5 @@ dependencies:
   - cadquery=2.1
   - matplotlib=3.3
   - pip:
-    - jupyter-cadquery==2.1.0rc1
+    - jupyter-cadquery==2.1.0
     - git+https://github.com/bernhard-42/cadquery-massembly
