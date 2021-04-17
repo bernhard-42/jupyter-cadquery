@@ -133,14 +133,14 @@ class Tessellator:
 
             face_list = face_map.FindFromKey(edge)
             if face_list.Extent() == 0:
-                print("no faces")
+                # print("no faces")
                 continue
 
             loc = TopLoc_Location()
             poly = BRep_Tool.Polygon3D_s(edge, loc)
 
             if poly is not None:
-                print("Polygon3D successful")
+                # print("Polygon3D successful")
                 nodes = poly.Nodes()
                 transf = loc.Transformation()
                 v1 = None
