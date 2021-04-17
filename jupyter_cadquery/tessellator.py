@@ -104,12 +104,13 @@ class Tessellator:
 
                 # add normals
                 if poly.HasUVNodes():
-                    prop = BRepGProp_Face(face)
-                    items = poly.UVNodes()
-
+                    
                     def extract(uv0, uv1):
                         prop.Normal(uv0, uv1, p_buf, n_buf)
                         return n_buf.Reverse().Coord() if internal else n_buf.Coord()
+
+                    prop = BRepGProp_Face(face)
+                    items = poly.UVNodes()
 
                     uvs = [items.Value(i).Coord() for i in range(items.Lower(), items.Upper() + 1)]
                     flat = []
