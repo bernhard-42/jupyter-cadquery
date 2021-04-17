@@ -62,6 +62,8 @@ class Defaults:
         - grid:              Show grid (default=False)
         - ortho:             Use orthographic projections (default=True)
         - transparent:       Show objects transparent (default=False)
+        - ambient_intensity  Intensity of ambient ligth (default=1.0)
+        - direct_intensity   Intensity of direct lights (default=0.2)
         - position:          Relative camera position that will be scaled (default=(1, 1, 1))
         - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
         - zoom:              Zoom factor of view (default=2.5)
@@ -104,6 +106,8 @@ class Defaults:
             "grid": False,
             "ortho": True,
             "transparent": False,
+            "ambient_intensity": 1.0,
+            "direct_intensity": 0.2,
             "position": (1, 1, 1),
             "rotation": (0, 0, 0),
             "zoom": 2.5,
@@ -493,6 +497,8 @@ class CadqueryDisplay(object):
         grid=None,
         ortho=None,
         transparent=None,
+        ambient_intensity=None,
+        direct_intensity=None,
         position=None,
         rotation=None,
         zoom=None,
@@ -520,6 +526,8 @@ class CadqueryDisplay(object):
         self.grid = preset("grid", grid)
         self.ortho = preset("ortho", ortho)
         self.transparent = preset("transparent", transparent)
+        self.ambient_intensity = preset("ambient_intensity", ambient_intensity)
+        self.direct_intensity = preset("direct_intensity", direct_intensity)
         self.position = preset("position", position)
         self.rotation = preset("rotation", rotation)
         self.zoom = preset("zoom", zoom)
@@ -549,6 +557,8 @@ class CadqueryDisplay(object):
             info=self.info,
             position=self.position,
             rotation=self.rotation,
+            ambient_intensity=self.ambient_intensity,
+            direct_intensity=self.direct_intensity,
             zoom=self.zoom,
             timeit=self.timeit,
         )

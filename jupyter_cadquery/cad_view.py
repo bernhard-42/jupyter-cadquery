@@ -61,6 +61,8 @@ class CadqueryView(object):
         info=None,
         position=None,
         rotation=None,
+        ambient_intensity=None,
+        direct_intensity=None,
         zoom=None,
         timeit=False,
     ):
@@ -78,6 +80,8 @@ class CadqueryView(object):
         self.info = info
         self.position = position
         self.rotation = rotation
+        self.ambient_intensity = ambient_intensity
+        self.direct_intensity = direct_intensity
         self.zoom = zoom
         self.timeit = timeit
 
@@ -298,7 +302,7 @@ class CadqueryView(object):
         self.toggle_ortho(True)
 
         # Set up scene
-        self.scene = Scene(children=[self.camera, AmbientLight(intensity=1.0)])
+        self.scene = Scene(children=[self.camera, AmbientLight(intensity=self.ambient_intensity)])
 
         # Set up Controllers
         camera_target = (0.0, 0.0, 0.0)
@@ -386,7 +390,8 @@ class CadqueryView(object):
         # Set up lights in every of the 8 corners of the global bounding box
         positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
         self.key_lights = [
-            DirectionalLight(color="white", position=position, intensity=0.12) for position in positions
+            DirectionalLight(color="white", position=position, intensity=self.direct_intensity)
+            for position in positions
         ]
 
         # Set up Picker
