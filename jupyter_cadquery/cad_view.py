@@ -42,7 +42,7 @@ from jupyter_cadquery_widgets.widgets import state_diff
 from .cad_helpers import Grid, Axes
 from .ocp_utils import BoundingBox, is_compound, is_shape, is_solid
 from .utils import rotate, Color, Timer
-from .cad_renderer import CadqueryRenderer
+from .cad_renderer import CadqueryRenderer, IndexedMesh
 
 
 class CadqueryView(object):
@@ -184,7 +184,7 @@ class CadqueryView(object):
                 if isinstance(obj, Group):
                     toggle(obj, value)
                 else:
-                    if isinstance(obj, Mesh):
+                    if type(obj) is IndexedMesh:
                         obj.material.transparent = value
 
         toggle(self.pickable_objects, value)
