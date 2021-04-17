@@ -10,8 +10,8 @@ from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopAbs import TopAbs_Orientation
 from OCP.TopTools import TopTools_IndexedDataMapOfShapeListOfShape, TopTools_IndexedMapOfShape
-from OCP.TopExp import TopExp
-from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE
+from OCP.TopExp import TopExp, TopExp_Explorer
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_SOLID
 from OCP.TopoDS import TopoDS
 
 from jupyter_cadquery.utils import Timer
@@ -26,15 +26,24 @@ class Tessellator:
         self.normals = np.empty((0, 2, 3), dtype="float32")
         self.shape = None
 
+    def number_solids(self, shape):
+        count = 0
+        e = TopExp_Explorer(shape, TopAbs_SOLID)
+        while e.More():
+            count += 1
+            e.Next()
+        return count
+
     def compute(
         self, shape, quality: float, angular_tolerance: float = 0.3, tessellate=True, compute_edges=True, debug=False
     ):
         self.shape = shape
+        count = self.number_solids(shape)
+        timer_mesh = Timer(debug, f"| | | | Incremental mesh {'(parallel)' if count > 1 else ''}")
 
-        timer_mesh = Timer(debug, "| | | | Incremental mesh")
         # Remove previous mesh data
         BRepTools.Clean_s(shape)
-        BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, True)
+        BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, count > 1)
         timer_mesh.stop()
 
         if tessellate:
