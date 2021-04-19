@@ -71,7 +71,7 @@ def show(cad_obj, **kwargs):
     - grid:              Show grid (default=False)
     - ortho:             Use orthographic projections (default=True)
     - ambient_intensity  Intensity of ambient ligth (default=1.0)
-    - direct_intensity   Intensity of direct lights (default=0.2)
+    - direct_intensity   Intensity of direct lights (default=0.12)
     - transparent:       Show objects transparent (default=False)
     - position:          Relative camera position that will be scaled (default=(1, 1, 1))
     - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))

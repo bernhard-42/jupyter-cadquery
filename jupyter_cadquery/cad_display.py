@@ -63,7 +63,7 @@ class Defaults:
         - ortho:             Use orthographic projections (default=True)
         - transparent:       Show objects transparent (default=False)
         - ambient_intensity  Intensity of ambient ligth (default=1.0)
-        - direct_intensity   Intensity of direct lights (default=0.2)
+        - direct_intensity   Intensity of direct lights (default=0.12)
         - position:          Relative camera position that will be scaled (default=(1, 1, 1))
         - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
         - zoom:              Zoom factor of view (default=2.5)
@@ -107,7 +107,7 @@ class Defaults:
             "ortho": True,
             "transparent": False,
             "ambient_intensity": 1.0,
-            "direct_intensity": 0.2,
+            "direct_intensity": 0.12,
             "position": (1, 1, 1),
             "rotation": (0, 0, 0),
             "zoom": 2.5,
