@@ -1,184 +1,259 @@
-from array import array
+from enum import Enum
 
+import cadquery as cq
+import vtk
+import pyvista as pv
 import numpy as np
 
-from OCP.gp import gp_Vec, gp_Pnt, gp_Trsf
-from OCP.BRep import BRep_Tool
-from OCP.BRepTools import BRepTools
-from OCP.BRepGProp import BRepGProp_Face
+import OCP
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
-from OCP.TopLoc import TopLoc_Location
-from OCP.TopAbs import TopAbs_Orientation
-from OCP.TopTools import TopTools_IndexedDataMapOfShapeListOfShape, TopTools_IndexedMapOfShape
-from OCP.TopExp import TopExp, TopExp_Explorer
-from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_SOLID
-from OCP.TopoDS import TopoDS
+from OCP.TopExp import TopExp_Explorer
+from OCP.TopAbs import TopAbs_SOLID
+from OCP.IVtkOCC import IVtkOCC_Shape, IVtkOCC_ShapeMesher
+from OCP.IVtkVTK import IVtkVTK_ShapeData
 
-from jupyter_cadquery.utils import Timer
-from jupyter_cadquery.ocp_utils import get_faces
+
+class MeshType(Enum):
+    # Order of cell blocks from OCP vtk:
+    # - Vertices:   1/FreeVertex, 2/Shared_Vertex (will be mixed)
+    # - Edges:      0/IsoLine (only when requested), 3/FreeEdge, 4/BoundaryEdge, 5/SharedEdge, 8/SeamEdge (will be mixed)
+    # - WireFrames: 0/IsoLine
+    # - Faces:      7/ShadedFace
+
+    IsoLine = 0  # Isoline
+    FreeVertex = 1  # Free vertex
+    SharedVertex = 2  # Shared vertex
+    FreeEdge = 3  # Free edge
+    BoundaryEdge = 4  # Boundary edge (related to a single face)
+    SharedEdge = 5  # Shared edge (related to several faces)
+    WireFrameFace = 6  # Wireframe face
+    ShadedFace = 7  # Shaded face
+    SeamEdge = 8  # Seam edge between faces
 
 
 class Tessellator:
     def __init__(self):
-        self.vertices = np.empty((0, 3), dtype="float32")
-        self.triangles = np.empty((0,), dtype="uint32")
-        self.normals = np.empty((0, 3), dtype="float32")
-        self.normals = np.empty((0, 2, 3), dtype="float32")
-        self.shape = None
+        self._poly_data = None
+        self._points = None
 
-    def number_solids(self, shape):
+        self._vertices = None
+        self._triangle_points = None
+        self._triangle_point_normals = None
+        self._segments = None
+        self._mesh_types = None
+        self._subshape_ids = None
+
+        self.num_vertices = self.vertices_offset = None
+        self.num_segments = self.segments_offset = None
+        self.num_triangles = self.triangles_offset = None
+
+    def _multi_shape(self, shape):
+        """
+        Check whether a shape or compound has multiple subshapes
+
+        :param shape: An OCP.TopoDS.TopoDS_Compound or OCP.TopoDS.TopoDS_Solid
+        :returns: True for multiple subshapes, False else
+        """
+
         count = 0
         e = TopExp_Explorer(shape, TopAbs_SOLID)
-        while e.More():
+        while e.More() and count <= 1:
             count += 1
             e.Next()
-        return count
+        return count > 1
 
     def compute(
-        self, shape, quality: float, angular_tolerance: float = 0.3, tessellate=True, compute_edges=True, debug=False
+        self,
+        shape,
+        deviation=0,
+        deviation_angle=12 * 3.141593 / 180,
+        iso_lines=0,
+        parallel=None,
+        info=False,
     ):
-        self.shape = shape
-        count = self.number_solids(shape)
-        timer_mesh = Timer(debug, f"| | | | Incremental mesh {'(parallel)' if count > 1 else ''}")
+        """
+        Tessellate the shape
+        :param shape: An OCP.TopoDS.TopoDS_Compound or OCP.TopoDS.TopoDS_Solid
+        :param deviation: Multiplier for the internally calculated deflection value (default=0.0001)
+        :param deviation_angle: Angle in degree for the angular deflection (default=12)
+        :param iso_lines: Number of iso lines to compute
+        :param parallel: Overwrite the default behaviour (parallel computation for 2 subshapes and more)
+        """
 
-        # Remove previous mesh data
-        BRepTools.Clean_s(shape)
-        BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, count > 1)
-        timer_mesh.stop()
+        if parallel is None:
+            parallel = self._multi_shape(shape)
 
-        if tessellate:
-            timer_values = Timer(debug, "| | | | nodes, normals")
-            self.tessellate()
-            timer_values.stop()
+        BRepMesh_IncrementalMesh.SetParallelDefault_s(parallel)
 
-        if compute_edges:
-            timer_edges = Timer(debug, "| | | | edges")
-            self.compute_edges()
-            timer_edges.stop()
+        vtk_shape = IVtkOCC_Shape(shape)
+        vtk_data = IVtkVTK_ShapeData()
+        vtk_mesher = IVtkOCC_ShapeMesher(
+            theDevCoeff=deviation,
+            theDevAngle=deviation_angle,
+            theNbUIsos=iso_lines,
+            theNbVIsos=iso_lines,
+        )
+        vtk_mesher.Build(vtk_shape, vtk_data)
 
-        # Remove mesh data again
-        # BRepTools.Clean_s(shape)
+        if info:
+            print(
+                f"| | | (deflection ={vtk_mesher.GetDeflection():8.5f}, "
+                + f"angular deflection ={vtk_mesher.GetDeviationAngle():8.5f}, parallel = {parallel})"
+            )
 
-    def tessellate(self):
-        self.vertices = array("f")
-        self.triangles = array("f")
-        self.normals = array("f")
+        alg = vtk.vtkTriangleFilter()
+        alg.SetInputData(pv.PolyData(vtk_data.getVtkPolyData()))
+        alg.Update()
+        self._poly_data = pv.PolyData(alg.GetOutput())
 
-        # global buffers
-        p_buf = gp_Pnt()
-        n_buf = gp_Vec()
-        loc_buf = TopLoc_Location()
+        # Extract only once for all later methods
+        self._points = self._poly_data.points
 
-        offset = -1
+        self.vertex_offset = 0
+        self.line_offset = self.num_vertices
 
-        # every line below is selected for performance. Do not introduce functions to "beautify" the code
+        # Transform the triangles and get the minimum point offset
+        triangles = self._poly_data.faces.reshape(-1, 4)[:, 1:].ravel().astype("uint32")
+        self.triangle_offset = 0  # triangles.min()
 
-        for face in get_faces(self.shape):
-            if face.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
-                i1, i2 = 2, 1
-            else:
-                i1, i2 = 1, 2
+        # Ensure triangle index starts with 0
+        self.triangles = triangles - self.triangle_offset
 
-            internal = face.Orientation() == TopAbs_Orientation.TopAbs_INTERNAL
+        self.num_vertices = self._poly_data.verts.size // 2
+        self.num_segments = self._poly_data.lines.size // 3
+        self.num_triangles = self._poly_data.faces.size // 4
 
-            poly = BRep_Tool.Triangulation_s(face, loc_buf)
-            if poly is not None:
-                Trsf = loc_buf.Transformation()
+    @property
+    def subshape_ids(self):
+        """
+        Property returning all subshape ids of the VTK tessellation
 
-                # add vertices
-                # [node.Transformed(Trsf).Coord() for node in poly.Nodes()] is 5-8 times slower!
-                items = poly.Nodes()
-                coords = [items.Value(i).Transformed(Trsf).Coord() for i in range(items.Lower(), items.Upper() + 1)]
-                flat = []
-                for coord in coords:
-                    flat += coord
-                self.vertices.extend(flat)
+        :returns: A 1-dim numpy array containing the subshape id for each point, line, wire and face
+        """
 
-                # add triangles
-                items = poly.Triangles()
-                coords = [items.Value(i).Get() for i in range(items.Lower(), items.Upper() + 1)]
-                flat = []
-                for coord in coords:
-                    flat += (coord[0] + offset, coord[i1] + offset, coord[i2] + offset)
-                self.triangles.extend(flat)
+        if self._subshape_ids is None:
+            self._subshape_ids = self._poly_data.get_array("SUBSHAPE_IDS")
+        return self._subshape_ids
 
-                # add normals
-                if poly.HasUVNodes():
-                    
-                    def extract(uv0, uv1):
-                        prop.Normal(uv0, uv1, p_buf, n_buf)
-                        return n_buf.Reverse().Coord() if internal else n_buf.Coord()
+    @property
+    def mesh_types(self):
+        """
+        Property returning the mesh types of all points, lines, faces and wires of the VTK tessellation
 
-                    prop = BRepGProp_Face(face)
-                    items = poly.UVNodes()
+        All supported mesh types can be seen in class MeshType
 
-                    uvs = [items.Value(i).Coord() for i in range(items.Lower(), items.Upper() + 1)]
-                    flat = []
-                    for uv1, uv2 in uvs:
-                        flat += extract(uv1, uv2)
-                    self.normals.extend(flat)
+        :returns: A 1-dim numpy array containing the mesh type id for each point, line, wire and face
+        """
 
-                offset += poly.NbNodes()
+        if self._mesh_types is None:
+            self._mesh_types = self._poly_data.get_array("MESH_TYPES")
+        return self._mesh_types
 
-    def compute_edges(self):
-        self.edges = []
+    @property
+    def vertices(self):
+        """
+        Property returning all vertices of the VTK tessellation
 
-        edge_map = TopTools_IndexedMapOfShape()
-        face_map = TopTools_IndexedDataMapOfShapeListOfShape()
+        Vertices are the points at the beginning of self.points with vertex mesh types "FreeVertex" or "SharedVertex"
 
-        TopExp.MapShapes_s(self.shape, TopAbs_EDGE, edge_map)
-        TopExp.MapShapesAndAncestors_s(self.shape, TopAbs_EDGE, TopAbs_FACE, face_map)
+        :returns: A (-1,3) shaped numpy float32 array of all vertices
+        """
 
-        for i in range(1, edge_map.Extent() + 1):
-            edge = TopoDS.Edge_s(edge_map.FindKey(i))
+        if self._vertices is None:
+            self._vertices = self._points[self._poly_data.verts.reshape(-1, 2)[:, 1]]
+        return self._vertices
 
-            face_list = face_map.FindFromKey(edge)
-            if face_list.Extent() == 0:
-                # print("no faces")
-                continue
+    @property
+    def segments(self):
+        """
+        Property returning all edges of the VTK tessellation as segments
 
-            loc = TopLoc_Location()
-            poly = BRep_Tool.Polygon3D_s(edge, loc)
+        This is the preferred format to feed into pythreejs from a performance perspective
 
-            if poly is not None:
-                # print("Polygon3D successful")
-                nodes = poly.Nodes()
-                transf = loc.Transformation()
-                v1 = None
-                for j in range(1, poly.NbNodes() + 1):
-                    v2 = nodes.Value(j)
-                    v2.Transform(transf)
-                    v2 = v2.Coord()
-                    if v1 is not None:
-                        self.edges.append((v1, v2))
-                    v1 = v2
-            else:
-                face = TopoDS.Face_s(face_list.First())
-                triang = BRep_Tool.Triangulation_s(face, loc)
-                poly = BRep_Tool.PolygonOnTriangulation_s(edge, triang, loc)
-                if poly is None:
-                    continue
+        Example:
+            { <MeshType.SharedEdge: 5>: array([
+                [[-0.5       , -0.47      , -0.47      ],
+                 [-0.5       , -0.47      ,  0.47      ]],
 
-                indices = poly.Nodes()
-                nodes = triang.Nodes()
-                transf = loc.Transformation()
-                v1 = None
-                for j in range(indices.Lower(), indices.Upper() + 1):
-                    v2 = nodes.Value(indices.Value(j))
-                    v2.Transform(transf)
-                    v2 = v2.Coord()
-                    if v1 is not None:
-                        self.edges.append((v1, v2))
-                    v1 = v2
+                [[-0.5       , -0.47      , -0.47      ],
+                 [-0.5       ,  0.47      , -0.47      ]],
 
-    def get_vertices(self):
-        return np.asarray(self.vertices, dtype=np.float32).reshape(-1, 3)
+                ...,
 
-    def get_triangles(self):
-        return np.asarray(self.triangles, dtype=np.uint32)
+              ], dtype=float32),
+              <MeshType.SeamEdge: 8>: ... }
 
-    def get_normals(self):
-        return np.asarray(self.normals, dtype=np.float32).reshape(-1, 3)
+        :returns: A dict of mesh types with (-1,3,2) shaped numpy float32 arrays of all segments per mesh type
+        """
 
-    def get_edges(self):
-        return np.asarray(self.edges, dtype=np.float32)
+        if self._segments is None:
+            segments = self._poly_data.lines.reshape(-1, 3)[:, 1:]
+            line_types = self.mesh_types[self.num_vertices : self.num_vertices + self.num_segments]
+            typed_segments = np.column_stack((line_types, segments))
+
+            self._segments = {}
+            for key in [
+                MeshType.FreeEdge,
+                MeshType.SharedEdge,
+                MeshType.IsoLine,
+                MeshType.BoundaryEdge,
+                MeshType.SeamEdge,
+            ]:
+                self._segments[key] = self._points[
+                    typed_segments[np.in1d(typed_segments[:, 0], np.asarray([key.value]))][:, 1:]
+                ]
+
+        return self._segments
+
+    @property
+    def combined_segments(self):
+        """
+        Property returning all segments of the VTK tessellation as a combined numpy array
+
+        :returns: A (-1,3,2) shaped numpy float32 array of all segments for all line mesh types
+        """
+
+        return np.vstack(
+            [
+                self.segments[mt]
+                for mt in [
+                    MeshType.FreeEdge,
+                    MeshType.SharedEdge,
+                    MeshType.IsoLine,
+                    MeshType.BoundaryEdge,
+                    MeshType.SeamEdge,
+                ]
+                if self.segments[mt].shape[0] > 0
+            ]
+        )
+
+    @property
+    def triangle_vertices(self):
+        """
+        Property returning all triangle points of the VTK tessellation
+
+        :returns: A (-1,3) shaped numpy float32 array of all normals
+        """
+
+        if self._triangle_points is None:
+            # Extract relevant points and point_normals
+            self._triangle_points = np.asarray(self._points[self.triangle_offset :], dtype=np.float32)
+        return self._triangle_points
+
+    @property
+    def triangle_vertex_normals(self):
+        """
+        Property returning all normals of the VTK tessellation
+
+        :returns: A (-1,3) shaped numpy float32 array of all normals
+        """
+
+        if self._triangle_point_normals is None:
+            # Note: threejs uses point_normals:
+            #       https://threejsfundamentals.org/threejs/lessons/threejs-custom-buffergeometry.html
+
+            # Extract relevant point_normals
+            self._triangle_point_normals = np.asarray(
+                self._poly_data.point_normals[self.triangle_offset :], dtype=np.float32
+            )
+        return self._triangle_point_normals

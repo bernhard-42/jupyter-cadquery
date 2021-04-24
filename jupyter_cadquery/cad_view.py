@@ -51,8 +51,7 @@ class CadqueryView(object):
         width=600,
         height=400,
         bb_factor=1.01,
-        quality=None,
-        deviation=0.5,
+        deviation=0.0001,
         angular_tolerance=0.3,
         edge_accuracy=None,
         optimal_bb=False,
@@ -70,7 +69,6 @@ class CadqueryView(object):
         self.width = width
         self.height = height
         self.bb_factor = bb_factor
-        self.quality = quality
         self.deviation = deviation
         self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
@@ -278,7 +276,6 @@ class CadqueryView(object):
 
     def create(self):
         self.cq_renderer = CadqueryRenderer(
-            quality=self.quality,
             deviation=self.deviation,
             angular_tolerance=self.angular_tolerance,
             edge_accuracy=self.edge_accuracy,

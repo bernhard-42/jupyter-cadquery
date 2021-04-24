@@ -64,7 +64,7 @@ class RenderCache:
         print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
 
     def tessellate(
-        self, compound, quality=None, angular_tolerance=None, render_shapes=True, render_edges=True, debug=False
+        self, compound, deviation=None, angular_tolerance=None, render_shapes=True, render_edges=True, debug=False
     ):
 
         hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
@@ -72,16 +72,15 @@ class RenderCache:
             tess = Tessellator()
             tess.compute(
                 compound,
-                quality=quality,
-                angular_tolerance=angular_tolerance,
-                tessellate=render_shapes,
-                compute_edges=render_edges,
-                debug=debug,
+                deviation=deviation,
+                deviation_angle=angular_tolerance,
+                info=debug,
             )
-            np_vertices = tess.get_vertices()
-            np_triangles = tess.get_triangles()
-            np_normals = tess.get_normals()
-            np_edges = tess.get_edges() if render_edges else None
+
+            np_vertices = tess.triangle_vertices
+            np_triangles = tess.triangles
+            np_normals = tess.triangle_vertex_normals
+            np_edges = tess.combined_segments if render_edges else None
 
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
@@ -94,11 +93,11 @@ class RenderCache:
                 }
             )
             if debug:
-                print(f"| | | (Caching {hash})")
+                print(f"| | | (caching {hash})")
             self.objects[hash] = (shape_geometry, np_edges)
         else:
             if debug:
-                print(f"| | | (Taking {hash} from cache)")
+                print(f"| | | (taking {hash} from cache)")
         return self.objects[hash]
 
 
@@ -172,22 +171,20 @@ class IndexedLineSegments2(LineSegments2):
 class CadqueryRenderer(object):
     def __init__(
         self,
-        quality=None,
-        deviation=0.5,
+        deviation=0.0001,
         angular_tolerance=0.3,
+        edge_accuracy=None,
         render_edges=True,
         render_shapes=True,
-        edge_accuracy=None,
         default_mesh_color=None,
         default_edge_color=None,
         timeit=False,
     ):
-        self.quality = quality
+        self.deviation = deviation
         self.angular_tolerance = angular_tolerance
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
         self.render_shapes = render_shapes
-        self.deviation = deviation
         self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
         self.default_edge_color = Color(default_edge_color or (128, 128, 128))
 
@@ -223,16 +220,11 @@ class CadqueryRenderer(object):
 
         render_timer = Timer(self.timeit, "| | shape render time")
         if shape is not None:
-            quality = self.quality if self.quality is not None else self.compute_quality(shape)
-            edge_accuracy = self.edge_accuracy if self.edge_accuracy is not None else (quality * 0.02 * self.deviation)
-            if self.timeit:
-                print(f"| | | (quality: {quality:8.6f}, angular_tolerance: {self.angular_tolerance:8.6f})")
-
             # Compute the tesselation and build mesh
             tesselation_timer = Timer(self.timeit, "| | | build mesh time")
             shape_geometry, edge_list = RENDER_CACHE.tessellate(
                 shape,
-                quality=quality,
+                deviation=self.deviation,
                 angular_tolerance=self.angular_tolerance,
                 render_shapes=render_shapes,
                 render_edges=render_edges,
@@ -264,8 +256,12 @@ class CadqueryRenderer(object):
             points = IndexedPoints(geometry=geom, material=mat)
 
         if edges is not None:
-            if edge_accuracy is None:  # take over from shape meshing
-                edge_accuracy = self.edge_accuracy if self.edge_accuracy is not None else 0.01 * self.deviation
+            if self.edge_accuracy is None:
+                edge_shape = Compound._makeCompound(edges)
+                bb = BoundingBox([[edge_shape]])
+                edge_accuracy = (bb.xsize + bb.ysize + bb.zsize) / 300 * 0.005
+            else:
+                edge_accuracy = self.edge_accuracy
 
             discretize_timer = Timer(self.timeit, "| | | discretize time")
             edge_list = []

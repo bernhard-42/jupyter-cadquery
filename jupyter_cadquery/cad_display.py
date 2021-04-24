@@ -50,12 +50,10 @@ class Defaults:
         - render_edges:      Render edges  (default=True)
         - render_mates:      Render mates (for MAssemblies)
         - mate_scale:        Scale of rendered mates (for MAssemblies)
-        - quality:           Linear deflection for tessellation (default=None)
-                             If None, uses: (xlen + ylen + zlen) / 300 * deviation)
-        - deviation:         Deviation from default for linear deflection value ((default=0.5)
-        - angular_tolerance: Angular deflection in radians for tessellation (default=0.5)
+        - deviation:         Deviation from default value of the tessellation's linear deflection ((default=0.0001)
+        - angular_tolerance: Angular deflection in radians for tessellation (default=12*pi/180)
         - edge_accuracy:     Presicion of edge discretizaion (default=None)
-                             If None, uses: quality / 100
+                             If None, uses: len(bounding box) / 300 * 0.005
         - optimal_bb:        Use optimal bounding box (default=False)
         - axes:              Show axes (default=False)
         - axes0:             Show axes at (0,0,0) (default=False)
@@ -96,9 +94,8 @@ class Defaults:
             "render_edges": True,
             "render_mates": False,
             "mate_scale": 1,
-            "quality": None,
-            "deviation": 0.5,
-            "angular_tolerance": 0.3,
+            "deviation": 0.0001,
+            "angular_tolerance": 12 * 3.141593 / 180,
             "edge_accuracy": None,
             "optimal_bb": False,
             "axes": False,
@@ -487,9 +484,8 @@ class CadqueryDisplay(object):
         bb_factor=None,
         tree_width=None,
         cad_width=None,
-        quality=None,
-        deviation=0.5,
-        angular_tolerance=0.3,
+        deviation=0.0001,
+        angular_tolerance=12 * 3.141593 / 180,
         optimal_bb=False,
         edge_accuracy=None,
         axes=None,
@@ -516,7 +512,6 @@ class CadqueryDisplay(object):
         self.bb_factor = preset("bb_factor", bb_factor)
         self.render_shapes = preset("render_shapes", render_shapes)
         self.render_edges = preset("render_edges", render_edges)
-        self.quality = preset("quality", quality)
         self.deviation = preset("deviation", deviation)
         self.angular_tolerance = preset("angular_tolerance", angular_tolerance)
         self.optimal_bb = preset("optimal_bb", optimal_bb)
@@ -547,7 +542,6 @@ class CadqueryDisplay(object):
             width=self.cad_width,
             height=self.height,
             bb_factor=self.bb_factor,
-            quality=self.quality,
             deviation=self.deviation,
             edge_accuracy=self.edge_accuracy,
             angular_tolerance=self.angular_tolerance,
