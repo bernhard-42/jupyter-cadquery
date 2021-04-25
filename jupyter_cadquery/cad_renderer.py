@@ -66,11 +66,9 @@ class RenderCache:
     def tessellate(
         self,
         compound,
-        quality=None,
+        deviation=None,
         angular_tolerance=None,
-        render_shapes=True,
-        render_edges=True,
-        normals_len=0,
+        render_normals=False,
         debug=False,
     ):
 
@@ -79,17 +77,13 @@ class RenderCache:
             tess = Tessellator()
             tess.compute(
                 compound,
-                quality=quality,
-                angular_tolerance=angular_tolerance,
-                tessellate=render_shapes,
-                compute_edges=render_edges,
-                normals_len=normals_len,
-                debug=debug,
+                deviation=deviation,
+                deviation_angle=angular_tolerance,
             )
-            np_vertices = tess.get_vertices()
-            np_triangles = tess.get_triangles()
-            np_normals = tess.get_normals()
-            np_edges = tess.get_edges()
+            np_vertices = tess.vertices
+            np_triangles = tess.triangles
+            np_normals = tess.normals
+            np_edges = tess.segments
 
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
@@ -102,8 +96,22 @@ class RenderCache:
                 }
             )
             if debug:
+                print(
+                    f"| | | (deflection ={tess.deflection:8.5f}, "
+                    + f"angular deflection ={tess.deviation_angle:8.5f}, parallel = {tess.parallel})"
+                )
                 print(f"| | | (caching {hash})")
-            self.objects[hash] = (shape_geometry, np_edges)
+            if render_normals:
+                size = tess.deflection * 100
+                self.objects[hash] = (
+                    shape_geometry,
+                    (
+                        np_edges,
+                        np.column_stack((np_vertices, np_vertices + (np_normals * size))).reshape(-1, 2, 3),
+                    ),
+                )
+            else:
+                self.objects[hash] = (shape_geometry, (np_edges, []))
         else:
             if debug:
                 print(f"| | | (taking {hash} from cache)")
@@ -196,7 +204,6 @@ class CadqueryRenderer(object):
         self.render_edges = render_edges
         self.render_shapes = render_shapes
         self.render_normals = render_normals
-        self.deviation = deviation
         self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
         self.default_edge_color = Color(default_edge_color or (128, 128, 128))
 
@@ -241,9 +248,7 @@ class CadqueryRenderer(object):
                 shape,
                 deviation=self.deviation,
                 angular_tolerance=self.angular_tolerance,
-                render_shapes=render_shapes,
-                render_edges=render_edges,
-                normals_len=quality * 10 if render_normals else 0,
+                render_normals=render_normals,
                 debug=self.timeit,
             )
             shape_mesh = None

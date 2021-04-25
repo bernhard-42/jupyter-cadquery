@@ -516,7 +516,6 @@ class CadqueryDisplay(object):
         self.render_shapes = preset("render_shapes", render_shapes)
         self.render_edges = preset("render_edges", render_edges)
         self.render_normals = preset("render_normals", render_normals)
-        self.quality = preset("quality", quality)
         self.deviation = preset("deviation", deviation)
         self.angular_tolerance = preset("angular_tolerance", angular_tolerance)
         self.optimal_bb = preset("optimal_bb", optimal_bb)

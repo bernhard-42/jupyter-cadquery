@@ -2,6 +2,8 @@ from enum import Enum
 
 import cadquery as cq
 import vtk
+from vtk.util.numpy_support import vtk_to_numpy
+
 import pyvista as pv
 import numpy as np
 
@@ -43,10 +45,6 @@ class Tessellator:
         self._mesh_types = None
         self._subshape_ids = None
 
-        self.num_vertices = self.vertices_offset = None
-        self.num_segments = self.segments_offset = None
-        self.num_triangles = self.triangles_offset = None
-
     def _multi_shape(self, shape):
         """
         Check whether a shape or compound has multiple subshapes
@@ -65,11 +63,10 @@ class Tessellator:
     def compute(
         self,
         shape,
-        deviation=0,
+        deviation=0.0001,
         deviation_angle=12 * 3.141593 / 180,
         iso_lines=0,
         parallel=None,
-        info=False,
     ):
         """
         Tessellate the shape
@@ -79,92 +76,56 @@ class Tessellator:
         :param iso_lines: Number of iso lines to compute
         :param parallel: Overwrite the default behaviour (parallel computation for 2 subshapes and more)
         """
+        self.parallel = parallel or self._multi_shape(shape)
+        BRepMesh_IncrementalMesh.SetParallelDefault_s(self.parallel)
 
-        if parallel is None:
-            parallel = self._multi_shape(shape)
-
-        BRepMesh_IncrementalMesh.SetParallelDefault_s(parallel)
-
-        vtk_shape = IVtkOCC_Shape(shape)
-        vtk_data = IVtkVTK_ShapeData()
-        vtk_mesher = IVtkOCC_ShapeMesher(
-            theDevCoeff=deviation,
-            theDevAngle=deviation_angle,
-            theNbUIsos=iso_lines,
-            theNbVIsos=iso_lines,
+        vtk_shape = OCP.IVtkOCC.IVtkOCC_Shape(shape)
+        vtk_data = OCP.IVtkVTK.IVtkVTK_ShapeData()
+        self.vtk_mesher = OCP.IVtkOCC.IVtkOCC_ShapeMesher(
+            theDevCoeff=deviation, theDevAngle=deviation_angle, theNbUIsos=0, theNbVIsos=0
         )
-        vtk_mesher.Build(vtk_shape, vtk_data)
+        self.vtk_mesher.Build(vtk_shape, vtk_data)
+        dataset = vtk_data.getVtkPolyData()
 
-        if info:
-            print(
-                f"| | | (deflection ={vtk_mesher.GetDeflection():8.5f}, "
-                + f"angular deflection ={vtk_mesher.GetDeviationAngle():8.5f}, parallel = {parallel})"
-            )
+        # Split lines into segments
+        t_filter = vtk.vtkTriangleFilter()
+        t_filter.SetInputData(dataset)
+        t_filter.Update()
+        dataset = t_filter.GetOutput()
 
-        alg = vtk.vtkTriangleFilter()
-        alg.SetInputData(pv.PolyData(vtk_data.getVtkPolyData()))
-        alg.Update()
-        self._poly_data = pv.PolyData(alg.GetOutput())
+        # Calculate point normals
+        n_filter = vtk.vtkPolyDataNormals()
+        n_filter.SetInputData(dataset)
+        n_filter.Update()
+        dataset = n_filter.GetOutput()
+        self._dataset = dataset
 
-        # Extract only once for all later methods
-        self._points = self._poly_data.points
+        self._mesh_types = vtk_to_numpy(dataset.GetCellData().GetAbstractArray("MESH_TYPES"))
+        self._points = vtk_to_numpy(dataset.GetPoints().GetData())
+        self._vertices = vtk_to_numpy(dataset.GetVerts().GetData()).reshape(-1, 2)[:, 1:]
 
-        self.vertex_offset = 0
-        self.line_offset = self.num_vertices
+        self.segments = self._points[vtk_to_numpy(dataset.GetLines().GetData()).reshape(-1, 3)[:, 1:]]
 
-        # Transform the triangles and get the minimum point offset
-        triangles = self._poly_data.faces.reshape(-1, 4)[:, 1:].ravel().astype("uint32")
-        self.triangle_offset = 0  # triangles.min()
+        self.triangles = vtk_to_numpy(dataset.GetPolys().GetData()).reshape(-1, 4)[:, 1:].ravel().astype("uint32")
+        triangle_offset = np.min(self.triangles)
+        # Ensure triangles start with 0
+        self.triangles = self.triangles - triangle_offset
+        self.vertices = np.asarray(self._points[triangle_offset:], dtype=np.float32)
 
-        # Ensure triangle index starts with 0
-        self.triangles = triangles - self.triangle_offset
-
-        self.num_vertices = self._poly_data.verts.size // 2
-        self.num_segments = self._poly_data.lines.size // 3
-        self.num_triangles = self._poly_data.faces.size // 4
-
-    @property
-    def subshape_ids(self):
-        """
-        Property returning all subshape ids of the VTK tessellation
-
-        :returns: A 1-dim numpy array containing the subshape id for each point, line, wire and face
-        """
-
-        if self._subshape_ids is None:
-            self._subshape_ids = self._poly_data.get_array("SUBSHAPE_IDS")
-        return self._subshape_ids
+        self.normals = np.asarray(
+            vtk_to_numpy(dataset.GetPointData().GetAbstractArray("Normals"))[triangle_offset:], dtype=np.float32
+        )
 
     @property
-    def mesh_types(self):
-        """
-        Property returning the mesh types of all points, lines, faces and wires of the VTK tessellation
-
-        All supported mesh types can be seen in class MeshType
-
-        :returns: A 1-dim numpy array containing the mesh type id for each point, line, wire and face
-        """
-
-        if self._mesh_types is None:
-            self._mesh_types = self._poly_data.get_array("MESH_TYPES")
-        return self._mesh_types
+    def deflection(self):
+        return self.vtk_mesher.GetDeflection()
 
     @property
-    def vertices(self):
-        """
-        Property returning all vertices of the VTK tessellation
-
-        Vertices are the points at the beginning of self.points with vertex mesh types "FreeVertex" or "SharedVertex"
-
-        :returns: A (-1,3) shaped numpy float32 array of all vertices
-        """
-
-        if self._vertices is None:
-            self._vertices = self._points[self._poly_data.verts.reshape(-1, 2)[:, 1]]
-        return self._vertices
+    def deviation_angle(self):
+        return self.vtk_mesher.GetDeviationAngle()
 
     @property
-    def segments(self):
+    def typed_segments(self):
         """
         Property returning all edges of the VTK tessellation as segments
 
@@ -186,10 +147,9 @@ class Tessellator:
         :returns: A dict of mesh types with (-1,3,2) shaped numpy float32 arrays of all segments per mesh type
         """
 
-        if self._segments is None:
-            segments = self._poly_data.lines.reshape(-1, 3)[:, 1:]
-            line_types = self.mesh_types[self.num_vertices : self.num_vertices + self.num_segments]
-            typed_segments = np.column_stack((line_types, segments))
+        if self._typed_segments is None:
+            line_types = self.mesh_types[self._vertices.shape[0] : self._vertices.shape[0] + self.segments.shape[0]]
+            typed_segments = np.column_stack((line_types, self.segments))
 
             self._segments = {}
             for key in [
@@ -199,61 +159,8 @@ class Tessellator:
                 MeshType.BoundaryEdge,
                 MeshType.SeamEdge,
             ]:
-                self._segments[key] = self._points[
+                self.segments[key] = self._points[
                     typed_segments[np.in1d(typed_segments[:, 0], np.asarray([key.value]))][:, 1:]
                 ]
 
-        return self._segments
-
-    @property
-    def combined_segments(self):
-        """
-        Property returning all segments of the VTK tessellation as a combined numpy array
-
-        :returns: A (-1,3,2) shaped numpy float32 array of all segments for all line mesh types
-        """
-
-        return np.vstack(
-            [
-                self.segments[mt]
-                for mt in [
-                    MeshType.FreeEdge,
-                    MeshType.SharedEdge,
-                    MeshType.IsoLine,
-                    MeshType.BoundaryEdge,
-                    MeshType.SeamEdge,
-                ]
-                if self.segments[mt].shape[0] > 0
-            ]
-        )
-
-    @property
-    def triangle_vertices(self):
-        """
-        Property returning all triangle points of the VTK tessellation
-
-        :returns: A (-1,3) shaped numpy float32 array of all normals
-        """
-
-        if self._triangle_points is None:
-            # Extract relevant points and point_normals
-            self._triangle_points = np.asarray(self._points[self.triangle_offset :], dtype=np.float32)
-        return self._triangle_points
-
-    @property
-    def triangle_vertex_normals(self):
-        """
-        Property returning all normals of the VTK tessellation
-
-        :returns: A (-1,3) shaped numpy float32 array of all normals
-        """
-
-        if self._triangle_point_normals is None:
-            # Note: threejs uses point_normals:
-            #       https://threejsfundamentals.org/threejs/lessons/threejs-custom-buffergeometry.html
-
-            # Extract relevant point_normals
-            self._triangle_point_normals = np.asarray(
-                self._poly_data.point_normals[self.triangle_offset :], dtype=np.float32
-            )
-        return self._triangle_point_normals
+        return self._typed_segments
