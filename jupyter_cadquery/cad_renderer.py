@@ -64,7 +64,14 @@ class RenderCache:
         print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
 
     def tessellate(
-        self, compound, deviation=None, angular_tolerance=None, render_shapes=True, render_edges=True, debug=False
+        self,
+        compound,
+        quality=None,
+        angular_tolerance=None,
+        render_shapes=True,
+        render_edges=True,
+        normals_len=0,
+        debug=False,
     ):
 
         hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
@@ -72,15 +79,17 @@ class RenderCache:
             tess = Tessellator()
             tess.compute(
                 compound,
-                deviation=deviation,
-                deviation_angle=angular_tolerance,
-                info=debug,
+                quality=quality,
+                angular_tolerance=angular_tolerance,
+                tessellate=render_shapes,
+                compute_edges=render_edges,
+                normals_len=normals_len,
+                debug=debug,
             )
-
-            np_vertices = tess.triangle_vertices
-            np_triangles = tess.triangles
-            np_normals = tess.triangle_vertex_normals
-            np_edges = tess.combined_segments if render_edges else None
+            np_vertices = tess.get_vertices()
+            np_triangles = tess.get_triangles()
+            np_normals = tess.get_normals()
+            np_edges = tess.get_edges()
 
             if np_normals.shape != np_vertices.shape:
                 raise AssertionError("Wrong number of normals/shapes")
@@ -176,6 +185,7 @@ class CadqueryRenderer(object):
         edge_accuracy=None,
         render_edges=True,
         render_shapes=True,
+        render_normals=False,
         default_mesh_color=None,
         default_edge_color=None,
         timeit=False,
@@ -185,6 +195,8 @@ class CadqueryRenderer(object):
         self.edge_accuracy = edge_accuracy
         self.render_edges = render_edges
         self.render_shapes = render_shapes
+        self.render_normals = render_normals
+        self.deviation = deviation
         self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
         self.default_edge_color = Color(default_edge_color or (128, 128, 128))
 
@@ -205,14 +217,17 @@ class CadqueryRenderer(object):
         vertex_color=None,
         render_edges=True,
         render_shapes=True,
+        render_normals=False,
         edge_width=1,
         vertex_width=5,
         transparent=False,
         opacity=1.0,
     ):
 
-        edge_list = None
-        edge_lines = None
+        edge_list = []
+        normals_list = []
+        edge_lines = []
+        normal_lines = []
         points = None
         shape_mesh = None
 
@@ -222,12 +237,13 @@ class CadqueryRenderer(object):
         if shape is not None:
             # Compute the tesselation and build mesh
             tesselation_timer = Timer(self.timeit, "| | | build mesh time")
-            shape_geometry, edge_list = RENDER_CACHE.tessellate(
+            shape_geometry, (edge_list, normals_list) = RENDER_CACHE.tessellate(
                 shape,
                 deviation=self.deviation,
                 angular_tolerance=self.angular_tolerance,
                 render_shapes=render_shapes,
                 render_edges=render_edges,
+                normals_len=quality * 10 if render_normals else 0,
                 debug=self.timeit,
             )
             shape_mesh = None
@@ -272,7 +288,7 @@ class CadqueryRenderer(object):
             if self.timeit:
                 print(f"| | | (edge_accuracy: {edge_accuracy:8.6f})")
 
-        if edge_list is not None:
+        if len(edge_list) > 0:
             if edge_color is None:
                 edge_color = self.default_edge_color
 
@@ -293,9 +309,14 @@ class CadqueryRenderer(object):
                 mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
                 edge_lines = [IndexedLineSegments2(lines, mat)]
 
+        if len(normals_list) > 0:
+            lines = LineSegmentsGeometry(positions=normals_list)
+            mat = LineMaterial(linewidth=2, color="#9400d3")
+            normal_lines = [IndexedLineSegments2(lines, mat)]
+
         render_timer.stop()
 
-        return shape_mesh, edge_lines, points
+        return shape_mesh, edge_lines, normal_lines, points
 
     def _render(self, shapes, current, prefix=""):
 
@@ -339,9 +360,10 @@ class CadqueryRenderer(object):
                         mesh_color=shape["color"],
                         render_shapes=self.render_shapes,
                         render_edges=self.render_edges,
+                        render_normals=self.render_normals,
                     )
 
-                shape_mesh, edge_lines, points = self.render_shape(**options)
+                shape_mesh, edge_lines, normal_lines, points = self.render_shape(**options)
 
                 ind = len(group.children)
                 if shape_mesh is not None:
@@ -352,11 +374,11 @@ class CadqueryRenderer(object):
                     self._mapping[shape["ind"]]["mesh"] = (*current, ind)
                     ind += 1
 
-                if edge_lines is not None:
+                if edge_lines or normal_lines:
                     edge_group = IndexedGroup()
                     edge_group.name = "edges"
                     edge_group.ind = (*current, ind)
-                    for j, edge in enumerate(edge_lines):
+                    for j, edge in enumerate(edge_lines + normal_lines):
                         edge.name = shape["name"]
                         edge.ind = {"group": (*current, ind, j), "shape": shape["ind"]}
                         edge_group.add(edge)

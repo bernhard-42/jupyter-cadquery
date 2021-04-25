@@ -57,6 +57,7 @@ def show(cad_obj, **kwargs):
     - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
     - render_shapes:     Render shapes  (default=True)
     - render_edges:      Render edges  (default=True)
+    - render_normals:    Render normals (default=False)
     - render_mates:      Render mates (for MAssemblies)
     - mate_scale:        Scale of rendered mates (for MAssemblies)
     - deviation:         Deviation from default value of the tessellation's linear deflection ((default=0.0001)

@@ -57,6 +57,7 @@ class CadqueryView(object):
         optimal_bb=False,
         render_edges=True,
         render_shapes=True,
+        render_normals=False,
         info=None,
         position=None,
         rotation=None,
@@ -75,6 +76,7 @@ class CadqueryView(object):
         self.optimal_bb = optimal_bb
         self.render_edges = render_edges
         self.render_shapes = render_shapes
+        self.render_normals = render_normals
         self.info = info
         self.position = position
         self.rotation = rotation
@@ -281,6 +283,7 @@ class CadqueryView(object):
             edge_accuracy=self.edge_accuracy,
             render_edges=self.render_edges,
             render_shapes=self.render_shapes,
+            render_normals=self.render_normals,
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             timeit=self.timeit,
