@@ -4,5 +4,5 @@
         "--line-length",
         "119"
     ],
-    "python.pythonPath": "/opt/miniconda/envs/cq/bin/python"
+    "python.pythonPath": "/opt/miniconda/envs/cq751/bin/python"
 }
