@@ -48,6 +48,7 @@ class Defaults:
         - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
         - render_shapes:     Render shapes  (default=True)
         - render_edges:      Render edges  (default=True)
+        - render_normals:    Render normals (default=False)
         - render_mates:      Render mates (for MAssemblies)
         - mate_scale:        Scale of rendered mates (for MAssemblies)
         - quality:           Linear deflection for tessellation (default=None)
@@ -94,6 +95,7 @@ class Defaults:
             "bb_factor": 1.0,
             "render_shapes": True,
             "render_edges": True,
+            "render_normals": False,
             "render_mates": False,
             "mate_scale": 1,
             "quality": None,
@@ -483,6 +485,7 @@ class CadqueryDisplay(object):
         self,
         render_shapes=None,
         render_edges=None,
+        render_normals=None,
         height=None,
         bb_factor=None,
         tree_width=None,
@@ -516,6 +519,7 @@ class CadqueryDisplay(object):
         self.bb_factor = preset("bb_factor", bb_factor)
         self.render_shapes = preset("render_shapes", render_shapes)
         self.render_edges = preset("render_edges", render_edges)
+        self.render_normals = preset("render_normals", render_normals)
         self.quality = preset("quality", quality)
         self.deviation = preset("deviation", deviation)
         self.angular_tolerance = preset("angular_tolerance", angular_tolerance)
@@ -554,6 +558,7 @@ class CadqueryDisplay(object):
             optimal_bb=self.optimal_bb,
             render_shapes=self.render_shapes,
             render_edges=self.render_edges,
+            render_normals=self.render_normals,
             info=self.info,
             position=self.position,
             rotation=self.rotation,

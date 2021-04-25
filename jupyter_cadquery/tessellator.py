@@ -35,9 +35,19 @@ class Tessellator:
         return count
 
     def compute(
-        self, shape, quality: float, angular_tolerance: float = 0.3, tessellate=True, compute_edges=True, debug=False
+        self,
+        shape,
+        quality: float,
+        angular_tolerance: float = 0.3,
+        tessellate=True,
+        compute_edges=True,
+        normals_len=0,
+        debug=False,
     ):
         self.shape = shape
+        self.normals_len = normals_len
+        self.edges = []
+
         count = self.number_solids(shape)
         timer_mesh = Timer(debug, f"| | | | Incremental mesh {'(parallel)' if count > 1 else ''}")
 
@@ -104,7 +114,7 @@ class Tessellator:
 
                 # add normals
                 if poly.HasUVNodes():
-                    
+
                     def extract(uv0, uv1):
                         prop.Normal(uv0, uv1, p_buf, n_buf)
                         if n_buf.SquareMagnitude() > 0:
@@ -123,8 +133,6 @@ class Tessellator:
                 offset += poly.NbNodes()
 
     def compute_edges(self):
-        self.edges = []
-
         edge_map = TopTools_IndexedMapOfShape()
         face_map = TopTools_IndexedDataMapOfShapeListOfShape()
 
@@ -183,4 +191,10 @@ class Tessellator:
         return np.asarray(self.normals, dtype=np.float32).reshape(-1, 3)
 
     def get_edges(self):
-        return np.asarray(self.edges, dtype=np.float32)
+        normal_edges = []
+        if self.normals_len > 0:
+            vertices = self.get_vertices()
+            normals = self.get_normals()
+            normal_edges = np.column_stack((vertices, vertices + (normals * self.normals_len))).reshape((-1, 2, 3))
+
+        return (np.asarray(self.edges, dtype=np.float32), normal_edges)
