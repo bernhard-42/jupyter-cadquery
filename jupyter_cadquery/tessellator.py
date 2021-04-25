@@ -107,6 +107,8 @@ class Tessellator:
                     
                     def extract(uv0, uv1):
                         prop.Normal(uv0, uv1, p_buf, n_buf)
+                        if n_buf.SquareMagnitude() > 0:
+                            n_buf.Normalize()
                         return n_buf.Reverse().Coord() if internal else n_buf.Coord()
 
                     prop = BRepGProp_Face(face)
