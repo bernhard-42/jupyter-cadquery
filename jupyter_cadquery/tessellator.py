@@ -1,13 +1,10 @@
 from enum import Enum
 
-import cadquery as cq
+import numpy as np
+
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 
-import pyvista as pv
-import numpy as np
-
-import OCP
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopAbs import TopAbs_SOLID
@@ -35,15 +32,16 @@ class MeshType(Enum):
 
 class Tessellator:
     def __init__(self):
-        self._poly_data = None
+        self._vtk_mesher = None
+        self._dataset = None
         self._points = None
-
         self._vertices = None
-        self._triangle_points = None
-        self._triangle_point_normals = None
-        self._segments = None
-        self._mesh_types = None
-        self._subshape_ids = None
+        self._typed_segments = None
+
+        self.segments = None
+        self.triangles = None
+        self.vertices = None
+        self.normals = None
 
     def _multi_shape(self, shape):
         """
@@ -79,12 +77,12 @@ class Tessellator:
         self.parallel = parallel or self._multi_shape(shape)
         BRepMesh_IncrementalMesh.SetParallelDefault_s(self.parallel)
 
-        vtk_shape = OCP.IVtkOCC.IVtkOCC_Shape(shape)
-        vtk_data = OCP.IVtkVTK.IVtkVTK_ShapeData()
-        self.vtk_mesher = OCP.IVtkOCC.IVtkOCC_ShapeMesher(
-            theDevCoeff=deviation, theDevAngle=deviation_angle, theNbUIsos=0, theNbVIsos=0
+        vtk_shape = IVtkOCC_Shape(shape)
+        vtk_data = IVtkVTK_ShapeData()
+        self._vtk_mesher = IVtkOCC_ShapeMesher(
+            theDevCoeff=deviation, theDevAngle=deviation_angle, theNbUIsos=iso_lines, theNbVIsos=iso_lines
         )
-        self.vtk_mesher.Build(vtk_shape, vtk_data)
+        self._vtk_mesher.Build(vtk_shape, vtk_data)
         dataset = vtk_data.getVtkPolyData()
 
         # Split lines into segments
@@ -97,39 +95,34 @@ class Tessellator:
         n_filter = vtk.vtkPolyDataNormals()
         n_filter.SetInputData(dataset)
         n_filter.Update()
-        dataset = n_filter.GetOutput()
-        self._dataset = dataset
+        dataset = self._dataset = n_filter.GetOutput()
 
-        self._mesh_types = vtk_to_numpy(dataset.GetCellData().GetAbstractArray("MESH_TYPES"))
         self._points = vtk_to_numpy(dataset.GetPoints().GetData())
-        self._vertices = vtk_to_numpy(dataset.GetVerts().GetData()).reshape(-1, 2)[:, 1:]
-
-        self.segments = self._points[vtk_to_numpy(dataset.GetLines().GetData()).reshape(-1, 3)[:, 1:]]
 
         self.triangles = vtk_to_numpy(dataset.GetPolys().GetData()).reshape(-1, 4)[:, 1:].ravel().astype("uint32")
         triangle_offset = np.min(self.triangles)
-        # Ensure triangles start with 0
-        self.triangles = self.triangles - triangle_offset
+        self.triangles = self.triangles - triangle_offset  # Ensure triangles start with 0
+
         self.vertices = np.asarray(self._points[triangle_offset:], dtype=np.float32)
 
         self.normals = np.asarray(
             vtk_to_numpy(dataset.GetPointData().GetAbstractArray("Normals"))[triangle_offset:], dtype=np.float32
         )
 
+        self.segments = self._points[vtk_to_numpy(dataset.GetLines().GetData()).reshape(-1, 3)[:, 1:]]
+
     @property
     def deflection(self):
-        return self.vtk_mesher.GetDeflection()
+        return self._vtk_mesher.GetDeflection()
 
     @property
     def deviation_angle(self):
-        return self.vtk_mesher.GetDeviationAngle()
+        return self._vtk_mesher.GetDeviationAngle()
 
     @property
     def typed_segments(self):
         """
         Property returning all edges of the VTK tessellation as segments
-
-        This is the preferred format to feed into pythreejs from a performance perspective
 
         Example:
             { <MeshType.SharedEdge: 5>: array([
@@ -148,7 +141,8 @@ class Tessellator:
         """
 
         if self._typed_segments is None:
-            line_types = self.mesh_types[self._vertices.shape[0] : self._vertices.shape[0] + self.segments.shape[0]]
+            mesh_types = vtk_to_numpy(self._dataset.GetCellData().GetAbstractArray("MESH_TYPES"))
+            line_types = mesh_types[self._vertices.shape[0] : self._vertices.shape[0] + self.segments.shape[0]]
             typed_segments = np.column_stack((line_types, self.segments))
 
             self._segments = {}
