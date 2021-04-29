@@ -18,7 +18,9 @@ from cadquery import Compound
 
 from jupyter_cadquery.cad_display import CadqueryDisplay, get_default
 from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
-from jupyter_cadquery.utils import Color
+from jupyter_cadquery.utils import Color, flatten
+from jupyter_cadquery.ocp_utils import bounding_box, get_point, BoundingBox, loc_to_tq
+from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality
 
 PART_ID = 0
 
@@ -43,7 +45,7 @@ class _CADObject(object):
     def to_state(self):
         raise NotImplementedError("not implemented yet")
 
-    def collect_shapes(self):
+    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
         raise NotImplementedError("not implemented yet")
 
     def to_assembly(self):
@@ -88,12 +90,16 @@ class _Part(_CADObject):
     def to_state(self):
         return [self.state_faces, self.state_edges]
 
-    def collect_shapes(self):
+    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+        bb = bounding_box(self.shape, loc=loc)
+        quality = compute_quality(bb, deviation=deviation)
         return {
             "id": self.id,
+            "type": "shapes",
             "name": self.name,
-            "shape": self.shape,
-            "color": self.color,
+            "shape": tessellate(self.shape, quality=quality, angular_tolerance=angular_tolerance),
+            "color": self.color.web_color,
+            "bb": bb.to_dict(),
         }
 
     def compound(self):
@@ -128,12 +134,20 @@ class _Edges(_CADObject):
     def to_state(self):
         return [EMPTY, SELECTED]
 
-    def collect_shapes(self):
+    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+        bb = bounding_box(self.shape, loc=loc)
+        quality = compute_quality(bb, deviation=deviation)
+        deflection = quality / 100 if edge_accuracy is None else edge_accuracy
+
+        edges = flatten([discretize_edge(edge, deflection) for edge in self.shape])
+
         return {
             "id": self.id,
+            "type": "edges",
             "name": self.name,
-            "shape": [edge for edge in self.shape],
-            "color": self.color,
+            "shape": edges,
+            "color": self.color.web_color,
+            "bb": bb,
         }
 
 
@@ -156,12 +170,15 @@ class _Vertices(_CADObject):
     def to_state(self):
         return [SELECTED, EMPTY]
 
-    def collect_shapes(self):
+    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+        bb = bounding_box(self.shape, loc=loc)
         return {
             "id": self.id,
+            "type": "vertices",
             "name": self.name,
-            "shape": [edge for edge in self.shape],
-            "color": self.color,
+            "shape": [get_point(vertex) for vertex in self.shape],
+            "color": self.color.web_color,
+            "bb": bb,
         }
 
 
@@ -181,15 +198,22 @@ class _PartGroup(_CADObject):
             "children": [obj.to_nav_dict() for obj in self.objects],
         }
 
-    def collect_shapes(self):
-        result = {"parts": [], "loc": None}
+    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+        if loc is None and self.loc is None:
+            combined_loc = None
+        elif loc is None:
+            combined_loc = self.loc
+        else:
+            combined_loc = loc * self.loc
+            
+        result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(self.loc), "name": self.name}
         for obj in self.objects:
-            result["parts"].append(obj.collect_shapes())
-        result["loc"] = self.loc
-        result["name"] = self.name
+            result["parts"].append(
+                obj.collect_shapes(combined_loc, quality, deviation, angular_tolerance, edge_accuracy)
+            )
         return result
 
-    def collect_mapped_shapes(self, mapping):
+    def collect_mapped_shapes(self, mapping, quality, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
         def set_paths(shapes, mapping):
             for obj in shapes["parts"]:
                 if obj.get("parts") is None:
@@ -197,7 +221,7 @@ class _PartGroup(_CADObject):
                 else:
                     set_paths(obj, mapping)
 
-        shapes = self.collect_shapes()
+        shapes = self.collect_shapes(quality=quality, deviation=deviation, angular_tolerance=0.3, edge_accuracy=None)
         set_paths(shapes, mapping)
         return shapes
 
@@ -227,20 +251,40 @@ class _PartGroup(_CADObject):
         return Compound._makeCompound(self.compounds())
 
 
+def _combined_bb(shapes):
+    def c_bb(shapes, bb):
+        for shape in shapes["parts"]:
+            if shape.get("parts") is None:
+                bb.update(shape["bb"])
+            else:
+                c_bb(shape, bb)
+
+    bb = BoundingBox()
+    c_bb(shapes, bb)
+    return bb
+
+
 def _show(assembly, **kwargs):
     for k in kwargs:
         if get_default(k, "") == "":
             raise KeyError("Paramater %s is not a valid argument for show()" % k)
 
-    mapping = assembly.to_state()
-    shapes = assembly.collect_mapped_shapes(mapping)
-    tree = tree = assembly.to_nav_dict()
-
     d = CadqueryDisplay()
     widget = d.create(**kwargs)
     d.display(widget)
-    d.add_shapes(shapes=shapes, mapping=mapping, tree=tree)
 
+    mapping = assembly.to_state()
+    shapes = assembly.collect_mapped_shapes(
+        mapping,
+        quality=kwargs.get("quality"),
+        deviation=kwargs.get("deviation", 0.5),
+        angular_tolerance=kwargs.get("angular_tolerance", 0.3),
+        edge_accuracy=kwargs.get("edge_accuracy"),
+    )
+    tree = assembly.to_nav_dict()
+
+    d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes))
+    
     d.info.ready_msg(d.cq_view.grid.step)
 
     return d

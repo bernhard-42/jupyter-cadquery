@@ -2,7 +2,7 @@ from array import array
 
 import numpy as np
 
-from OCP.gp import gp_Vec, gp_Pnt, gp_Trsf
+from OCP.gp import gp_Vec, gp_Pnt
 from OCP.BRep import BRep_Tool
 from OCP.BRepTools import BRepTools
 from OCP.BRepGProp import BRepGProp_Face
@@ -13,11 +13,75 @@ from OCP.TopTools import TopTools_IndexedDataMapOfShapeListOfShape, TopTools_Ind
 from OCP.TopExp import TopExp, TopExp_Explorer
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_SOLID
 from OCP.TopoDS import TopoDS
+from OCP.BRepAdaptor import BRepAdaptor_Curve
+from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
 from jupyter_cadquery.utils import Timer
-from jupyter_cadquery.ocp_utils import get_faces
+from jupyter_cadquery.ocp_utils import get_faces, bounding_box
+from cadquery.occ_impl.shapes import Compound
+
+# class RenderCache:
+#     def __init__(self):
+#         self.objects = {}
+#         self.use_cache = True
+
+#     def reset_cache(self):
+#         self.objects = {}
+
+#     def toggle_cache(self):
+#         self.use_cache = not self.use_cache
+#         print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
+
+#     def tessellate(
+#         self,
+#         compound,
+#         quality=None,
+#         angular_tolerance=None,
+#         render_shapes=True,
+#         render_edges=True,
+#         normals_len=0,
+#         debug=False,
+#     ):
+
+#         hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
+#         if self.objects.get(hash) is None:
+#             tess = Tessellator()
+#             tess.compute(
+#                 compound,
+#                 quality=quality,
+#                 angular_tolerance=angular_tolerance,
+#                 tessellate=render_shapes,
+#                 compute_edges=render_edges,
+#                 normals_len=normals_len,
+#                 debug=debug,
+#             )
+#             np_vertices = tess.get_vertices()
+#             np_triangles = tess.get_triangles()
+#             np_normals = tess.get_normals()
+#             np_edges = tess.get_edges()
+
+#             if np_normals.shape != np_vertices.shape:
+#                 raise AssertionError("Wrong number of normals/shapes")
+
+#             shape_geometry = BufferGeometry(
+#                 attributes={
+#                     "position": BufferAttribute(np_vertices),
+#                     "index": BufferAttribute(np_triangles),
+#                     "normal": BufferAttribute(np_normals),
+#                 }
+#             )
+#             if debug:
+#                 print(f"| | | (Caching {hash})")
+#             self.objects[hash] = (shape_geometry, np_edges)
+#         else:
+#             if debug:
+#                 print(f"| | | (Taking {hash} from cache)")
+#         return self.objects[hash]
 
 
+# RENDER_CACHE = RenderCache()
+# reset_cache = RENDER_CACHE.reset_cache
+# toggle_cache = RENDER_CACHE.toggle_cache
 class Tessellator:
     def __init__(self):
         self.vertices = np.empty((0, 3), dtype="float32")
@@ -198,3 +262,48 @@ class Tessellator:
             normal_edges = np.column_stack((vertices, vertices + (normals * self.normals_len))).reshape((-1, 2, 3))
 
         return (np.asarray(self.edges, dtype=np.float32), normal_edges)
+
+
+def compute_quality(bb, deviation=0.5):
+    return (bb.xsize + bb.ysize + bb.zsize) / 300 * deviation
+
+
+def tessellate(
+    shapes,
+    quality: float,
+    angular_tolerance: float = 0.3,
+    tessellate=True,
+    compute_edges=True,
+    normals_len=0,
+    debug=False,
+):
+    compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
+    tess = Tessellator()
+    tess.compute(compound, quality, angular_tolerance, tessellate, compute_edges, normals_len, debug)
+    return {
+        "vertices": tess.get_vertices(),
+        "triangles": tess.get_triangles(),
+        "normals": tess.get_normals(),
+        "edges": tess.get_edges(),
+    }
+
+
+def discretize_edge(edge, deflection=0.1):
+    curve_adaptator = BRepAdaptor_Curve(edge)
+
+    discretizer = GCPnts_QuasiUniformDeflection()
+    discretizer.Initialize(
+        curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
+    )
+
+    if not discretizer.IsDone():
+        raise AssertionError("Discretizer not done.")
+
+    points = [curve_adaptator.Value(discretizer.Parameter(i)).Coord() for i in range(1, discretizer.NbPoints() + 1)]
+
+    # return tuples representing the single lines of the egde
+    edges = []
+    for i in range(len(points) - 1):
+        edges.append((points[i], points[i + 1]))
+
+    return np.asarray(edges, dtype=np.float32)

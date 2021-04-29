@@ -32,87 +32,12 @@ with warnings.catch_warnings():
     )
 
 from .cad_helpers import CustomMaterial
-from .tessellator import Tessellator
-from .ocp_utils import (
-    is_vertex,
-    is_edge,
-    discretize_edge,
-    get_edges,
-    get_point,
-    tq,
-)
+
 from .utils import (
     Color,
     tree_find_single_selector,
     Timer,
 )
-
-from cadquery.occ_impl.shapes import Compound
-from .ocp_utils import BoundingBox
-
-
-class RenderCache:
-    def __init__(self):
-        self.objects = {}
-        self.use_cache = True
-
-    def reset_cache(self):
-        self.objects = {}
-
-    def toggle_cache(self):
-        self.use_cache = not self.use_cache
-        print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
-
-    def tessellate(
-        self,
-        compound,
-        quality=None,
-        angular_tolerance=None,
-        render_shapes=True,
-        render_edges=True,
-        normals_len=0,
-        debug=False,
-    ):
-
-        hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
-        if self.objects.get(hash) is None:
-            tess = Tessellator()
-            tess.compute(
-                compound,
-                quality=quality,
-                angular_tolerance=angular_tolerance,
-                tessellate=render_shapes,
-                compute_edges=render_edges,
-                normals_len=normals_len,
-                debug=debug,
-            )
-            np_vertices = tess.get_vertices()
-            np_triangles = tess.get_triangles()
-            np_normals = tess.get_normals()
-            np_edges = tess.get_edges()
-
-            if np_normals.shape != np_vertices.shape:
-                raise AssertionError("Wrong number of normals/shapes")
-
-            shape_geometry = BufferGeometry(
-                attributes={
-                    "position": BufferAttribute(np_vertices),
-                    "index": BufferAttribute(np_triangles),
-                    "normal": BufferAttribute(np_normals),
-                }
-            )
-            if debug:
-                print(f"| | | (Caching {hash})")
-            self.objects[hash] = (shape_geometry, np_edges)
-        else:
-            if debug:
-                print(f"| | | (Taking {hash} from cache)")
-        return self.objects[hash]
-
-
-RENDER_CACHE = RenderCache()
-reset_cache = RENDER_CACHE.reset_cache
-toggle_cache = RENDER_CACHE.toggle_cache
 
 
 def material(color, transparent=False, opacity=1.0):
@@ -203,12 +128,7 @@ class CadqueryRenderer(object):
 
         self.timeit = timeit
 
-    def compute_quality(self, shape):
-        # based on non-optimal bounding box without mesh
-        bb = BoundingBox([[shape]], optimal=False)
-        return (bb.xsize + bb.ysize + bb.zsize) / 300 * self.deviation
-
-    def render_shape(
+    def _render_shape(
         self,
         shape=None,
         edges=None,
@@ -232,63 +152,45 @@ class CadqueryRenderer(object):
         points = None
         shape_mesh = None
 
-        edge_accuracy = None
+        # edge_accuracy = None
 
         render_timer = Timer(self.timeit, "| | shape render time")
         if shape is not None:
-            quality = self.quality if self.quality is not None else self.compute_quality(shape)
-            edge_accuracy = self.edge_accuracy if self.edge_accuracy is not None else (quality * 0.02 * self.deviation)
-            if self.timeit:
-                print(f"| | | (quality: {quality:8.6f}, angular_tolerance: {self.angular_tolerance:8.6f})")
-
             # Compute the tesselation and build mesh
-            tesselation_timer = Timer(self.timeit, "| | | build mesh time")
-            shape_geometry, (edge_list, normals_list) = RENDER_CACHE.tessellate(
-                shape,
-                quality=quality,
-                angular_tolerance=self.angular_tolerance,
-                render_shapes=render_shapes,
-                render_edges=render_edges,
-                normals_len=quality * 10 if render_normals else 0,
-                debug=self.timeit,
-            )
+            mesh_timer = Timer(self.timeit, "| | | build mesh time")
+
+            edge_list, normals_list = shape["edges"]
+
             shape_mesh = None
             if render_shapes:
+                shape_geometry = BufferGeometry(
+                    attributes={
+                        "position": BufferAttribute(shape["vertices"]),
+                        "index": BufferAttribute(shape["triangles"]),
+                        "normal": BufferAttribute(shape["normals"]),
+                    }
+                )
+
                 if mesh_color is None:
                     mesh_color = self.default_mesh_color
-                shp_material = material(mesh_color.web_color, transparent=transparent, opacity=opacity)
-                # Do not cache building the mesh. Might lead to unpredictable results
+                shp_material = material(mesh_color, transparent=transparent, opacity=opacity)
                 shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
-            tesselation_timer.stop()
+            mesh_timer.stop()
 
         if vertices is not None:
             if vertex_color is None:
                 vertex_color = self.default_edge_color  # same as edge_color
 
-            vertices_list = []
-            for vertex in vertices:
-                vertices_list.append(get_point(vertex))
-            vertices_list = np.array(vertices_list, dtype=np.float32)
-
+            vertices_list = vertices
             attributes = {"position": BufferAttribute(vertices_list, normalized=False)}
 
-            mat = PointsMaterial(color=vertex_color.web_color, sizeAttenuation=False, size=vertex_width)
+            mat = PointsMaterial(color=vertex_color, sizeAttenuation=False, size=vertex_width)
             geom = BufferGeometry(attributes=attributes)
             points = IndexedPoints(geometry=geom, material=mat)
 
         if edges is not None:
-            if edge_accuracy is None:  # take over from shape meshing
-                edge_accuracy = self.edge_accuracy if self.edge_accuracy is not None else 0.01 * self.deviation
-
-            discretize_timer = Timer(self.timeit, "| | | discretize time")
-            edge_list = []
-            for edge in edges:
-                edge_list += discretize_edge(edge, edge_accuracy)
-            edge_list = np.asarray(edge_list, dtype="float32")
-            discretize_timer.stop()
-            if self.timeit:
-                print(f"| | | (edge_accuracy: {edge_accuracy:8.6f})")
+            edge_list = edges
 
         if len(edge_list) > 0:
             if edge_color is None:
@@ -308,7 +210,7 @@ class CadqueryRenderer(object):
                 edge_lines = [IndexedLineSegments2(lines, mat)]
             else:
                 lines = LineSegmentsGeometry(positions=edge_list)
-                mat = LineMaterial(linewidth=edge_width, color=edge_color.web_color)
+                mat = LineMaterial(linewidth=edge_width, color= edge_color.web_color if isinstance(edge_color, Color) else edge_color)
                 edge_lines = [IndexedLineSegments2(lines, mat)]
 
         if len(normals_list) > 0:
@@ -333,22 +235,21 @@ class CadqueryRenderer(object):
             print(f"| | Object: {name}")
 
         if shapes["loc"] is not None:
-            group.position, group.quaternion = tq(shapes["loc"])
+            group.position, group.quaternion = shapes["loc"]
 
         # Render all shapes
         for shape in shapes["parts"]:
             if shape.get("parts") is None:
                 self._mapping[shape["ind"]] = {"mesh": None, "edges": None}
 
-                # Assume that all are edges when first element is an edge
-                if is_edge(shape["shape"][0]):
+                if shape["type"] == "edges":
                     options = dict(
                         edges=shape["shape"],
                         edge_color=shape["color"],
                         edge_width=3,
                         render_edges=True,
                     )
-                elif is_vertex(shape["shape"][0]):
+                elif shape["type"] == "vertices":
                     options = dict(
                         vertices=shape["shape"],
                         vertex_color=shape["color"],
@@ -356,16 +257,15 @@ class CadqueryRenderer(object):
                         render_edges=False,
                     )
                 else:
-                    # Creatge a Compound out of all shapes
                     options = dict(
-                        shape=Compound._makeCompound(shape["shape"]) if len(shape["shape"]) > 1 else shape["shape"][0],
+                        shape=shape["shape"],
                         mesh_color=shape["color"],
                         render_shapes=self.render_shapes,
                         render_edges=self.render_edges,
                         render_normals=self.render_normals,
                     )
 
-                shape_mesh, edge_lines, normal_lines, points = self.render_shape(**options)
+                shape_mesh, edge_lines, normal_lines, points = self._render_shape(**options)
 
                 ind = len(group.children)
                 if shape_mesh is not None:
@@ -404,9 +304,6 @@ class CadqueryRenderer(object):
         return group
 
     def render(self, shapes, progress):
-        # Since ids are only unique during lifetime of the objects reset the cache for
-        # each call. The cache will only speed up assemblies with multiple same parts
-        RENDER_CACHE.reset_cache()
         self.progress = progress
         self._mapping = {}
         rendered_objects = self._render(shapes, (), "")

@@ -644,7 +644,7 @@ class CadqueryDisplay(object):
                 ]
             )
 
-    def add_shapes(self, shapes, mapping, tree, reset=True):
+    def add_shapes(self, shapes, mapping, tree, bb, reset=True):
         def count_shapes(shapes):
             count = 0
             for shape in shapes["parts"]:
@@ -664,7 +664,7 @@ class CadqueryDisplay(object):
         self.progress.reset(count_shapes(shapes) + 1)
 
         add_shapes_timer = Timer(self.timeit, "add shapes")
-        self.cq_view.add_shapes(shapes, self.progress, reset=reset)
+        self.cq_view.add_shapes(shapes, bb, self.progress, reset=reset)
         add_shapes_timer.stop()
 
         configure_display_timer = Timer(self.timeit, "configure display")

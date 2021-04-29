@@ -14,13 +14,10 @@
 # limitations under the License.
 #
 
-import math
 import itertools
-from cadquery.occ_impl.shapes import Vertex, Shape
+import math
 import numpy as np
-
 import warnings
-
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import (
@@ -40,7 +37,7 @@ with warnings.catch_warnings():
 
 from jupyter_cadquery_widgets.widgets import state_diff
 from .cad_helpers import Grid, Axes
-from .ocp_utils import BoundingBox, is_compound, is_shape, is_solid
+from .ocp_utils import BoundingBox
 from .utils import rotate, Color, Timer
 from .cad_renderer import CadqueryRenderer, IndexedMesh
 
@@ -229,8 +226,18 @@ class CadqueryView(object):
         else:
             self.renderer.clippingPlanes = self.clippingPlanes
 
-    def _get_shape(self, shape_index):
-        shape = self.shapes
+    def _filter_shapes(self, shapes):
+        return {"parts": [
+            (
+                {"id": shape["id"], "name": shape["name"],"bb": shape["bb"]} 
+                if shape.get("parts") is None 
+                else self._filter_shapes(shape)
+            )
+            for shape in shapes["parts"]]
+        }
+
+    def _get_bb(self, shape_index):
+        shape = self.bbs
         try:
             for j in shape_index:
                 shape = shape["parts"][j]
@@ -249,16 +256,20 @@ class CadqueryView(object):
             # Change highlighted mesh
             if isinstance(value.owner.object, Mesh):
                 self.pick_last_mesh = value.owner.object
-                shape = self._get_shape(value.owner.object.ind["shape"])
-                bbox = BoundingBox([shape["shape"]])
+                shape = self._get_bb(value.owner.object.ind["shape"])
+                bbox = shape["bb"]
 
                 self.info.bb_info(
                     shape["name"],
                     (
-                        (bbox.xmin, bbox.xmax),
-                        (bbox.ymin, bbox.ymax),
-                        (bbox.zmin, bbox.zmax),
-                        bbox.center,
+                        (bbox["xmin"], bbox["xmax"]),
+                        (bbox["ymin"], bbox["ymax"]),
+                        (bbox["zmin"], bbox["zmax"]),
+                        (
+                            (bbox["xmax"] + bbox["xmin"]) / 2,
+                            (bbox["ymax"] + bbox["ymin"]) / 2,
+                            (bbox["zmax"] + bbox["zmin"]) / 2,
+                        ),
                     ),
                 )
                 self.pick_last_mesh_color = self.pick_last_mesh.material.color
@@ -322,36 +333,14 @@ class CadqueryView(object):
         )
         return self.renderer
 
-    def add_shapes(self, shapes, progress, position=None, rotation=None, zoom=None, reset=True):
-        def all_shapes(shapes, loc=None):
-            loc = shapes["loc"] if loc is None else loc * shapes["loc"]
-            result = []
-            for shape in shapes["parts"]:
-                if shape.get("parts") is None:
-                    compounds = [c for c in shape["shape"] if is_compound(c) or is_solid(c) or is_shape(c)]
-                    if compounds:
-                        if loc is None:
-                            result.append(shape["shape"])
-                        else:
-                            reloc_shape = [Shape(s).moved(loc).wrapped for s in compounds]
-                            result.append(reloc_shape)
-                else:
-                    result += all_shapes(shape, loc)
-            return result
-
-        self.shapes = shapes
-        self.all_shapes = all_shapes(shapes)
+    def add_shapes(self, shapes, bb, progress, position=None, rotation=None, zoom=None, reset=True):
+        self.bbs = self._filter_shapes(shapes)
+        self.bb = bb
 
         # Render Shapes
         render_timer = Timer(self.timeit, "| overall render time")
-        self.pickable_objects, self.pick_mapping = self.cq_renderer.render(self.shapes, progress)
+        self.pickable_objects, self.pick_mapping = self.cq_renderer.render(shapes, progress)
         render_timer.stop()
-        progress.update()
-
-        bb_timer = Timer(self.timeit, "| create bounding box")
-        # Get bounding box
-        self.bb = self.get_bounding_box(self.all_shapes)
-        bb_timer.stop()
         progress.update()
 
         configure_timer = Timer(self.timeit, "| configure view")
@@ -426,18 +415,6 @@ class CadqueryView(object):
         progress.update()
 
         return self.renderer
-
-    def get_bounding_box(self, shapes):
-        bb = BoundingBox(shapes, optimal=self.optimal_bb)
-        if bb.is_empty():
-            # add origin to increase bounding box to also show origin
-            bb = BoundingBox([[Vertex.makeVertex(0, 0, 0).wrapped]] + [shape["shape"] for shape in self.shapes])
-            if bb.is_empty():
-                # looks like only one vertex in origin is to be shown
-                bb = BoundingBox(
-                    [[Vertex.makeVertex(0.1, 0.1, 0.1).wrapped]] + [shape["shape"] for shape in self.shapes]
-                )
-        return bb
 
     def update_camera(self, position, zoom, orbit_radius):
         self.camera.position = position

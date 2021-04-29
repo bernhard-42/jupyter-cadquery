@@ -23,15 +23,15 @@ from .cad_display import (
     reset_defaults,
 )
 
-from .cad_renderer import reset_cache
+# from .cad_renderer import reset_cache
 from .export import exportSTL
-from .ocp_utils import tq
+from .ocp_utils import loc_to_tq
 from cadquery import Location
 
 
 def __location__repr__(self):
-    t, r = tq(self)
-    return f"Location(t={t}, q=({r[0]}, {r[1]}, {r[2]}, {r[3]}))"
+    t, r = loc_to_tq(self)
+    return f"(t={t}, q=({r[0]}, {r[1]}, {r[2]}, {r[3]}))"
 
 
 Location.__repr__ = __location__repr__  # type: ignore
