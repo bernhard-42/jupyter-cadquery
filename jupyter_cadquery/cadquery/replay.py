@@ -21,14 +21,14 @@ import warnings
 from IPython.display import display
 from IPython import get_ipython
 
-from ipywidgets import Button, HBox, VBox, Output, SelectMultiple, Layout
+from ipywidgets import HBox, Output, SelectMultiple, Layout
 
 import cadquery as cq
-from cadquery import Compound
 from jupyter_cadquery.cadquery import Part, show
 from jupyter_cadquery.cadquery.cqparts import is_cqparts_part, convert_cqparts
 from jupyter_cadquery.cad_display import CadqueryDisplay
 from .cad_objects import to_assembly
+from jupyter_cadquery.cad_objects import _combined_bb
 
 #
 # The Runtime part
@@ -226,8 +226,12 @@ class Step:
 
 
 class Replay(object):
-    def __init__(self, debug, cad_width, height):
+    def __init__(self, quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height):
         self.debug_output = Output()
+        self.quality = quality
+        self.deviation = deviation
+        self.angular_tolerance = angular_tolerance
+        self.edge_accuracy = edge_accuracy
         self.debug = debug
         self.cad_width = cad_width
         self.height = height
@@ -357,12 +361,29 @@ class Replay(object):
         with self.debug_output:
             assembly = to_assembly(*objs)
             mapping = assembly.to_state()
-            shapes = assembly.collect_mapped_shapes(mapping)
-            tree = tree = assembly.to_nav_dict()
-            self.display.add_shapes(shapes=shapes, mapping=mapping, tree=tree, reset=False)
+            shapes = assembly.collect_mapped_shapes(
+                mapping,
+                quality=self.quality,
+                deviation=self.deviation,
+                angular_tolerance=self.angular_tolerance,
+                edge_accuracy=self.edge_accuracy,
+            )
+            tree = assembly.to_nav_dict()
+
+            self.display.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes))
 
 
-def replay(cad_obj, index=-1, debug=False, cad_width=600, height=600):
+def replay(
+    cad_obj,
+    index=-1,
+    quality=None,
+    deviation=0.5,
+    angular_tolerance=0.3,
+    edge_accuracy=None,
+    debug=False,
+    cad_width=600,
+    height=600,
+):
 
     if not REPLAY:
         print("Replay is not enabled. To do so call 'enable_replay()'. Falling back to 'show()'")
@@ -370,7 +391,7 @@ def replay(cad_obj, index=-1, debug=False, cad_width=600, height=600):
     else:
         print("Use the multi select box below to select one or more steps you want to examine")
 
-    r = Replay(debug, cad_width, height)
+    r = Replay(quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height)
 
     if isinstance(cad_obj, cq.Workplane):
         workplane = cad_obj
