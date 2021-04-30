@@ -241,7 +241,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
         parent.append(
             PartGroup(
                 [
-                    Part(to_edge(mate_def.mate, scale=mate_scale), name=name, color=RGB)
+                    Edges(to_edge(mate_def.mate, scale=mate_scale), name=name, color=RGB)
                     for name, mate_def in top.mates.items()
                     if mate_def.assembly == cad_obj
                 ],
@@ -364,8 +364,8 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - mate_scale:        Scale of rendered mates (for MAssemblies)
     - quality:           Linear deflection for tessellation (default=None)
                          If None, uses bounding box as in (xlen + ylen + zlen) / 300 * deviation)
-    - deviation:         Deviation from default for linear deflection value ((default=0.5)
-    - angular_tolerance: Angular deflection in radians for tessellation (default=0.3)
+    - deviation:         Deviation from default for linear deflection value ((default=0.1)
+    - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
     - edge_accuracy:     Presicion of edge discretizaion (default=None)
                          If None, uses: quality / 100
     - optimal_bb:        Use optimal bounding box (default=False)

@@ -101,8 +101,8 @@ class Tessellator:
     def compute(
         self,
         shape,
-        quality: float,
-        angular_tolerance: float = 0.3,
+        quality,
+        angular_tolerance,
         tessellate=True,
         compute_edges=True,
         normals_len=0,
@@ -264,14 +264,14 @@ class Tessellator:
         return (np.asarray(self.edges, dtype=np.float32), normal_edges)
 
 
-def compute_quality(bb, deviation=0.5):
+def compute_quality(bb, deviation=0.1):
     return (bb.xsize + bb.ysize + bb.zsize) / 300 * deviation
 
 
 def tessellate(
     shapes,
     quality: float,
-    angular_tolerance: float = 0.3,
+    angular_tolerance: float,
     tessellate=True,
     compute_edges=True,
     normals_len=0,

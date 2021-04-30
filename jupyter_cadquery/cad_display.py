@@ -53,8 +53,8 @@ class Defaults:
         - mate_scale:        Scale of rendered mates (for MAssemblies)
         - quality:           Linear deflection for tessellation (default=None)
                              If None, uses: (xlen + ylen + zlen) / 300 * deviation)
-        - deviation:         Deviation from default for linear deflection value ((default=0.5)
-        - angular_tolerance: Angular deflection in radians for tessellation (default=0.5)
+        - deviation:         Deviation from default for linear deflection value ((default=0.1)
+        - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
         - edge_accuracy:     Presicion of edge discretizaion (default=None)
                              If None, uses: quality / 100
         - optimal_bb:        Use optimal bounding box (default=False)
@@ -99,8 +99,8 @@ class Defaults:
             "render_mates": False,
             "mate_scale": 1,
             "quality": None,
-            "deviation": 0.5,
-            "angular_tolerance": 0.3,
+            "deviation": 0.1,
+            "angular_tolerance": 0.2,
             "edge_accuracy": None,
             "optimal_bb": False,
             "axes": False,
@@ -495,8 +495,8 @@ class CadqueryDisplay(object):
         tree_width=None,
         cad_width=None,
         quality=None,
-        deviation=0.5,
-        angular_tolerance=0.3,
+        deviation=None,
+        angular_tolerance=None,
         optimal_bb=False,
         edge_accuracy=None,
         axes=None,

@@ -62,8 +62,8 @@ def show(cad_obj, **kwargs):
     - mate_scale:        Scale of rendered mates (for MAssemblies)
     - quality:           Linear deflection for tessellation (default=None)
                          If None, uses bounding box as in (xlen + ylen + zlen) / 300 * deviation)
-    - deviation:         Deviation from default for linear deflection value ((default=0.5)
-    - angular_tolerance: Angular deflection in radians for tessellation (default=0.3)
+    - deviation:         Deviation from default for linear deflection value ((default=0.1)
+    - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
     - edge_accuracy:     Presicion of edge discretizaion (default=None)
                          If None, uses: quality / 100
     - optimal_bb:        Use optimal bounding box (default=False)

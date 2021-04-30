@@ -105,9 +105,9 @@ class IndexedLineSegments2(LineSegments2):
 class CadqueryRenderer(object):
     def __init__(
         self,
-        quality=None,
-        deviation=0.5,
-        angular_tolerance=0.3,
+        quality,
+        deviation,
+        angular_tolerance,
         render_edges=True,
         render_shapes=True,
         render_normals=False,
@@ -204,7 +204,7 @@ class CadqueryRenderer(object):
             if isinstance(edge_color, (list, tuple)):
                 lines = LineSegmentsGeometry(
                     positions=edge_list,
-                    colors=[[color.percentage] * 2 for color in edge_color],
+                    colors=[[Color(color).percentage] * 2 for color in edge_color],
                 )
                 mat = LineMaterial(linewidth=edge_width, vertexColors="VertexColors")
                 edge_lines = [IndexedLineSegments2(lines, mat)]

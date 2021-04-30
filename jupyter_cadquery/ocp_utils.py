@@ -113,7 +113,7 @@ class BoundingBox(object):
         }
 
     def __repr__(self):
-        return "{xmin=%f, xmax=%f, ymin=%f, ymax=%f, zmin=%f, zmax=%f]" % (
+        return "{xmin:%.2f, xmax:%.2f, ymin:%.2f, ymax:%.2f, zmin:%.2f, zmax:%.2f}" % (
             self.xmin,
             self.xmax,
             self.ymin,
