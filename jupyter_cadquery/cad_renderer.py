@@ -154,10 +154,10 @@ class CadqueryRenderer(object):
 
         # edge_accuracy = None
 
-        render_timer = Timer(self.timeit, "| | shape render time")
+        
         if shape is not None:
             # Compute the tesselation and build mesh
-            mesh_timer = Timer(self.timeit, "| | | build mesh time")
+            mesh_timer = Timer(self.timeit, "", "build mesh", 5)
 
             edge_list, normals_list = shape["edges"]
 
@@ -210,15 +210,15 @@ class CadqueryRenderer(object):
                 edge_lines = [IndexedLineSegments2(lines, mat)]
             else:
                 lines = LineSegmentsGeometry(positions=edge_list)
-                mat = LineMaterial(linewidth=edge_width, color= edge_color.web_color if isinstance(edge_color, Color) else edge_color)
+                mat = LineMaterial(
+                    linewidth=edge_width, color=edge_color.web_color if isinstance(edge_color, Color) else edge_color
+                )
                 edge_lines = [IndexedLineSegments2(lines, mat)]
 
         if len(normals_list) > 0:
             lines = LineSegmentsGeometry(positions=normals_list)
             mat = LineMaterial(linewidth=2, color="#9400d3")
             normal_lines = [IndexedLineSegments2(lines, mat)]
-
-        render_timer.stop()
 
         return shape_mesh, edge_lines, normal_lines, points
 
@@ -230,9 +230,6 @@ class CadqueryRenderer(object):
         _, _, name = shapes["name"].rpartition("/")
         group.name = name if prefix == "" else f"{prefix}\\{name}"
         group.ind = current
-
-        if self.timeit:
-            print(f"| | Object: {name}")
 
         if shapes["loc"] is not None:
             group.position, group.quaternion = shapes["loc"]
@@ -264,8 +261,10 @@ class CadqueryRenderer(object):
                         render_edges=self.render_edges,
                         render_normals=self.render_normals,
                     )
-
+                
+                render_timer = Timer(self.timeit, shape["name"], "render shape", 4)
                 shape_mesh, edge_lines, normal_lines, points = self._render_shape(**options)
+                render_timer.stop()
 
                 ind = len(group.children)
                 if shape_mesh is not None:

@@ -146,14 +146,20 @@ def tree_find_single_selector(tree, selector):
 
 
 class Timer:
-    def __init__(self, timeit, activity):
+    def __init__(self, timeit, name, activity, level=0):
         self.timeit = timeit
         self.activity = activity
+        self.name = name
+        self.level = level
         self.start = time.time()
 
     def stop(self):
+        prefix = ""
+        if self.level > 0:
+            prefix += "| " * self.level
+
         if self.timeit:
-            print("%-20s %7.2f sec" % (self.activity + ":", time.time() - self.start))
+            print("%8.3f sec: %s%s %s" % (time.time() - self.start, prefix, self.activity, self.name))
 
 
 class Progress:

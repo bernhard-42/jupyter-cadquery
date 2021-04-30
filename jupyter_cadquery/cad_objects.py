@@ -18,7 +18,7 @@ from cadquery import Compound
 
 from jupyter_cadquery.cad_display import CadqueryDisplay, get_default
 from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
-from jupyter_cadquery.utils import Color, flatten
+from jupyter_cadquery.utils import Color, flatten, Timer
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, BoundingBox, loc_to_tq
 from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality
 
@@ -90,14 +90,42 @@ class _Part(_CADObject):
     def to_state(self):
         return [self.state_faces, self.state_edges]
 
-    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
-        bb = bounding_box(self.shape, loc=loc)
+    def collect_shapes(
+        self,
+        loc=None,
+        quality=None,
+        deviation=0.5,
+        angular_tolerance=0.3,
+        edge_accuracy=None,
+        progress=None,
+        timeit=False,
+    ):
+
+        # A first rough estimate of the bounding box.
+        # Will be too large, but is sufficient for computing the quality
+
+        bb_timer = Timer(timeit, self.name, "bounding box", 2)
+        bb = bounding_box(self.shape, loc=loc, optimal=False)
         quality = compute_quality(bb, deviation=deviation)
+        bb_timer.stop()
+
+        tessellation_timer = Timer(timeit, self.name, "tessellate  ", 2)
+        mesh = tessellate(self.shape, quality=quality, angular_tolerance=angular_tolerance)
+        tessellation_timer.stop()
+
+        # After meshing the non optimal bounding box is much more exact
+        bb_timer = Timer(timeit, self.name, "bounding box", 2)
+        bb = bounding_box(self.shape, loc=loc, optimal=False)
+        bb_timer.stop()
+
+        if progress:
+            progress.update()
+
         return {
             "id": self.id,
             "type": "shapes",
             "name": self.name,
-            "shape": tessellate(self.shape, quality=quality, angular_tolerance=angular_tolerance),
+            "shape": mesh,
             "color": self.color.web_color,
             "bb": bb.to_dict(),
         }
@@ -134,12 +162,28 @@ class _Edges(_CADObject):
     def to_state(self):
         return [EMPTY, SELECTED]
 
-    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+    def collect_shapes(
+        self,
+        loc=None,
+        quality=None,
+        deviation=0.5,
+        angular_tolerance=0.3,
+        edge_accuracy=None,
+        progress=None,
+        timeit=False,
+    ):
+        bb_timer = Timer(timeit, self.name, "bounding box", 2)
         bb = bounding_box(self.shape, loc=loc)
         quality = compute_quality(bb, deviation=deviation)
         deflection = quality / 100 if edge_accuracy is None else edge_accuracy
+        bb_timer.stop()
 
+        discretize_timer = Timer(timeit, self.name, "discretize  ", 2)
         edges = flatten([discretize_edge(edge, deflection) for edge in self.shape])
+        discretize_timer.stop()
+
+        if progress:
+            progress.update()
 
         return {
             "id": self.id,
@@ -170,8 +214,21 @@ class _Vertices(_CADObject):
     def to_state(self):
         return [SELECTED, EMPTY]
 
-    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+    def collect_shapes(
+        self,
+        loc=None,
+        quality=None,
+        deviation=0.5,
+        angular_tolerance=0.3,
+        edge_accuracy=None,
+        progress=None,
+        timeit=False,
+    ):
         bb = bounding_box(self.shape, loc=loc)
+
+        if progress:
+            progress.update()
+
         return {
             "id": self.id,
             "type": "vertices",
@@ -198,22 +255,35 @@ class _PartGroup(_CADObject):
             "children": [obj.to_nav_dict() for obj in self.objects],
         }
 
-    def collect_shapes(self, loc=None, quality=None, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+    def collect_shapes(
+        self,
+        loc=None,
+        quality=None,
+        deviation=0.5,
+        angular_tolerance=0.3,
+        edge_accuracy=None,
+        progress=None,
+        timeit=False,
+    ):
         if loc is None and self.loc is None:
             combined_loc = None
         elif loc is None:
             combined_loc = self.loc
         else:
             combined_loc = loc * self.loc
-            
+
         result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(self.loc), "name": self.name}
         for obj in self.objects:
             result["parts"].append(
-                obj.collect_shapes(combined_loc, quality, deviation, angular_tolerance, edge_accuracy)
+                obj.collect_shapes(
+                    combined_loc, quality, deviation, angular_tolerance, edge_accuracy, progress, timeit
+                )
             )
         return result
 
-    def collect_mapped_shapes(self, mapping, quality, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None):
+    def collect_mapped_shapes(
+        self, mapping, quality, deviation=0.5, angular_tolerance=0.3, edge_accuracy=None, progress=None, timeit=False
+    ):
         def set_paths(shapes, mapping):
             for obj in shapes["parts"]:
                 if obj.get("parts") is None:
@@ -221,7 +291,14 @@ class _PartGroup(_CADObject):
                 else:
                     set_paths(obj, mapping)
 
-        shapes = self.collect_shapes(quality=quality, deviation=deviation, angular_tolerance=0.3, edge_accuracy=None)
+        shapes = self.collect_shapes(
+            quality=quality,
+            deviation=deviation,
+            angular_tolerance=0.3,
+            edge_accuracy=None,
+            progress=progress,
+            timeit=timeit,
+        )
         set_paths(shapes, mapping)
         return shapes
 
@@ -235,6 +312,18 @@ class _PartGroup(_CADObject):
             else:
                 result[str(obj.id)] = {"path": (*parents, i), "state": obj.to_state()}
         return result
+
+    def count_shapes(self):
+        def c(pg):
+            count = 0
+            for p in pg.objects:
+                if isinstance(p, _PartGroup):
+                    count += c(p)
+                else:
+                    count += 1
+            return count
+
+        return c(self)
 
     @staticmethod
     def reset_id():
@@ -264,27 +353,45 @@ def _combined_bb(shapes):
     return bb
 
 
-def _show(assembly, **kwargs):
+def _show(part_group, **kwargs):
+    def preset(key, value):
+        return get_default(key) if value is None else value
+
     for k in kwargs:
         if get_default(k, "") == "":
             raise KeyError("Paramater %s is not a valid argument for show()" % k)
 
+    timeit = preset("timeit", kwargs.get("timeit"))
+    overall_timer = Timer(timeit, "", "overall")
+
+    display_timer = Timer(timeit, "", "setup display", 1)
+    num_shapes = part_group.count_shapes()
     d = CadqueryDisplay()
     widget = d.create(**kwargs)
+    d.init_progress(num_shapes)
     d.display(widget)
+    display_timer.stop()
 
-    mapping = assembly.to_state()
-    shapes = assembly.collect_mapped_shapes(
+    tessellation_timer = Timer(timeit, "", "tessellate", 1)
+    mapping = part_group.to_state()
+    shapes = part_group.collect_mapped_shapes(
         mapping,
-        quality=kwargs.get("quality"),
-        deviation=kwargs.get("deviation", 0.5),
-        angular_tolerance=kwargs.get("angular_tolerance", 0.3),
-        edge_accuracy=kwargs.get("edge_accuracy"),
+        quality=preset("quality", kwargs.get("quality")),
+        deviation=preset("deviation", kwargs.get("deviation")),
+        angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
+        edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
+        progress=d.progress,
+        timeit=timeit,
     )
-    tree = assembly.to_nav_dict()
+    tree = part_group.to_nav_dict()
+    tessellation_timer.stop()
 
+    visualize_timer = Timer(timeit, "", "show shapes", 1)
     d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes))
+    visualize_timer.stop()
     
     d.info.ready_msg(d.cq_view.grid.step)
+    
+    overall_timer.stop()
 
     return d

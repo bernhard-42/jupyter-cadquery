@@ -18,6 +18,7 @@ import itertools
 import math
 import numpy as np
 import warnings
+
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from pythreejs import (
@@ -227,13 +228,15 @@ class CadqueryView(object):
             self.renderer.clippingPlanes = self.clippingPlanes
 
     def _filter_shapes(self, shapes):
-        return {"parts": [
-            (
-                {"id": shape["id"], "name": shape["name"],"bb": shape["bb"]} 
-                if shape.get("parts") is None 
-                else self._filter_shapes(shape)
-            )
-            for shape in shapes["parts"]]
+        return {
+            "parts": [
+                (
+                    {"id": shape["id"], "name": shape["name"], "bb": shape["bb"]}
+                    if shape.get("parts") is None
+                    else self._filter_shapes(shape)
+                )
+                for shape in shapes["parts"]
+            ]
         }
 
     def _get_bb(self, shape_index):
@@ -338,12 +341,11 @@ class CadqueryView(object):
         self.bb = bb
 
         # Render Shapes
-        render_timer = Timer(self.timeit, "| overall render time")
+        render_timer = Timer(self.timeit, "", "overall render", 3)
         self.pickable_objects, self.pick_mapping = self.cq_renderer.render(shapes, progress)
         render_timer.stop()
-        progress.update()
 
-        configure_timer = Timer(self.timeit, "| configure view")
+        configure_timer = Timer(self.timeit, "", "configure view", 3)
         bb_max = self.bb.max_dist_from_center()
         orbit_radius = 4 * self.bb_factor * bb_max
 
@@ -412,7 +414,6 @@ class CadqueryView(object):
 
         self.savestate = (self.camera.rotation, self.controller.target)
         configure_timer.stop()
-        progress.update()
 
         return self.renderer
 

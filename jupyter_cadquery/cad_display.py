@@ -481,6 +481,10 @@ class CadqueryDisplay(object):
         if change["name"] == "selected_index":
             self.cq_view.set_clipping(change["new"])
 
+    def init_progress(self, num_shapes):
+        self.progress.progress.value = 0
+        self.progress.reset(num_shapes * 2)
+
     def create(
         self,
         render_shapes=None,
@@ -645,29 +649,18 @@ class CadqueryDisplay(object):
             )
 
     def add_shapes(self, shapes, mapping, tree, bb, reset=True):
-        def count_shapes(shapes):
-            count = 0
-            for shape in shapes["parts"]:
-                if shape.get("parts") is None:
-                    count += 1
-                else:
-                    count += count_shapes(shape)
-            return count
-
         self.clear()
         self.states = {k: v["state"] for k, v in mapping.items()}
         self.paths = {k: v["path"] for k, v in mapping.items()}
 
         self.tree_view = Output()
         self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
-        self.progress.progress.value = 0
-        self.progress.reset(count_shapes(shapes) + 1)
 
-        add_shapes_timer = Timer(self.timeit, "add shapes")
+        add_shapes_timer = Timer(self.timeit, "", "mesh shapes", 2)
         self.cq_view.add_shapes(shapes, bb, self.progress, reset=reset)
         add_shapes_timer.stop()
 
-        configure_display_timer = Timer(self.timeit, "configure display")
+        configure_display_timer = Timer(self.timeit, "", "configure display", 2)
 
         def set_slider(i, s_min, s_max):
             s_min = -0.02 if abs(s_min) < 1e-4 else s_min * self.bb_factor

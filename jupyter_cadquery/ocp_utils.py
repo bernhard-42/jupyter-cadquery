@@ -26,6 +26,7 @@ from .utils import distance
 
 HASH_CODE_MAX = 2147483647
 
+
 class BoundingBox(object):
     def __init__(self, obj=None, optimal=False, tol=1e-5):
         self.optimal = optimal
@@ -57,8 +58,7 @@ class BoundingBox(object):
             self.zmin + self.zsize / 2.0,
         )
         self.max = max([abs(x) for x in (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)])
-  
-  
+
     def is_empty(self, eps=0.01):
         return (
             (abs(self.xmax - self.xmin) < 0.01)
@@ -66,7 +66,6 @@ class BoundingBox(object):
             and (abs(self.zmax - self.zmin) < 0.01)
         )
 
- 
     def max_dist_from_center(self):
         return max(
             [
@@ -123,13 +122,14 @@ class BoundingBox(object):
             self.zmax,
         )
 
-def bounding_box(objs, loc=None):
+
+def bounding_box(objs, loc=None, optimal=False):
     if isinstance(objs, (list, tuple)):
         compound = Compound._makeCompound(objs)
     else:
         compound = objs
 
-    return BoundingBox(compound if loc is None else compound.Moved(loc.wrapped))
+    return BoundingBox(compound if loc is None else compound.Moved(loc.wrapped), optimal=optimal)
 
 
 # Export STL
@@ -210,6 +210,7 @@ def loc_to_tq(loc):
     t = T.Transforms()
     q = T.GetRotation()
     return (t, (q.X(), q.Y(), q.Z(), q.W()))
+
 
 def get_rgb(color):
     if color is None:
