@@ -439,7 +439,9 @@ def _show(part_group, **kwargs):
         ]
     }
 
-    timeit = kwargs.get("timeit", get_default("timeit"))
+    preset = lambda key, value: get_default(key) if value is None else value
+
+    timeit = preset("timeit", kwargs.get("timeit"))
 
     with Timer(timeit, "", "overall"):
 
@@ -449,16 +451,17 @@ def _show(part_group, **kwargs):
             d.init_progress(num_shapes)
 
         with Timer(timeit, "", "tessellate", 1):
+
             mapping = part_group.to_state()
             shapes = part_group.collect_mapped_shapes(
                 mapping,
-                quality=kwargs.get("quality", get_default("quality")),
-                deviation=kwargs.get("deviation", get_default("deviation")),
-                angular_tolerance=kwargs.get("angular_tolerance", get_default("angular_tolerance")),
-                edge_accuracy=kwargs.get("edge_accuracy", get_default("edge_accuracy")),
-                render_shapes=kwargs.get("render_shapes", get_default("render_shapes")),
-                render_edges=kwargs.get("render_edges", get_default("render_edges")),
-                render_normals=kwargs.get("render_normals", get_default("render_normals")),
+                quality=preset("quality", kwargs.get("quality")),
+                deviation=preset("deviation", kwargs.get("deviation")),
+                angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
+                edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
+                render_shapes=preset("render_shapes", kwargs.get("render_shapes")),
+                render_edges=preset("render_edges", kwargs.get("render_edges")),
+                render_normals=preset("render_normals", kwargs.get("render_normals")),
                 progress=d.progress,
                 timeit=timeit,
             )

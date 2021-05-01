@@ -411,32 +411,26 @@ class CadqueryDisplay(object):
         return val if isinstance(val, bool) else val["new"]
 
     def toggle_axes(self, change):
-        self.checkbox_axes.value = self.axes
         self.axes = self.bool_or_new(change)
         self.cq_view.set_axes_visibility(self.axes)
 
     def toggle_grid(self, change):
-        self.checkbox_grid.value = self.grid
         self.grid = self.bool_or_new(change)
         self.cq_view.set_grid_visibility(self.grid)
 
     def toggle_axes0(self, change):
-        self.checkbox_axes0.value = self.axes0
         self.axes0 = self.bool_or_new(change)
         self.cq_view.set_axes_center(self.axes0)
 
     def toggle_ortho(self, change):
-        self.checkbox_ortho.value = self.ortho
         self.ortho = self.bool_or_new(change)
         self.cq_view.toggle_ortho(self.ortho)
 
     def toggle_transparent(self, change):
-        self.checkbox_transparent.value = self.transparent
         self.transparent = self.bool_or_new(change)
         self.cq_view.set_transparent(self.transparent)
 
     def toggle_black_edges(self, change):
-        self.checkbox_black_edges.value = self.black_edges
         self.black_edges = self.bool_or_new(change)
         self.cq_view.set_black_edges(self.black_edges)
 
@@ -447,6 +441,14 @@ class CadqueryDisplay(object):
     def init_progress(self, num_shapes):
         self.progress.progress.value = 0
         self.progress.reset(num_shapes * 2)
+
+    def _set_checkboxes(self):
+        self.checkbox_axes.value = self.axes
+        self.checkbox_grid.value = self.grid
+        self.checkbox_axes0.value = self.axes0
+        self.checkbox_ortho.value = self.ortho
+        self.checkbox_transparent.value = self.transparent
+        self.checkbox_black_edges.value = self.black_edges
 
     def _update_settings(self, **kwargs):
         preset = lambda key, value: get_default(key) if value is None else value
@@ -664,6 +666,7 @@ class CadqueryDisplay(object):
                 for i, val in enumerate(vals):
                     self.cq_view.set_visibility(self.paths[obj], i, val)
 
+            self._set_checkboxes()
             self.toggle_axes(self.axes)
             self.toggle_axes0(self.axes0)
             self.toggle_grid(self.grid)
