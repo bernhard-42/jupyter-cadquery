@@ -41,6 +41,7 @@ from .cad_helpers import Grid, Axes
 from .ocp_utils import BoundingBox
 from .utils import rotate, Color, Timer
 from .cad_renderer import CadqueryRenderer, IndexedMesh
+from .defaults import get_default
 
 
 class CadqueryView(object):
@@ -48,41 +49,13 @@ class CadqueryView(object):
         self,
         width=600,
         height=400,
-        bb_factor=1.01,
-        quality=None,
-        deviation=None,
-        angular_tolerance=None,
-        edge_accuracy=None,
-        optimal_bb=False,
-        render_edges=True,
-        render_shapes=True,
-        render_normals=False,
         info=None,
-        position=None,
-        rotation=None,
-        ambient_intensity=None,
-        direct_intensity=None,
-        zoom=None,
         timeit=False,
     ):
 
         self.width = width
         self.height = height
-        self.bb_factor = bb_factor
-        self.quality = quality
-        self.deviation = deviation
-        self.angular_tolerance = angular_tolerance
-        self.edge_accuracy = edge_accuracy
-        self.optimal_bb = optimal_bb
-        self.render_edges = render_edges
-        self.render_shapes = render_shapes
-        self.render_normals = render_normals
         self.info = info
-        self.position = position
-        self.rotation = rotation
-        self.ambient_intensity = ambient_intensity
-        self.direct_intensity = direct_intensity
-        self.zoom = zoom
         self.timeit = timeit
 
         self.all_shapes = None
@@ -92,7 +65,7 @@ class CadqueryView(object):
         self.default_edge_color = Color((128, 128, 128))
 
         self.camera_distance_factor = 6
-        self.camera_initial_zoom = zoom
+        self.camera_initial_zoom = get_default("zoom")
 
         self.features = ["mesh", "edges"]
 
@@ -294,13 +267,6 @@ class CadqueryView(object):
 
     def create(self):
         self.cq_renderer = CadqueryRenderer(
-            quality=self.quality,
-            deviation=self.deviation,
-            angular_tolerance=self.angular_tolerance,
-            edge_accuracy=self.edge_accuracy,
-            render_edges=self.render_edges,
-            render_shapes=self.render_shapes,
-            render_normals=self.render_normals,
             default_mesh_color=self.default_mesh_color,
             default_edge_color=self.default_edge_color,
             timeit=self.timeit,
@@ -319,7 +285,11 @@ class CadqueryView(object):
         self.toggle_ortho(True)
 
         # Set up scene
-        self.scene = Scene(children=[self.camera, AmbientLight(intensity=self.ambient_intensity)])
+        self.scene = Scene(
+            children=[
+                self.camera,
+            ]
+        )
 
         # Set up Controllers
         camera_target = (0.0, 0.0, 0.0)
@@ -336,7 +306,28 @@ class CadqueryView(object):
         )
         return self.renderer
 
-    def add_shapes(self, shapes, bb, progress, position=None, rotation=None, zoom=None, reset=True):
+    def add_shapes(
+        self,
+        shapes,
+        bb,
+        progress,
+        bb_factor=None,
+        ambient_intensity=None,
+        direct_intensity=None,
+        position=None,
+        rotation=None,
+        zoom=None,
+        reset=True,
+    ):
+        preset = lambda key, value: get_default(key) if value is None else value
+
+        bb_factor = preset("bb_factor", bb_factor)
+        ambient_intensity = preset("ambient_intensity", ambient_intensity)
+        direct_intensity = preset("direct_intensity", direct_intensity)
+        position = preset("position", position)
+        rotation = preset("rotation", rotation)
+        self.zoom = preset("zoom", zoom)
+
         self.bbs = self._filter_shapes(shapes)
         self.bb = bb
 
@@ -346,8 +337,8 @@ class CadqueryView(object):
 
         with Timer(self.timeit, "", "configure view", 3):
             bb_max = self.bb.max_dist_from_center()
-            orbit_radius = 4 * self.bb_factor * bb_max
- 
+            orbit_radius = 4 * bb_factor * bb_max
+
             if reset:
                 self._reset()
 
@@ -382,8 +373,10 @@ class CadqueryView(object):
 
             # Set up lights in every of the 8 corners of the global bounding box
             positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
+
+            self.amb_light = AmbientLight(intensity=ambient_intensity)
             self.key_lights = [
-                DirectionalLight(color="white", position=position, intensity=self.direct_intensity)
+                DirectionalLight(color="white", position=position, intensity=direct_intensity)
                 for position in positions
             ]
 
@@ -406,9 +399,9 @@ class CadqueryView(object):
             self.renderer.localClippingEnabled = True
             self.renderer.clippingPlanes = []  # turn off when not in clipping view
             self.clippingPlanes = [
-                Plane((-1, 0, 0), 0.02 if abs(self.bb.xmax) < 1e-4 else self.bb.xmax * self.bb_factor),
-                Plane((0, -1, 0), 0.02 if abs(self.bb.ymax) < 1e-4 else self.bb.ymax * self.bb_factor),
-                Plane((0, 0, -1), 0.02 if abs(self.bb.zmax) < 1e-4 else self.bb.zmax * self.bb_factor),
+                Plane((-1, 0, 0), 0.02 if abs(self.bb.xmax) < 1e-4 else self.bb.xmax * bb_factor),
+                Plane((0, -1, 0), 0.02 if abs(self.bb.ymax) < 1e-4 else self.bb.ymax * bb_factor),
+                Plane((0, 0, -1), 0.02 if abs(self.bb.zmax) < 1e-4 else self.bb.zmax * bb_factor),
             ]
 
             self.savestate = (self.camera.rotation, self.controller.target)
@@ -423,6 +416,7 @@ class CadqueryView(object):
         self._update()
 
     def add_to_scene(self):
+        self.scene.add(self.amb_light)
         self.scene.add(self.key_lights)
         self.scene.add(self.axes.axes)
         self.scene.add(self.grid.grid)
@@ -433,6 +427,7 @@ class CadqueryView(object):
         self.zoom = self.camera.zoom
         self.camera_position = self.camera.position
 
+        self.scene.remove(self.amb_light)
         self.scene.remove(self.key_lights)
         self.scene.remove(self.axes.axes)
         self.scene.remove(self.grid.grid)

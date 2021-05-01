@@ -105,24 +105,10 @@ class IndexedLineSegments2(LineSegments2):
 class CadqueryRenderer(object):
     def __init__(
         self,
-        quality,
-        deviation,
-        angular_tolerance,
-        render_edges=True,
-        render_shapes=True,
-        render_normals=False,
-        edge_accuracy=None,
         default_mesh_color=None,
         default_edge_color=None,
         timeit=False,
     ):
-        self.quality = quality
-        self.angular_tolerance = angular_tolerance
-        self.edge_accuracy = edge_accuracy
-        self.render_edges = render_edges
-        self.render_shapes = render_shapes
-        self.render_normals = render_normals
-        self.deviation = deviation
         self.default_mesh_color = Color(default_mesh_color or (166, 166, 166))
         self.default_edge_color = Color(default_edge_color or (128, 128, 128))
 
@@ -136,9 +122,6 @@ class CadqueryRenderer(object):
         mesh_color=None,
         edge_color=None,
         vertex_color=None,
-        render_edges=True,
-        render_shapes=True,
-        render_normals=False,
         edge_width=1,
         vertex_width=5,
         transparent=False,
@@ -158,20 +141,18 @@ class CadqueryRenderer(object):
             # Compute the tesselation and build mesh
             with Timer(self.timeit, "", "build mesh:", 5):
                 edge_list, normals_list = shape["edges"]
-                shape_mesh = None
-                if render_shapes:
-                    shape_geometry = BufferGeometry(
-                        attributes={
-                            "position": BufferAttribute(shape["vertices"]),
-                            "index": BufferAttribute(shape["triangles"]),
-                            "normal": BufferAttribute(shape["normals"]),
-                        }
-                    )
+                shape_geometry = BufferGeometry(
+                    attributes={
+                        "position": BufferAttribute(shape["vertices"]),
+                        "index": BufferAttribute(shape["triangles"]),
+                        "normal": BufferAttribute(shape["normals"]),
+                    }
+                )
 
-                    if mesh_color is None:
-                        mesh_color = self.default_mesh_color
-                    shp_material = material(mesh_color, transparent=transparent, opacity=opacity)
-                    shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
+                if mesh_color is None:
+                    mesh_color = self.default_mesh_color
+                shp_material = material(mesh_color, transparent=transparent, opacity=opacity)
+                shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
         if vertices is not None:
             if vertex_color is None:
@@ -239,22 +220,17 @@ class CadqueryRenderer(object):
                         edges=shape["shape"],
                         edge_color=shape["color"],
                         edge_width=3,
-                        render_edges=True,
                     )
                 elif shape["type"] == "vertices":
                     options = dict(
                         vertices=shape["shape"],
                         vertex_color=shape["color"],
                         vertex_width=6,
-                        render_edges=False,
                     )
                 else:
                     options = dict(
                         shape=shape["shape"],
                         mesh_color=shape["color"],
-                        render_shapes=self.render_shapes,
-                        render_edges=self.render_edges,
-                        render_normals=self.render_normals,
                     )
 
                 with Timer(self.timeit, shape["name"], "render shape:", 4):

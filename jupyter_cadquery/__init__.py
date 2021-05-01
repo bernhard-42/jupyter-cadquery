@@ -17,6 +17,11 @@
 from ._version import __version_info__, __version__
 from .cad_display import (
     set_sidecar,
+    reset_sidecar,
+    has_sidecar,
+    close_sidecar,
+)
+from .defaults import (
     get_default,
     get_defaults,
     set_defaults,

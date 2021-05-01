@@ -16,7 +16,11 @@
 
 from cadquery import Compound
 
-from jupyter_cadquery.cad_display import CadqueryDisplay, get_default
+from jupyter_cadquery.cad_display import (
+    get_default,
+    get_or_create_display,
+    has_sidecar,
+)
 from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
 from jupyter_cadquery.utils import Color, flatten, Timer
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, BoundingBox, loc_to_tq
@@ -87,6 +91,8 @@ class _Part(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_shapes,
+        render_edges,
         render_normals,
         progress=None,
         timeit=False,
@@ -176,6 +182,8 @@ class _Edges(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_shapes,
+        render_edges,
         render_normals,
         progress=None,
         timeit=False,
@@ -230,6 +238,8 @@ class _Vertices(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_shapes,
+        render_edges,
         render_normals,
         progress=None,
         timeit=False,
@@ -272,6 +282,8 @@ class _PartGroup(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_shapes,
+        render_edges,
         render_normals,
         progress=None,
         timeit=False,
@@ -292,6 +304,8 @@ class _PartGroup(_CADObject):
                     deviation,
                     angular_tolerance,
                     edge_accuracy,
+                    render_shapes,
+                    render_edges,
                     render_normals,
                     progress,
                     timeit,
@@ -306,7 +320,9 @@ class _PartGroup(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
-        render_normals=False,
+        render_shapes,
+        render_edges,
+        render_normals,
         progress=None,
         timeit=False,
     ):
@@ -323,6 +339,8 @@ class _PartGroup(_CADObject):
             deviation=deviation,
             angular_tolerance=angular_tolerance,
             edge_accuracy=edge_accuracy,
+            render_shapes=render_shapes,
+            render_edges=render_edges,
             render_normals=render_normals,
             progress=progress,
             timeit=timeit,
@@ -382,40 +400,77 @@ def _combined_bb(shapes):
 
 
 def _show(part_group, **kwargs):
-    def preset(key, value):
-        return get_default(key) if value is None else value
-
     for k in kwargs:
-        if get_default(k, "") == "":
-            raise KeyError("Paramater %s is not a valid argument for show()" % k)
+        if get_default(k, "n/a") == "n/a":
+            raise KeyError(f"Paramater {k} is not a valid argument for show()")
 
-    timeit = preset("timeit", kwargs.get("timeit"))
+    # remove all tessellation and view parameters
+    create_args = {
+        k: v
+        for k, v in kwargs.items()
+        if k
+        in [
+            "height",
+            "bb",
+            "tree",
+            "cad",
+            "axes",
+            "axes0",
+            "grid",
+            "ortho",
+            "transparent",
+            "mac_scrollbar",
+            "display",
+            "tools",
+            "timeit",
+        ]
+    }
+    add_shape_args = {
+        k: v
+        for k, v in kwargs.items()
+        if k
+        in [
+            "bb_factor",
+            "ambient_intensity",
+            "direct_intensity",
+            "position",
+            "rotation",
+            "zoom",
+        ]
+    }
+
+    timeit = kwargs.get("timeit", get_default("timeit"))
+
     with Timer(timeit, "", "overall"):
 
         with Timer(timeit, "", "setup display", 1):
             num_shapes = part_group.count_shapes()
-            d = CadqueryDisplay()
-            widget = d.create(**kwargs)
+            d = get_or_create_display(**create_args)
             d.init_progress(num_shapes)
-            d.display(widget)
 
         with Timer(timeit, "", "tessellate", 1):
             mapping = part_group.to_state()
             shapes = part_group.collect_mapped_shapes(
                 mapping,
-                quality=preset("quality", kwargs.get("quality")),
-                deviation=preset("deviation", kwargs.get("deviation")),
-                angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
-                edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
-                render_normals=preset("render_normals", kwargs.get("render_normals")),
+                quality=kwargs.get("quality", get_default("quality")),
+                deviation=kwargs.get("deviation", get_default("deviation")),
+                angular_tolerance=kwargs.get("angular_tolerance", get_default("angular_tolerance")),
+                edge_accuracy=kwargs.get("edge_accuracy", get_default("edge_accuracy")),
+                render_shapes=kwargs.get("render_shapes", get_default("render_shapes")),
+                render_edges=kwargs.get("render_edges", get_default("render_edges")),
+                render_normals=kwargs.get("render_normals", get_default("render_normals")),
                 progress=d.progress,
                 timeit=timeit,
             )
             tree = part_group.to_nav_dict()
 
         with Timer(timeit, "", "show shapes", 1):
-            d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes))
+            d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), **add_shape_args)
 
     d.info.ready_msg(d.cq_view.grid.step)
+
+    sidecar = has_sidecar()
+    if sidecar is not None:
+        print(f"Done, using side car '{sidecar.title()}'")
 
     return d
