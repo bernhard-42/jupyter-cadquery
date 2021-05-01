@@ -55,7 +55,6 @@ def show(cad_obj, **kwargs):
     - tree_width:        Width of navigation tree part of the view (default=250)
     - cad_width:         Width of CAD view part of the view (default=800)
     - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
-    - render_shapes:     Render shapes  (default=True)
     - render_edges:      Render edges  (default=True)
     - render_normals:    Render normals (default=False)
     - render_mates:      Render mates (for MAssemblies)

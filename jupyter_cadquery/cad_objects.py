@@ -91,7 +91,6 @@ class _Part(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
-        render_shapes,
         render_edges,
         render_normals,
         progress=None,
@@ -109,7 +108,12 @@ class _Part(_CADObject):
 
         with Timer(timeit, self.name, "tessellate:     ", 2) as t:
             mesh = tessellate(
-                self.shape, quality=quality, angular_tolerance=angular_tolerance, normals_len=normals_len, debug=timeit
+                self.shape,
+                quality=quality,
+                angular_tolerance=angular_tolerance,
+                normals_len=normals_len,
+                debug=timeit,
+                compute_edges=render_edges,
             )
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
 
@@ -182,7 +186,6 @@ class _Edges(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
-        render_shapes,
         render_edges,
         render_normals,
         progress=None,
@@ -238,7 +241,6 @@ class _Vertices(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
-        render_shapes,
         render_edges,
         render_normals,
         progress=None,
@@ -282,7 +284,6 @@ class _PartGroup(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
-        render_shapes,
         render_edges,
         render_normals,
         progress=None,
@@ -304,7 +305,6 @@ class _PartGroup(_CADObject):
                     deviation,
                     angular_tolerance,
                     edge_accuracy,
-                    render_shapes,
                     render_edges,
                     render_normals,
                     progress,
@@ -320,7 +320,6 @@ class _PartGroup(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
-        render_shapes,
         render_edges,
         render_normals,
         progress=None,
@@ -339,7 +338,6 @@ class _PartGroup(_CADObject):
             deviation=deviation,
             angular_tolerance=angular_tolerance,
             edge_accuracy=edge_accuracy,
-            render_shapes=render_shapes,
             render_edges=render_edges,
             render_normals=render_normals,
             progress=progress,
@@ -459,7 +457,6 @@ def _show(part_group, **kwargs):
                 deviation=preset("deviation", kwargs.get("deviation")),
                 angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
                 edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
-                render_shapes=preset("render_shapes", kwargs.get("render_shapes")),
                 render_edges=preset("render_edges", kwargs.get("render_edges")),
                 render_normals=preset("render_normals", kwargs.get("render_normals")),
                 progress=d.progress,
