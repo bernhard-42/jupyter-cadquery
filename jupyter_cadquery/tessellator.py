@@ -113,22 +113,18 @@ class Tessellator:
         self.edges = []
 
         count = self.number_solids(shape)
-        timer_mesh = Timer(debug, "", "Incremental mesh {'(parallel)' if count > 1 else ''}", 3)
-
-        # Remove previous mesh data
-        BRepTools.Clean_s(shape)
-        BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, count > 1)
-        timer_mesh.stop()
+        with Timer(debug, "", f"mesh incrementally {'(parallel)' if count > 1 else ''}", 3):
+            # Remove previous mesh data
+            BRepTools.Clean_s(shape)
+            BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, count > 1)
 
         if tessellate:
-            timer_values = Timer(debug, "", "nodes, normals", 3)
-            self.tessellate()
-            timer_values.stop()
+            with Timer(debug, "", "get nodes, triangles and normals", 3):
+                self.tessellate()
 
         if compute_edges:
-            timer_edges = Timer(debug, "", "edges", 3)
-            self.compute_edges()
-            timer_edges.stop()
+            with Timer(debug, "", "get edges", 3):
+                self.compute_edges()
 
         # Remove mesh data again
         # BRepTools.Clean_s(shape)

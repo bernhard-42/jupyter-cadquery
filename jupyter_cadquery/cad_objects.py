@@ -60,14 +60,8 @@ class _Part(_CADObject):
         super().__init__()
         self.name = name
         self.id = self.next_id()
+        self.color = Color(color or (232, 176, 36))
 
-        if color is not None:
-            if isinstance(color, (list, tuple)) and isinstance(color[0], Color):
-                self.color = color
-            elif isinstance(color, Color):
-                self.color = color
-            else:
-                self.color = Color(color)
         self.shape = shape
         self.set_states(show_faces, show_edges)
 
@@ -76,15 +70,11 @@ class _Part(_CADObject):
         self.state_edges = SELECTED if show_edges else UNSELECTED
 
     def to_nav_dict(self):
-        if isinstance(self.color, (tuple, list)):
-            color = [c.web_color for c in self.color]
-        else:
-            color = self.color.web_color
         return {
             "type": "leaf",
             "name": self.name,
             "id": self.id,
-            "color": color,
+            "color": self.color.web_color,
         }
 
     def to_state(self):
@@ -97,32 +87,36 @@ class _Part(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_normals,
         progress=None,
         timeit=False,
     ):
 
         # A first rough estimate of the bounding box.
         # Will be too large, but is sufficient for computing the quality
+        with Timer(timeit, self.name, "compute quality:", 2) as t:
+            bb = bounding_box(self.shape, loc=loc, optimal=False)
+            quality = compute_quality(bb, deviation=deviation)
+            t.info = str(bb)
 
-        bb_timer = Timer(timeit, self.name, "bounding box", 2)
-        bb = bounding_box(self.shape, loc=loc, optimal=False)
-        quality = compute_quality(bb, deviation=deviation)
-        bb_timer.stop(str(bb))
+        normals_len = 0 if render_normals is False else quality / deviation * 5
 
-        tessellation_timer = Timer(timeit, self.name, "tessellate  ", 2)
-        mesh = tessellate(self.shape, quality=quality, angular_tolerance=angular_tolerance)
-        tessellation_timer.stop(f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}")
+        with Timer(timeit, self.name, "tessellate:     ", 2) as t:
+            mesh = tessellate(
+                self.shape, quality=quality, angular_tolerance=angular_tolerance, normals_len=normals_len, debug=timeit
+            )
+            t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
 
         # After meshing the non optimal bounding box is much more exact
-        bb_timer = Timer(timeit, self.name, "bounding box", 2)
-        bb = bounding_box(self.shape, loc=loc, optimal=False)
-        bb_timer.stop(str(bb))
+        with Timer(timeit, self.name, "bounding box:   ", 2) as t:
+            bb = bounding_box(self.shape, loc=loc, optimal=False)
+            t.info = str(bb)
 
         if progress:
             progress.update()
-        
+
         color = [c.web_color for c in self.color] if isinstance(self.color, tuple) else self.color.web_color
-        
+
         return {
             "id": self.id,
             "type": "shapes",
@@ -151,7 +145,7 @@ class _Edges(_CADObject):
         self.shape = edges
         self.name = name
         self.id = self.next_id()
-        
+
         if color is not None:
             if isinstance(color, (list, tuple)) and isinstance(color[0], Color):
                 self.color = color
@@ -164,7 +158,7 @@ class _Edges(_CADObject):
         if isinstance(self.color, (tuple, list)):
             color = [c.web_color for c in self.color]
         else:
-            color = self.color.web_color        
+            color = self.color.web_color
         return {
             "type": "leaf",
             "name": self.name,
@@ -182,22 +176,22 @@ class _Edges(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_normals,
         progress=None,
         timeit=False,
     ):
-        bb_timer = Timer(timeit, self.name, "bounding box", 2)
-        bb = bounding_box(self.shape, loc=loc)
-        quality = compute_quality(bb, deviation=deviation)
-        deflection = quality / 100 if edge_accuracy is None else edge_accuracy
-        bb_timer.stop(str(bb))
+        with Timer(timeit, self.name, "bounding box:", 2) as t:
+            bb = bounding_box(self.shape, loc=loc)
+            quality = compute_quality(bb, deviation=deviation)
+            deflection = quality / 100 if edge_accuracy is None else edge_accuracy
+            t.info = str(bb)
 
-        discretize_timer = Timer(timeit, self.name, "discretize  ", 2)
-        edges = flatten([discretize_edge(edge, deflection) for edge in self.shape])
-        discretize_timer.stop()
+        with Timer(timeit, self.name, "discretize:  ", 2):
+            edges = flatten([discretize_edge(edge, deflection) for edge in self.shape])
 
         if progress:
             progress.update()
-        
+
         color = [c.web_color for c in self.color] if isinstance(self.color, tuple) else self.color.web_color
 
         return {
@@ -236,6 +230,7 @@ class _Vertices(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_normals,
         progress=None,
         timeit=False,
     ):
@@ -277,6 +272,7 @@ class _PartGroup(_CADObject):
         deviation,
         angular_tolerance,
         edge_accuracy,
+        render_normals,
         progress=None,
         timeit=False,
     ):
@@ -291,13 +287,28 @@ class _PartGroup(_CADObject):
         for obj in self.objects:
             result["parts"].append(
                 obj.collect_shapes(
-                    combined_loc, quality, deviation, angular_tolerance, edge_accuracy, progress, timeit
+                    combined_loc,
+                    quality,
+                    deviation,
+                    angular_tolerance,
+                    edge_accuracy,
+                    render_normals,
+                    progress,
+                    timeit,
                 )
             )
         return result
 
     def collect_mapped_shapes(
-        self, mapping, quality, deviation, angular_tolerance, edge_accuracy, progress=None, timeit=False
+        self,
+        mapping,
+        quality,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        render_normals=False,
+        progress=None,
+        timeit=False,
     ):
         def set_paths(shapes, mapping):
             for obj in shapes["parts"]:
@@ -312,6 +323,7 @@ class _PartGroup(_CADObject):
             deviation=deviation,
             angular_tolerance=angular_tolerance,
             edge_accuracy=edge_accuracy,
+            render_normals=render_normals,
             progress=progress,
             timeit=timeit,
         )
@@ -378,36 +390,31 @@ def _show(part_group, **kwargs):
             raise KeyError("Paramater %s is not a valid argument for show()" % k)
 
     timeit = preset("timeit", kwargs.get("timeit"))
-    overall_timer = Timer(timeit, "", "overall")
+    with Timer(timeit, "", "overall"):
 
-    display_timer = Timer(timeit, "", "setup display", 1)
-    num_shapes = part_group.count_shapes()
-    d = CadqueryDisplay()
-    widget = d.create(**kwargs)
-    d.init_progress(num_shapes)
-    d.display(widget)
-    display_timer.stop()
+        with Timer(timeit, "", "setup display", 1):
+            num_shapes = part_group.count_shapes()
+            d = CadqueryDisplay()
+            widget = d.create(**kwargs)
+            d.init_progress(num_shapes)
+            d.display(widget)
 
-    tessellation_timer = Timer(timeit, "", "tessellate", 1)
-    mapping = part_group.to_state()
-    shapes = part_group.collect_mapped_shapes(
-        mapping,
-        quality=preset("quality", kwargs.get("quality")),
-        deviation=preset("deviation", kwargs.get("deviation")),
-        angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
-        edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
-        progress=d.progress,
-        timeit=timeit,
-    )
+        with Timer(timeit, "", "tessellate", 1):
+            mapping = part_group.to_state()
+            shapes = part_group.collect_mapped_shapes(
+                mapping,
+                quality=preset("quality", kwargs.get("quality")),
+                deviation=preset("deviation", kwargs.get("deviation")),
+                angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
+                edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
+                render_normals=preset("render_normals", kwargs.get("render_normals")),
+                progress=d.progress,
+                timeit=timeit,
+            )
+            tree = part_group.to_nav_dict()
 
-    tree = part_group.to_nav_dict()
-    tessellation_timer.stop()
-
-    visualize_timer = Timer(timeit, "", "show shapes", 1)
-    d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes))
-    visualize_timer.stop()
-    
-    overall_timer.stop()
+        with Timer(timeit, "", "show shapes", 1):
+            d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes))
 
     d.info.ready_msg(d.cq_view.grid.step)
 

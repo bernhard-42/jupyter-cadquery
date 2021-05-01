@@ -151,15 +151,22 @@ class Timer:
         self.activity = activity
         self.name = name
         self.level = level
+        self.info = ""
         self.start = time.time()
 
-    def stop(self, suffix=""):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         prefix = ""
         if self.level > 0:
             prefix += "| " * self.level
 
+        if self.name != "":
+            self.name = f'"{self.name}"'
+
         if self.timeit:
-            print("%8.3f sec: %s%s %s %s" % (time.time() - self.start, prefix, self.activity, self.name, suffix))
+            print("%8.3f sec: %s%s %s %s" % (time.time() - self.start, prefix, self.activity, self.name, self.info))
 
 
 class Progress:

@@ -656,55 +656,54 @@ class CadqueryDisplay(object):
         self.tree_view = Output()
         self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
 
-        add_shapes_timer = Timer(self.timeit, "", "mesh shapes", 2)
-        self.cq_view.add_shapes(shapes, bb, self.progress, reset=reset)
-        add_shapes_timer.stop()
+        with Timer(self.timeit, "", "mesh shapes", 2):
+            self.cq_view.add_shapes(shapes, bb, self.progress, reset=reset)
 
-        configure_display_timer = Timer(self.timeit, "", "configure display", 2)
+        with Timer(self.timeit, "", "configure display", 2):
 
-        def set_slider(i, s_min, s_max):
-            s_min = -0.02 if abs(s_min) < 1e-4 else s_min * self.bb_factor
-            s_max = 0.02 if abs(s_max) < 1e-4 else s_max * self.bb_factor
-            self.clipping.sliders[i].max = 2 ** 31  #  first increase max to avoid traitlet error that min > max
-            self.clipping.sliders[i].min = s_min  # set min which now is always < max
-            self.clipping.sliders[i].max = s_max  # correct max
-            self.clipping.sliders[i].value = s_max
+            def set_slider(i, s_min, s_max):
+                s_min = -0.02 if abs(s_min) < 1e-4 else s_min * self.bb_factor
+                s_max = 0.02 if abs(s_max) < 1e-4 else s_max * self.bb_factor
+                self.clipping.sliders[i].max = 2 ** 31  #  first increase max to avoid traitlet error that min > max
+                self.clipping.sliders[i].min = s_min  # set min which now is always < max
+                self.clipping.sliders[i].max = s_max  # correct max
+                self.clipping.sliders[i].value = s_max
 
-        bb = self.cq_view.bb
-        set_slider(1, bb.xmin, bb.xmax)
-        set_slider(3, bb.ymin, bb.ymax)
-        set_slider(5, bb.zmin, bb.zmax)
+            bb = self.cq_view.bb
+            set_slider(1, bb.xmin, bb.xmax)
+            set_slider(3, bb.ymin, bb.ymax)
+            set_slider(5, bb.zmin, bb.zmax)
 
-        # Tree widget to change visibility
-        self.tree_view = TreeView(
-            image_paths=self.image_paths,
-            tree=tree,
-            state=self.states,
-            layout=Layout(height="%dpx" % (self.height * 0.6 - 30), width="%dpx" % (self.tree_width - 20)),
-        )
-        self.tree_view.add_class("view_tree")
-        self.tree_view.add_class("scroll-area")
-        if self.mac_scrollbar:
-            self.tree_view.add_class("mac-scrollbar")
+            # Tree widget to change visibility
+            self.tree_view = TreeView(
+                image_paths=self.image_paths,
+                tree=tree,
+                state=self.states,
+                layout=Layout(height="%dpx" % (self.height * 0.6 - 30), width="%dpx" % (self.tree_width - 20)),
+            )
+            self.tree_view.add_class("view_tree")
+            self.tree_view.add_class("scroll-area")
+            if self.mac_scrollbar:
+                self.tree_view.add_class("mac-scrollbar")
 
-        self.tree_view.observe(self.cq_view.change_visibility(self.paths), "state")
-        self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
+            self.tree_view.observe(self.cq_view.change_visibility(self.paths), "state")
+            self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
 
-        # Set initial state
+            # Set initial state
 
-        for obj, vals in self.states.items():
-            for i, val in enumerate(vals):
-                self.cq_view.set_visibility(self.paths[obj], i, val)
+            for obj, vals in self.states.items():
+                for i, val in enumerate(vals):
+                    self.cq_view.set_visibility(self.paths[obj], i, val)
+  
+            self.toggle_axes(self.axes)
+            self.toggle_center(self.axes0)
+            self.toggle_grid(self.grid)
+            self.toggle_transparent(self.transparent)
+            self.toggle_black_edges(self.black_edges)
+            self.toggle_ortho(self.ortho)
 
-        self.toggle_axes(self.axes)
-        self.toggle_center(self.axes0)
-        self.toggle_grid(self.grid)
-        self.toggle_transparent(self.transparent)
-        self.toggle_black_edges(self.black_edges)
-        self.toggle_ortho(self.ortho)
+            self.clean = False
 
-        self.clean = False
-        configure_display_timer.stop()
         if SIDECAR is not None:
             print("Done, using side car '%s'" % SIDECAR.title)
 

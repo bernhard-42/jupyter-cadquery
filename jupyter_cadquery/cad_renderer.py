@@ -154,29 +154,24 @@ class CadqueryRenderer(object):
 
         # edge_accuracy = None
 
-        
         if shape is not None:
             # Compute the tesselation and build mesh
-            mesh_timer = Timer(self.timeit, "", "build mesh", 5)
+            with Timer(self.timeit, "", "build mesh:", 5):
+                edge_list, normals_list = shape["edges"]
+                shape_mesh = None
+                if render_shapes:
+                    shape_geometry = BufferGeometry(
+                        attributes={
+                            "position": BufferAttribute(shape["vertices"]),
+                            "index": BufferAttribute(shape["triangles"]),
+                            "normal": BufferAttribute(shape["normals"]),
+                        }
+                    )
 
-            edge_list, normals_list = shape["edges"]
-
-            shape_mesh = None
-            if render_shapes:
-                shape_geometry = BufferGeometry(
-                    attributes={
-                        "position": BufferAttribute(shape["vertices"]),
-                        "index": BufferAttribute(shape["triangles"]),
-                        "normal": BufferAttribute(shape["normals"]),
-                    }
-                )
-
-                if mesh_color is None:
-                    mesh_color = self.default_mesh_color
-                shp_material = material(mesh_color, transparent=transparent, opacity=opacity)
-                shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
-
-            mesh_timer.stop()
+                    if mesh_color is None:
+                        mesh_color = self.default_mesh_color
+                    shp_material = material(mesh_color, transparent=transparent, opacity=opacity)
+                    shape_mesh = IndexedMesh(geometry=shape_geometry, material=shp_material)
 
         if vertices is not None:
             if vertex_color is None:
@@ -261,10 +256,9 @@ class CadqueryRenderer(object):
                         render_edges=self.render_edges,
                         render_normals=self.render_normals,
                     )
-                
-                render_timer = Timer(self.timeit, shape["name"], "render shape", 4)
-                shape_mesh, edge_lines, normal_lines, points = self._render_shape(**options)
-                render_timer.stop()
+
+                with Timer(self.timeit, shape["name"], "render shape:", 4):
+                    shape_mesh, edge_lines, normal_lines, points = self._render_shape(**options)
 
                 ind = len(group.children)
                 if shape_mesh is not None:

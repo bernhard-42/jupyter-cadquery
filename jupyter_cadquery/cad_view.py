@@ -341,79 +341,77 @@ class CadqueryView(object):
         self.bb = bb
 
         # Render Shapes
-        render_timer = Timer(self.timeit, "", "overall render", 3)
-        self.pickable_objects, self.pick_mapping = self.cq_renderer.render(shapes, progress)
-        render_timer.stop()
+        with Timer(self.timeit, "", "overall render", 3):
+            self.pickable_objects, self.pick_mapping = self.cq_renderer.render(shapes, progress)
 
-        configure_timer = Timer(self.timeit, "", "configure view", 3)
-        bb_max = self.bb.max_dist_from_center()
-        orbit_radius = 4 * self.bb_factor * bb_max
+        with Timer(self.timeit, "", "configure view", 3):
+            bb_max = self.bb.max_dist_from_center()
+            orbit_radius = 4 * self.bb_factor * bb_max
+ 
+            if reset:
+                self._reset()
 
-        if reset:
-            self._reset()
+            # Calculate camera postion
+            if position is None and rotation is None:  # no new defaults
+                if self.camera_position is None:  # no existing position
+                    self.camera_position = self._add(self.bb.center, self._scale((1, 1, 1)))
+            else:
+                position = rotate(position or (1, 1, 1), *(rotation or (0, 0, 0)))
+                self.camera_position = self._add(self.bb.center, self._scale(position))
 
-        # Calculate camera postion
-        if position is None and rotation is None:  # no new defaults
-            if self.camera_position is None:  # no existing position
-                self.camera_position = self._add(self.bb.center, self._scale((1, 1, 1)))
-        else:
-            position = rotate(position or (1, 1, 1), *(rotation or (0, 0, 0)))
-            self.camera_position = self._add(self.bb.center, self._scale(position))
+            if self.zoom is None:
+                self.zoom = self.camera_initial_zoom
 
-        if self.zoom is None:
-            self.zoom = self.camera_initial_zoom
+            # Set up Helpers relative to bounding box
+            xy_max = max(abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax)) * 1.2
+            self.grid = Grid(
+                bb_center=self.bb.center,
+                maximum=xy_max,
+                colorCenterLine="#aaa",
+                colorGrid="#ddd",
+            )
+            self.grid.set_visibility(False)
 
-        # Set up Helpers relative to bounding box
-        xy_max = max(abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax)) * 1.2
-        self.grid = Grid(
-            bb_center=self.bb.center,
-            maximum=xy_max,
-            colorCenterLine="#aaa",
-            colorGrid="#ddd",
-        )
-        self.grid.set_visibility(False)
+            self.axes = Axes(bb_center=self.bb.center, length=self.grid.grid.size / 2)
+            self.axes.set_visibility(False)
 
-        self.axes = Axes(bb_center=self.bb.center, length=self.grid.grid.size / 2)
-        self.axes.set_visibility(False)
+            # Set up the controller relative to bounding box
+            self.controller.target = self.bb.center
+            self.controller.target0 = self.bb.center
+            self.controller.panSpeed = (self.bb.xsize + self.bb.ysize + self.bb.zsize) / 300
 
-        # Set up the controller relative to bounding box
-        self.controller.target = self.bb.center
-        self.controller.target0 = self.bb.center
-        self.controller.panSpeed = (self.bb.xsize + self.bb.ysize + self.bb.zsize) / 300
+            # Set up lights in every of the 8 corners of the global bounding box
+            positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
+            self.key_lights = [
+                DirectionalLight(color="white", position=position, intensity=self.direct_intensity)
+                for position in positions
+            ]
 
-        # Set up lights in every of the 8 corners of the global bounding box
-        positions = list(itertools.product(*[(-orbit_radius, orbit_radius)] * 3))
-        self.key_lights = [
-            DirectionalLight(color="white", position=position, intensity=self.direct_intensity)
-            for position in positions
-        ]
+            # Set up Picker
+            self.picker = Picker(controlling=self.pickable_objects, event="dblclick")
+            self.picker.observe(self.pick)
+            self.renderer.controls = self.renderer.controls + [self.picker]
 
-        # Set up Picker
-        self.picker = Picker(controlling=self.pickable_objects, event="dblclick")
-        self.picker.observe(self.pick)
-        self.renderer.controls = self.renderer.controls + [self.picker]
+            # Set up camera
+            self.update_camera(self.camera_position, self.zoom, orbit_radius)
 
-        # Set up camera
-        self.update_camera(self.camera_position, self.zoom, orbit_radius)
+            # Add objects to scene
+            self._fix_camera()
+            self.add_to_scene()
 
-        # Add objects to scene
-        self._fix_camera()
-        self.add_to_scene()
+            # needs to be done after setup of camera
+            self.grid.set_rotation((math.pi / 2.0, 0, 0, "XYZ"))
+            self.grid.set_position((0, 0, 0))
 
-        # needs to be done after setup of camera
-        self.grid.set_rotation((math.pi / 2.0, 0, 0, "XYZ"))
-        self.grid.set_position((0, 0, 0))
+            self.renderer.localClippingEnabled = True
+            self.renderer.clippingPlanes = []  # turn off when not in clipping view
+            self.clippingPlanes = [
+                Plane((-1, 0, 0), 0.02 if abs(self.bb.xmax) < 1e-4 else self.bb.xmax * self.bb_factor),
+                Plane((0, -1, 0), 0.02 if abs(self.bb.ymax) < 1e-4 else self.bb.ymax * self.bb_factor),
+                Plane((0, 0, -1), 0.02 if abs(self.bb.zmax) < 1e-4 else self.bb.zmax * self.bb_factor),
+            ]
 
-        self.renderer.localClippingEnabled = True
-        self.renderer.clippingPlanes = []  # turn off when not in clipping view
-        self.clippingPlanes = [
-            Plane((-1, 0, 0), 0.02 if abs(self.bb.xmax) < 1e-4 else self.bb.xmax * self.bb_factor),
-            Plane((0, -1, 0), 0.02 if abs(self.bb.ymax) < 1e-4 else self.bb.ymax * self.bb_factor),
-            Plane((0, 0, -1), 0.02 if abs(self.bb.zmax) < 1e-4 else self.bb.zmax * self.bb_factor),
-        ]
-
-        self.savestate = (self.camera.rotation, self.controller.target)
-        configure_timer.stop()
+            self.savestate = (self.camera.rotation, self.controller.target)
 
         return self.renderer
 
