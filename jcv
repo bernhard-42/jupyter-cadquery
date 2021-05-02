@@ -1,0 +1,3 @@
+#!/bin/bash
+VIEWER_PATH=$(python -c "import os, jupyter_cadquery.viewer.client as c; print(os.path.dirname(c.__file__))")
+voila --enable_nbextensions=True $VIEWER_PATH/viewer.ipynb

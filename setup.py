@@ -34,6 +34,7 @@ setup_args = {
         "prod": {"cadquery==2.1"},
     },
     "packages": find_packages(),
+    "scripts": ["jcv"],
     "zip_safe": False,
     "author": "Bernhard Walter",
     "author_email": "b_walter@arcor.de",
