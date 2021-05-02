@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-import platform
 from os.path import join, dirname
 from uuid import uuid4
 from IPython.display import display as ipy_display
@@ -22,14 +21,13 @@ from IPython.display import display as ipy_display
 from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Tab, HTML, Box, Output
 
 from jupyter_cadquery_widgets.widgets import ImageButton, TreeView, UNSELECTED, SELECTED, MIXED, EMPTY
-import cadquery
 from .cad_view import CadqueryView
 from .utils import Timer, Progress
 from ._version import __version__
 from .defaults import set_defaults, get_default
 
-SIDECAR = None
 DISPLAY = None
+SIDECAR = None
 
 
 def has_sidecar():
@@ -144,12 +142,12 @@ class Info(object):
 
         self.html.value = html
 
-    def version_msg(self):
+    def version_msg(self, version):
         self.add_html(
             f"""
         <b>Versions</b>
         <table>
-            <tr class="small_table"><td>CadQuery:</td>        <td>{cadquery.__version__}</td> </tr>
+            <tr class="small_table"><td>CadQuery:</td>        <td>{version}</td> </tr>
             <tr class="small_table"><td>Jupyter CadQuery:</td><td>{__version__}</td> </tr>
         </table>
         """
@@ -581,8 +579,6 @@ class CadqueryDisplay(object):
                 tooltip = "Change view to %s" % typ
             button = self.create_button(typ, self.change_view(typ, CadqueryDisplay.directions), tooltip)
             self.view_controls.append(button)
-
-        self.info.version_msg()
 
         # only show pure renderer
         if self._tools == False:

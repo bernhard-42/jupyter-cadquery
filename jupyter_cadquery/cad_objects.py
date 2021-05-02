@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from cadquery import Compound
+from cadquery import Compound, __version__
 
 from jupyter_cadquery.cad_display import (
     get_default,
@@ -467,6 +467,7 @@ def _show(part_group, **kwargs):
         with Timer(timeit, "", "show shapes", 1):
             d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), **add_shape_args)
 
+    d.info.version_msg(__version__)
     d.info.ready_msg(d.cq_view.grid.step)
 
     sidecar = has_sidecar()

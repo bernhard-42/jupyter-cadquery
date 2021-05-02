@@ -20,9 +20,10 @@ from OCP.TopExp import TopExp_Explorer
 
 from OCP.StlAPI import StlAPI_Writer
 
-from cadquery import Compound
+from cadquery import Compound, Location
 from cadquery.occ_impl.shapes import downcast
 from .utils import distance
+
 
 HASH_CODE_MAX = 2147483647
 
@@ -239,3 +240,11 @@ def get_rgb(color):
 
 # def from_rgb(r, g, b):
 #     return Color(r, g, b)
+
+
+def __location__repr__(self):
+    t, r = loc_to_tq(self)
+    return f"(t={t}, q=({r[0]}, {r[1]}, {r[2]}, {r[3]}))"
+
+
+Location.__repr__ = __location__repr__  # type: ignore

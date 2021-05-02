@@ -3,7 +3,6 @@ from time import localtime
 import pickle
 import threading
 import time
-import zlib
 import zmq
 
 from IPython.display import display, clear_output
@@ -13,6 +12,7 @@ from jupyter_cadquery.cad_display import CadqueryDisplay
 CAD_DISPLAY = None
 LOG_OUTPUT = None
 ZMQ_SERVER = None
+ZMQ_PORT = 5555
 
 
 def log(typ, *msg):
@@ -39,11 +39,10 @@ def error(*msg):
     log("E", *msg)
 
 
-def recv_zipped_pickle(socket, flags=0, protocol=-1):
-    z = socket.recv(flags)
+def recv_pickle(socket, flags=0, protocol=4):
+    p = socket.recv(flags)
     info("receiving")
     try:
-        p = zlib.decompress(z)
         data = pickle.loads(p)
         return data
     except Exception as ex:
@@ -120,13 +119,13 @@ def start_viewer():
 
     context = zmq.Context()
     socket = context.socket(zmq.PAIR)
-    socket.bind("tcp://*:5555")
+    socket.bind(f"tcp://*:{ZMQ_PORT}")
     ZMQ_SERVER = socket
     info("zmq started\n")
 
     def msg_handler():
         while True:
-            msg = recv_zipped_pickle(socket)
+            msg = recv_pickle(socket)
             try:
                 if msg["type"] == "data":
                     t = time.time()

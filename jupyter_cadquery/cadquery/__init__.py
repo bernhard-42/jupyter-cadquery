@@ -28,4 +28,11 @@ from .cad_objects import (
 )
 from .replay import replay, enable_replay, disable_replay, reset_replay
 
-auto_show()
+try:
+    from IPython import get_ipython
+
+    shell_name = get_ipython().__class__.__name__
+    if shell_name == "ZMQInteractiveShell":
+        auto_show()
+except:
+    ...

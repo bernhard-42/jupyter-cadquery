@@ -38,7 +38,6 @@ with warnings.catch_warnings():
 
 from jupyter_cadquery_widgets.widgets import state_diff
 from .cad_helpers import Grid, Axes
-from .ocp_utils import BoundingBox
 from .utils import rotate, Color, Timer
 from .cad_renderer import CadqueryRenderer, IndexedMesh
 from .defaults import get_default

@@ -15,28 +15,17 @@
 #
 
 from ._version import __version_info__, __version__
+
 from .cad_display import (
     set_sidecar,
     reset_sidecar,
     has_sidecar,
     close_sidecar,
 )
+
 from .defaults import (
     get_default,
     get_defaults,
     set_defaults,
     reset_defaults,
 )
-
-# from .cad_renderer import reset_cache
-from .export import exportSTL
-from .ocp_utils import loc_to_tq
-from cadquery import Location
-
-
-def __location__repr__(self):
-    t, r = loc_to_tq(self)
-    return f"(t={t}, q=({r[0]}, {r[1]}, {r[2]}, {r[3]}))"
-
-
-Location.__repr__ = __location__repr__  # type: ignore
