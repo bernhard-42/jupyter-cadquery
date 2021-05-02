@@ -290,7 +290,7 @@ def _is_wirelist(cad_obj):
     )
 
 
-def to_assembly(*cad_objs, render_mates=None, mate_scale=None):
+def to_assembly(*cad_objs, render_mates=None, mate_scale=1):
     assembly = PartGroup([], "Group")
     obj_id = 0
     for cad_obj in cad_objs:
