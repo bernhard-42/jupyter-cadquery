@@ -224,11 +224,17 @@ def to_edge(mate, loc=None, scale=1) -> Workplane:
     return w
 
 
-def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
+def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, default_color=None):
     loc = Location()
     render_loc = cad_obj.loc
 
-    color = Color(get_rgb(cad_obj.color))
+    if cad_obj.color is None:
+        if default_color is None:
+            color = Color(get_default("default_color"))
+        else:
+            color = Color(default_color)
+    else:
+        color = Color(get_rgb(cad_obj.color))
 
     parent = [
         Part(
@@ -257,8 +263,8 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1):
     return PartGroup(parent + children, cad_obj.name, loc=render_loc)
 
 
-def _from_workplane(cad_obj, obj_id, name="Part"):
-    return Part(cad_obj, "%s_%d" % (name, obj_id))
+def _from_workplane(cad_obj, obj_id, name="Part", default_color=None):
+    return Part(cad_obj, "%s_%d" % (name, obj_id), color=Color(default_color))
 
 
 def _is_facelist(cad_obj):
@@ -293,7 +299,7 @@ def _is_wirelist(cad_obj):
     )
 
 
-def to_assembly(*cad_objs, render_mates=None, mate_scale=1):
+def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
     assembly = PartGroup([], "Group")
     obj_id = 0
     for cad_obj in cad_objs:
@@ -301,10 +307,14 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=1):
             assembly.add(cad_obj)
 
         elif HAS_MASSEMBLY and isinstance(cad_obj, MAssembly):
-            assembly.add(from_assembly(cad_obj, cad_obj, render_mates=render_mates, mate_scale=mate_scale))
+            assembly.add(
+                from_assembly(
+                    cad_obj, cad_obj, render_mates=render_mates, mate_scale=mate_scale, default_color=default_color
+                )
+            )
 
         elif isinstance(cad_obj, CqAssembly):
-            assembly.add(from_assembly(cad_obj, cad_obj))
+            assembly.add(from_assembly(cad_obj, cad_obj, default_color=default_color))
 
         elif isinstance(cad_obj, Edge):
             assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id))
@@ -337,13 +347,13 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=1):
             assembly.add_list(_from_vector(cad_obj, obj_id))
 
         elif isinstance(cad_obj, (Shape, Compound)):
-            assembly.add(_from_workplane(Workplane(cad_obj), obj_id))
+            assembly.add(_from_workplane(Workplane(cad_obj), obj_id, default_color=default_color))
 
         elif isinstance(cad_obj.val(), Vector):
             assembly.add_list(_from_vectorlist(cad_obj, obj_id))
 
         elif isinstance(cad_obj, Workplane):
-            assembly.add(_from_workplane(cad_obj, obj_id))
+            assembly.add(_from_workplane(cad_obj, obj_id, default_color=default_color))
 
         else:
             raise NotImplementedError("Type:", cad_obj)
@@ -393,8 +403,9 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     """
     render_mates = render_mates or get_default("render_mates")
     mate_scale = mate_scale or get_default("mate_scale")
+    default_color = kwargs.get("default_color") or get_default("default_color")
 
-    assembly = to_assembly(*cad_objs, render_mates=render_mates, mate_scale=mate_scale)
+    assembly = to_assembly(*cad_objs, render_mates=render_mates, mate_scale=mate_scale, default_color=default_color)
 
     if assembly is None:
         raise ValueError("%s cannot be viewed" % cad_objs)

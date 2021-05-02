@@ -8,6 +8,7 @@ import zmq
 from IPython.display import display, clear_output
 import ipywidgets as widgets
 from jupyter_cadquery.cad_display import CadqueryDisplay
+from jupyter_cadquery.defaults import split_args
 
 CAD_DISPLAY = None
 LOG_OUTPUT = None
@@ -47,43 +48,6 @@ def recv_pickle(socket, flags=0, protocol=4):
         return data
     except Exception as ex:
         return str(ex)
-
-
-def split_args(config):
-    create_args = {
-        k: v
-        for k, v in config.items()
-        if k
-        in [
-            "height",
-            "bb",
-            "tree",
-            "cad",
-            "axes",
-            "axes0",
-            "grid",
-            "ortho",
-            "transparent",
-            "mac_scrollbar",
-            "display",
-            "tools",
-            "timeit",
-        ]
-    }
-    add_shape_args = {
-        k: v
-        for k, v in config.items()
-        if k
-        in [
-            "bb_factor",
-            "ambient_intensity",
-            "direct_intensity",
-            "position",
-            "rotation",
-            "zoom",
-        ]
-    }
-    return create_args, add_shape_args
 
 
 def stop_viewer():

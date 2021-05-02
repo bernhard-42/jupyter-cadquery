@@ -124,4 +124,41 @@ def reset_defaults():
     DEFAULTS.reset_defaults()
 
 
+def split_args(config):
+    create_args = {
+        k: v
+        for k, v in config.items()
+        if k
+        in [
+            "height",
+            "bb",
+            "tree",
+            "cad",
+            "axes",
+            "axes0",
+            "grid",
+            "ortho",
+            "transparent",
+            "mac_scrollbar",
+            "display",
+            "tools",
+            "timeit",
+        ]
+    }
+    add_shape_args = {
+        k: v
+        for k, v in config.items()
+        if k
+        in [
+            "bb_factor",
+            "ambient_intensity",
+            "direct_intensity",
+            "position",
+            "rotation",
+            "zoom",
+        ]
+    }
+    return create_args, add_shape_args
+
+
 DEFAULTS = Defaults()

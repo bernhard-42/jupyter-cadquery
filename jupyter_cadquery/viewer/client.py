@@ -17,6 +17,8 @@
 from jupyter_cadquery.cadquery.cad_objects import to_assembly
 from jupyter_cadquery.defaults import get_defaults
 from jupyter_cadquery.cad_objects import _combined_bb
+from jupyter_cadquery.defaults import get_default
+
 import pickle
 import zmq
 from .server import ZMQ_PORT
@@ -82,7 +84,16 @@ def show(obj, **kwargs):
     - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
 
-    part_group = to_assembly(obj, render_mates=kwargs.get("render_mates"), mate_scale=kwargs.get("mate_scale", 1))
+    color = kwargs.get("default_color")
+    if color is None:
+        color = get_default("default_color")
+
+    part_group = to_assembly(
+        obj,
+        render_mates=kwargs.get("render_mates"),
+        mate_scale=kwargs.get("mate_scale", 1),
+        default_color=color,
+    )
 
     config = get_defaults()
     for k, v in kwargs.items():

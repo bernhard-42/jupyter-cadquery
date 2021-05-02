@@ -25,7 +25,7 @@ from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
 from jupyter_cadquery.utils import Color, flatten, Timer
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, BoundingBox, loc_to_tq
 from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality
-from jupyter_cadquery.defaults import get_default
+from jupyter_cadquery.defaults import get_default, split_args
 
 PART_ID = 0
 
@@ -404,39 +404,7 @@ def _show(part_group, **kwargs):
             raise KeyError(f"Paramater {k} is not a valid argument for show()")
 
     # remove all tessellation and view parameters
-    create_args = {
-        k: v
-        for k, v in kwargs.items()
-        if k
-        in [
-            "height",
-            "bb",
-            "tree",
-            "cad",
-            "axes",
-            "axes0",
-            "grid",
-            "ortho",
-            "transparent",
-            "mac_scrollbar",
-            "display",
-            "tools",
-            "timeit",
-        ]
-    }
-    add_shape_args = {
-        k: v
-        for k, v in kwargs.items()
-        if k
-        in [
-            "bb_factor",
-            "ambient_intensity",
-            "direct_intensity",
-            "position",
-            "rotation",
-            "zoom",
-        ]
-    }
+    create_args, add_shape_args = split_args(kwargs)
 
     preset = lambda key, value: get_default(key) if value is None else value
 
