@@ -28,6 +28,7 @@ setup_args = {
         "sidecar~=0.5",
         "jupyter-cadquery-widgets~=2.0.2",
         "pythreejs~=2.3",
+        "voila~=0.2",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},
