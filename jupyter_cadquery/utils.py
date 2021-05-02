@@ -147,7 +147,10 @@ def tree_find_single_selector(tree, selector):
 
 class Timer:
     def __init__(self, timeit, name, activity, level=0):
-        self.timeit = timeit
+        if isinstance(timeit, bool):
+            self.timeit = 99 if timeit else -1
+        else:
+            self.timeit = timeit
         self.activity = activity
         self.name = name
         self.level = level
@@ -158,14 +161,14 @@ class Timer:
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        prefix = ""
-        if self.level > 0:
-            prefix += "| " * self.level
+        if self.level <= self.timeit:
+            prefix = ""
+            if self.level > 0:
+                prefix += "| " * self.level
 
-        if self.name != "":
-            self.name = f'"{self.name}"'
+            if self.name != "":
+                self.name = f'"{self.name}"'
 
-        if self.timeit:
             print("%8.3f sec: %s%s %s %s" % (time.time() - self.start, prefix, self.activity, self.name, self.info))
 
 

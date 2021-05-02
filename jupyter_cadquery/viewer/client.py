@@ -74,7 +74,7 @@ def show(obj, **kwargs):
     - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
     - display:           Select display: "sidecar", "cell", "html"
     - tools:             Show the viewer tools like the object tree
-    - timeit:            Show rendering times (default=False)
+    - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
 
     For example isometric projection can be achieved in two ways:
     - position = (1, 1, 1)
