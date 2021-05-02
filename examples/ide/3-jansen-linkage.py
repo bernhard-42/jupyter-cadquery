@@ -1,6 +1,6 @@
 import cadquery as cq
 from cadquery_massembly import MAssembly
-from cadquery_massembly.cq_editor import show_mates
+from jupyter_cadquery.viewer.client import show
 
 # Jansen Linkage
 
@@ -87,8 +87,7 @@ def make_link(length, width=2, height=1):
 
 
 parts = {
-    name: make_link(links[name]["len"], height=(2 * height if name == "link_1_2" else height))
-    for name in link_list
+    name: make_link(links[name]["len"], height=(2 * height if name == "link_1_2" else height)) for name in link_list
 }
 
 
@@ -99,9 +98,7 @@ def create_leg(x, y):
     L = lambda *args: cq.Location(cq.Vector(*args))
     C = lambda *args: cq.Color(*args)
 
-    leg = MAssembly(
-        cq.Workplane("YZ").polyline([(0, 0), (x, 0), (x, y)]), name="base", color=C("Gray")
-    )
+    leg = MAssembly(cq.Workplane("YZ").polyline([(0, 0), (x, 0), (x, y)]), name="base", color=C("Gray"))
     for i, name in enumerate(link_list):
         leg.add(parts[name], name=name, color=C(links[name]["col"]), loc=L(0, 0, i * 10 - 50))
     return leg
@@ -117,8 +114,8 @@ for name in link_list:
 
 check_mates = True
 if check_mates:
-    show_object(leg, name="leg")
-    show_mates(leg, show_object, length=3)
+    show(leg, name="leg")
+    show_mates(leg, show, length=3)
 else:
     # Assemble the parts
     alpha = 0
@@ -129,8 +126,7 @@ else:
         abs_loc = cq.Location(
             cq.Workplane("YZ").plane.rotated((0, 0, a)), cq.Vector(*v)
         )  # calculate the absolute location ...
-        loc = (
-            abs_loc * leg.mates[name].mate.loc.inverse
-        )  # ... and center the mate of the link first
+        loc = abs_loc * leg.mates[name].mate.loc.inverse  # ... and center the mate of the link first
         leg.assemble(name, loc)
-    show_object(leg, name="leg")
+
+    show(leg, name="leg")

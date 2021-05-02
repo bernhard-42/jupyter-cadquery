@@ -4,9 +4,7 @@ import numpy as np
 
 import cadquery as cq
 from cadquery_massembly import Mate, MAssembly
-from jupyter_cadquery.viewer import show_object, set_server
-
-set_server("banach")
+from jupyter_cadquery.viewer.client import show
 
 r_disk = 100
 dist_pivot = 200
@@ -77,4 +75,4 @@ disk_arm.mate("arm?mate", name="arm", origin=True)
 disk_arm.assemble("arm", "arm_pivot")
 disk_arm.assemble("disk", "disk_pivot")
 
-show_object(disk_arm, reset=False)
+show(disk_arm, reset=False)

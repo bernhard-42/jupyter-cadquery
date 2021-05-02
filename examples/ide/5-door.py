@@ -1,7 +1,7 @@
 from collections import OrderedDict as odict
 import cadquery as cq
-from cadquery_massembly import MAssembly, Mate
-from cadquery_massembly.cq_editor import show_mates
+from cadquery_massembly import MAssembly
+from jupyter_cadquery.viewer.client import show
 
 # Note: Download https://www.matronics.dk/data/longship/files/products/vslot-2020_1.dxf first
 # if you don't have it at hand
@@ -157,8 +157,7 @@ door.mate("panel?hole1", name="handle_1")
 
 check_mates = True
 if check_mates:
-    show_object(door, name="door")
-    show_mates(door, show_object)
+    show(door, name="door")
 else:
     # Assemble the parts
     door.assemble("bottom_0", "con_bl_0")  # add bottom vslot to bottom-left connector
@@ -171,4 +170,4 @@ else:
     door.assemble("top_1", "con_tl_1")  # add top vslot to top-left connector
     door.assemble("handle_0", "handle_1")  # add handle
 
-    show_object(door, name="door")
+    show(door, name="door")

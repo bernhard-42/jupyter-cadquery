@@ -1,7 +1,6 @@
 import cadquery as cq
 from cadquery_massembly import MAssembly, Mate
-from cadquery_massembly.cq_editor import show_mates
-
+from jupyter_cadquery.viewer.client import show
 
 box0 = cq.Workplane("XY").box(10, 20, 10)
 box1 = cq.Workplane("XZ").box(10, 20, 10)
@@ -83,8 +82,7 @@ for obj, name in (
 
 check_mates = True
 if check_mates:
-    show_object(assy, name="assy")
-    show_mates(assy, show_object, length=2)
+    show(assy, name="assy")
 else:
     # Assemble the parts
     assy.assemble("cyl1_m0", "box0_m0")
@@ -94,4 +92,4 @@ else:
     assy.assemble("cyl3_m0", "box2_m0")
     assy.assemble("box3_m1", "cyl3_m1")
 
-    show_object(assy)
+    show(assy)

@@ -1,8 +1,7 @@
 import cadquery as cq
 from cadquery_massembly import MAssembly
 
-# from cadquery_massembly.cq_editor import show_mates
-from jupyter_cadquery.viewer import show_object
+from jupyter_cadquery.viewer.client import show
 
 # Parts
 
@@ -227,4 +226,4 @@ hexapod.assemble("top", "bottom")
 for stand_name in stand_names:
     hexapod.assemble(f"{stand_name}", f"{stand_name}_bottom")
 
-show_object(hexapod, reset=False)
+show(hexapod, reset=False)

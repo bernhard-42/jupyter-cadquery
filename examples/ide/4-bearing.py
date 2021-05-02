@@ -1,6 +1,6 @@
 import cadquery as cq
 from cadquery_massembly import MAssembly, Mate
-from cadquery_massembly.cq_editor import show_mates
+from jupyter_cadquery.viewer.client import show
 
 
 # Avoid clean error
@@ -11,12 +11,7 @@ cq.occ_impl.shapes.Shape.clean = lambda x: x
 
 
 def ring(inner_radius, outer_radius, width):
-    ring = (
-        cq.Workplane(origin=(0, 0, -width / 2))
-        .circle(outer_radius)
-        .circle(inner_radius)
-        .extrude(width)
-    )
+    ring = cq.Workplane(origin=(0, 0, -width / 2)).circle(outer_radius).circle(inner_radius).extrude(width)
     return ring
 
 
@@ -63,18 +58,16 @@ bearing.mate("inner@faces@<Z", name="inner", origin=True)
 
 for i in range(number_balls):
     bearing.mate(balls[i], Mate(), name=balls[i], origin=True)  # the default Mate is sufficient
-    bearing.mate(
-        "inner@faces@<Z", name="inner_%d" % i, transforms=odict(rz=i * 60, tx=r5, tz=-ball_diam / 2)
-    )
+    bearing.mate("inner@faces@<Z", name="inner_%d" % i, transforms=odict(rz=i * 60, tx=r5, tz=-ball_diam / 2))
 
 check_mates = True
 if check_mates:
     # Assemble the parts
-    show_object(bearing, name="bearing")
-    show_mates(bearing, show_object, length=1)
+    show(bearing, name="bearing")
+    show_mates(bearing, show, length=1)
 else:
     bearing.assemble("inner", "outer")
     for i in range(number_balls):
         bearing.assemble(balls[i], "inner_%d" % i)
 
-    show_object(bearing, name="bearing")
+    show(bearing, name="bearing")
