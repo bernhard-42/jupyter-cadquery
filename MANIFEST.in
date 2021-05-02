@@ -1,2 +1,3 @@
 recursive-include jupyter_cadquery/icons *
+recursive-include jupyter_cadquery/viewer viewer.ipynb
 include LICENSE
