@@ -1,12 +1,20 @@
-.PHONY: clean wheel install tests check_version dist check_dist upload_test upload bump release docker docker_upload
+.PHONY: clean_notebooks wheel install tests check_version dist check_dist upload_test upload bump release docker docker_upload
 
 PYCACHE := $(shell find . -name '__pycache__')
 EGGS := $(wildcard *.egg-info)
 CURRENT_VERSION := $(shell awk '/current_version/ {print $$3}' setup.cfg)
 
-clean:
+clean_notebooks: ./examples/*.ipynb ./examples/assemblies/*.ipynb
+	@for file in $^ ; do \
+		echo "$${file}" ; \
+		jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace "$${file}"; \
+	done
+	# 
+
+clean: clean_notebooks
 	@echo "=> Cleaning"
 	@rm -fr build dist $(EGGS) $(PYCACHE)
+
 
 prepare: clean
 	git add .
