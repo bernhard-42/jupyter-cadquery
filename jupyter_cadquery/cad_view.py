@@ -60,7 +60,7 @@ class CadqueryView(object):
         self.all_shapes = None
 
         self.pick_color = Color("LightGreen")
-        self.default_mesh_color = Color((232, 176, 36))
+        self.default_mesh_color = Color(get_default("default_color"))
         self.default_edge_color = Color((128, 128, 128))
 
         self.camera_distance_factor = 6

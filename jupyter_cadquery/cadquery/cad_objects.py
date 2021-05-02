@@ -39,10 +39,13 @@ from jupyter_cadquery.cad_display import get_default
 from .cqparts import is_cqparts, convert_cqparts
 from ..utils import Color
 from ..ocp_utils import get_rgb
+from ..defaults import get_default
 
 
 class Part(_Part):
     def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
+        if color is None:
+            color = get_default("default_color")
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -357,6 +360,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - tree_width:        Width of navigation tree part of the view (default=250)
     - cad_width:         Width of CAD view part of the view (default=800)
     - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
+    - default_color:     Default mesh color (default=(232, 176, 36))
     - render_edges:      Render edges  (default=True)
     - render_normals:    Render normals (default=False)
     - render_mates:      Render mates (for MAssemblies)

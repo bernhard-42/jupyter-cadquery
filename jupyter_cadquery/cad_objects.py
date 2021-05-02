@@ -25,6 +25,7 @@ from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
 from jupyter_cadquery.utils import Color, flatten, Timer
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, BoundingBox, loc_to_tq
 from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality
+from jupyter_cadquery.defaults import get_default
 
 PART_ID = 0
 
@@ -36,7 +37,7 @@ PART_ID = 0
 
 class _CADObject(object):
     def __init__(self):
-        self.color = Color((232, 176, 36))
+        self.color = Color(get_default("default_color"))
 
     def next_id(self):
         global PART_ID
@@ -64,7 +65,7 @@ class _Part(_CADObject):
         super().__init__()
         self.name = name
         self.id = self.next_id()
-        self.color = Color(color or (232, 176, 36))
+        self.color = Color(get_default("default_color") if color is None else color)
 
         self.shape = shape
         self.set_states(show_faces, show_edges)

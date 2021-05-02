@@ -1,5 +1,4 @@
 import itertools
-from functools import reduce
 import numpy as np
 
 from OCP.Bnd import Bnd_Box
@@ -10,11 +9,10 @@ from OCP.BRepTools import BRepTools
 
 
 from OCP.TopAbs import (
-    TopAbs_VERTEX,
     TopAbs_EDGE,
     TopAbs_FACE,
 )
-from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound, TopoDS_Solid
+from OCP.TopoDS import TopoDS_Compound
 from OCP.TopAbs import TopAbs_FACE
 from OCP.TopExp import TopExp_Explorer
 
@@ -155,30 +153,9 @@ def write_stl_file(compound, filename, tolerance=None, angular_tolerance=None):
 
 # OCP types and accessors
 
-# Source pythonocc-core: Extend/TopologyUtils.py
-def is_vertex(topods_shape):
-    if not hasattr(topods_shape, "ShapeType"):
-        return False
-    return topods_shape.ShapeType() == TopAbs_VERTEX
-
-
-# Source pythonocc-core: Extend/TopologyUtils.py
-def is_edge(topods_shape):
-    if not hasattr(topods_shape, "ShapeType"):
-        return False
-    return topods_shape.ShapeType() == TopAbs_EDGE
-
 
 def is_compound(topods_shape):
     return isinstance(topods_shape, TopoDS_Compound)
-
-
-def is_solid(topods_shape):
-    return isinstance(topods_shape, TopoDS_Solid)
-
-
-def is_shape(topods_shape):
-    return isinstance(topods_shape, TopoDS_Shape)
 
 
 def _get_topo(shape, topo):
@@ -206,13 +183,6 @@ def get_point(vertex):
     return (p.X(), p.Y(), p.Z())
 
 
-def loc_to_tq(loc):
-    T = loc.wrapped.Transformation()
-    t = T.Transforms()
-    q = T.GetRotation()
-    return (t, (q.X(), q.Y(), q.Z(), q.W()))
-
-
 def get_rgb(color):
     if color is None:
         return (176, 176, 176)
@@ -220,26 +190,11 @@ def get_rgb(color):
     return (int(255 * rgb.Red()), int(255 * rgb.Green()), int(255 * rgb.Blue()))
 
 
-# def from_loc(loc):
-#     t, q = loc_to_tq(loc)
-#     return {"t": t, "q": q}
-
-
-# def to_loc(t, q):
-#     trsf = gp_Trsf()
-#     trsf.SetRotation(gp_Quaternion(*q))
-#     trsf.SetTranslationPart(gp_Vec(*t))
-
-#     return Location(trsf)
-
-
-# def to_rgb(color):
-#     rgb = color.wrapped.GetRGB()
-#     return (rgb.Red(), rgb.Green(), rgb.Blue())
-
-
-# def from_rgb(r, g, b):
-#     return Color(r, g, b)
+def loc_to_tq(loc):
+    T = loc.wrapped.Transformation()
+    t = T.Transforms()
+    q = T.GetRotation()
+    return (t, (q.X(), q.Y(), q.Z(), q.W()))
 
 
 def __location__repr__(self):

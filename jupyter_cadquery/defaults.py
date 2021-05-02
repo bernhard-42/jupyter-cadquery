@@ -33,6 +33,7 @@ class Defaults:
         - tree_width:        Width of navigation tree part of the view (default=250)
         - cad_width:         Width of CAD view part of the view (default=800)
         - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
+        - default_color:     Default mesh color (default=(232, 176, 36))
         - render_edges:      Render edges  (default=True)
         - render_normals:    Render normals (default=False)
         - render_mates:      Render mates (for MAssemblies)
@@ -79,6 +80,7 @@ class Defaults:
             "tree_width": 250,
             "cad_width": 800,
             "bb_factor": 1.0,
+            "default_color": (232, 176, 36),
             "render_edges": True,
             "render_normals": False,
             "render_mates": False,
