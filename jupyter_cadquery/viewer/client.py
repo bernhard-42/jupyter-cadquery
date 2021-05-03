@@ -122,6 +122,7 @@ def show(obj, **kwargs):
         "data": dict(mapping=mapping, shapes=shapes, tree=tree, bb=_combined_bb(shapes)),
         "type": "data",
         "config": config,
+        "count": part_group.count_shapes(),
     }
 
     send_pickle(data)

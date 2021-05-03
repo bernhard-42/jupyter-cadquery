@@ -438,7 +438,7 @@ class CadqueryDisplay(object):
 
     def init_progress(self, num_shapes):
         self.progress.progress.value = 0
-        self.progress.reset(num_shapes * 2)
+        self.progress.reset(num_shapes)
 
     def _set_checkboxes(self):
         self.checkbox_axes.value = self.axes

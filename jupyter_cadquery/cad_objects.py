@@ -415,7 +415,7 @@ def _show(part_group, **kwargs):
         with Timer(timeit, "", "setup display", 1):
             num_shapes = part_group.count_shapes()
             d = get_or_create_display(**create_args)
-            d.init_progress(num_shapes)
+            d.init_progress(2 * num_shapes)
 
         with Timer(timeit, "", "tessellate", 1):
 
