@@ -21,7 +21,9 @@ from jupyter_cadquery.defaults import get_default
 
 import pickle
 import zmq
-from .server import ZMQ_PORT
+
+ZMQ_PORT = 5555
+SOCKET = None
 
 
 def set_port(port):
@@ -29,14 +31,17 @@ def set_port(port):
     ZMQ_PORT = port
 
 
-context = zmq.Context()
-socket = context.socket(zmq.PAIR)
-socket.connect(f"tcp://localhost:{ZMQ_PORT}")
+def send_pickle(obj, flags=0, protocol=4):
+    global SOCKET
 
+    if SOCKET is None:
+        context = zmq.Context()
+        SOCKET = context.socket(zmq.PAIR)
+        SOCKET.connect(f"tcp://localhost:{ZMQ_PORT}")
 
-def send_pickle(socket, obj, flags=0, protocol=4):
+    print(" sending")
     p = pickle.dumps(obj, protocol)
-    return socket.send(p, flags=flags)
+    return SOCKET.send(p, flags=flags)
 
 
 class Progress:
@@ -118,5 +123,5 @@ def show(obj, **kwargs):
         "type": "data",
         "config": config,
     }
-    print(" sending")
-    send_pickle(socket, data)
+
+    send_pickle(data)
