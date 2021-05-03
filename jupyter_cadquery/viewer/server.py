@@ -1,5 +1,6 @@
 from datetime import datetime
 from time import localtime
+import os
 import pickle
 import threading
 import time
@@ -42,7 +43,6 @@ def error(*msg):
 
 def recv_pickle(socket, flags=0, protocol=4):
     p = socket.recv(flags)
-    info("receiving")
     try:
         data = pickle.loads(p)
         return data
@@ -66,7 +66,7 @@ def stop_viewer():
 
 
 def start_viewer():
-    global CAD_DISPLAY, LOG_OUTPUT, ZMQ_SERVER
+    global CAD_DISPLAY, LOG_OUTPUT, ZMQ_SERVER, ZMQ_PORT
 
     CAD_DISPLAY = CadqueryDisplay()
     cad_view = CAD_DISPLAY.create()
@@ -81,9 +81,20 @@ def start_viewer():
 
     stop_viewer()
 
+    if os.environ.get("ZMQ_PORT") != None:
+        ZMQ_PORT = os.environ.get("ZMQ_PORT")
+        info(f"Using port {ZMQ_PORT}")
+
     context = zmq.Context()
     socket = context.socket(zmq.PAIR)
-    socket.bind(f"tcp://*:{ZMQ_PORT}")
+    for i in range(3):
+        try:
+            socket.bind(f"tcp://*:{ZMQ_PORT}")
+            time.sleep(1)
+            break
+        except:
+            pass
+
     ZMQ_SERVER = socket
     info("zmq started\n")
 
@@ -91,7 +102,7 @@ def start_viewer():
         while True:
             msg = recv_pickle(socket)
             try:
-                if msg["type"] == "data":
+                if msg.get("type") == "data":
                     t = time.time()
                     data = msg["data"]
                     config = msg["config"]
@@ -100,10 +111,13 @@ def start_viewer():
                     CAD_DISPLAY._update_settings(**create_args)
                     CAD_DISPLAY.add_shapes(**data, **add_shape_args)
                     info(f"duration: {time.time() - t:7.2f}")
+                else:
+                    error(f"Wrong message type {msg.get('type')}")
+
             except Exception as ex:
                 error(ex)
 
     thread = threading.Thread(target=msg_handler)
     thread.setDaemon(True)
     thread.start()
-    CAD_DISPLAY.info.add_html("<b>HTTP server started</b>")
+    CAD_DISPLAY.info.add_html("<b>zmq server started</b>")
