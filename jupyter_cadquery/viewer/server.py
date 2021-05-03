@@ -85,15 +85,15 @@ def start_viewer():
         ZMQ_PORT = os.environ.get("ZMQ_PORT")
         info(f"Using port {ZMQ_PORT}")
 
-    context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
     for i in range(3):
         try:
+            context = zmq.Context()
+            socket = context.socket(zmq.PAIR)
             socket.bind(f"tcp://*:{ZMQ_PORT}")
-            time.sleep(1)
             break
         except:
-            pass
+            print("retrying")
+            time.sleep(1)
 
     ZMQ_SERVER = socket
     info("zmq started\n")
@@ -108,6 +108,7 @@ def start_viewer():
                     config = msg["config"]
                     info(config)
                     create_args, add_shape_args = split_args(config)
+                    CAD_DISPLAY.init_progress(msg.get("count", 1))
                     CAD_DISPLAY._update_settings(**create_args)
                     CAD_DISPLAY.add_shapes(**data, **add_shape_args)
                     info(f"duration: {time.time() - t:7.2f}")
