@@ -2,6 +2,7 @@ from datetime import datetime
 from time import localtime
 import os
 import pickle
+import sys
 import threading
 import time
 import zmq
@@ -17,7 +18,7 @@ ZMQ_SERVER = None
 ZMQ_PORT = 5555
 
 
-def log(typ, *msg):
+def _log(typ, *msg):
     ts = datetime(*localtime()[:6]).isoformat()
     prefix = f"{ts} ({typ}) "
     if LOG_OUTPUT is not None:
@@ -30,24 +31,15 @@ def log(typ, *msg):
 
 
 def info(*msg):
-    log("I", *msg)
+    _log("I", *msg)
 
 
 def warn(*msg):
-    log("W", *msg)
+    _log("W", *msg)
 
 
 def error(*msg):
-    log("E", *msg)
-
-
-def recv_pickle(socket, flags=0, protocol=4):
-    p = socket.recv(flags)
-    try:
-        data = pickle.loads(p)
-        return data
-    except Exception as ex:
-        return str(ex)
+    _log("E", *msg)
 
 
 def stop_viewer():
@@ -85,38 +77,55 @@ def start_viewer():
         ZMQ_PORT = os.environ.get("ZMQ_PORT")
         info(f"Using port {ZMQ_PORT}")
 
-    for i in range(3):
+    for i in range(5):
         try:
             context = zmq.Context()
-            socket = context.socket(zmq.PAIR)
+            socket = context.socket(zmq.REP)
             socket.bind(f"tcp://*:{ZMQ_PORT}")
             break
         except:
-            print("retrying")
+            print("retrying ...")
             time.sleep(1)
 
     ZMQ_SERVER = socket
     info("zmq started\n")
 
+    def return_error(error_msg):
+        error(error_msg)
+        socket.send_json({"result": "error", "msg": error_msg})
+
+    def return_success(t):
+        info(f"duration: {time.time() - t:7.2f}")
+        socket.send_json({"result": "success"})
+
     def msg_handler():
         while True:
-            msg = recv_pickle(socket)
+            msg = socket.recv()
             try:
-                if msg.get("type") == "data":
+                data = pickle.loads(msg)
+            except Exception as ex:
+                return_error(str(ex))
+                continue
+
+            if data.get("type") == "data":
+                try:
                     t = time.time()
-                    data = msg["data"]
-                    config = msg["config"]
+                    mesh_data = data["data"]
+                    config = data["config"]
                     info(config)
                     create_args, add_shape_args = split_args(config)
-                    CAD_DISPLAY.init_progress(msg.get("count", 1))
+                    CAD_DISPLAY.init_progress(data.get("count", 1))
                     CAD_DISPLAY._update_settings(**create_args)
-                    CAD_DISPLAY.add_shapes(**data, **add_shape_args)
-                    info(f"duration: {time.time() - t:7.2f}")
-                else:
-                    error(f"Wrong message type {msg.get('type')}")
+                    CAD_DISPLAY.add_shapes(**mesh_data, **add_shape_args, reset=False)
 
-            except Exception as ex:
-                error(ex)
+                    return_success(t)
+
+                except Exception as ex:
+                    error_msg = f"{type(ex).__name__}: {ex}"
+                    return_error(error_msg)
+
+            else:
+                return_error(f"Wrong message type {data.get('type')}")
 
     thread = threading.Thread(target=msg_handler)
     thread.setDaemon(True)

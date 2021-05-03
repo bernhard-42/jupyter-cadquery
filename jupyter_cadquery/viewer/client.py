@@ -23,7 +23,7 @@ import pickle
 import zmq
 
 ZMQ_PORT = 5555
-SOCKET = None
+REQUEST_TIMEOUT = 2000
 
 
 def set_port(port):
@@ -31,22 +31,51 @@ def set_port(port):
     ZMQ_PORT = port
 
 
-def send_pickle(obj, flags=0, protocol=4):
-    global SOCKET
+def connect(context):
+    endpoint = f"tcp://localhost:{ZMQ_PORT}"
+    socket = context.socket(zmq.REQ)
+    socket.connect(endpoint)
+    return socket
 
-    if SOCKET is None:
-        context = zmq.Context()
-        SOCKET = context.socket(zmq.PAIR)
-        SOCKET.connect(f"tcp://localhost:{ZMQ_PORT}")
 
-    print(" sending")
-    p = pickle.dumps(obj, protocol)
-    return SOCKET.send(p, flags=flags)
+def send(data):
+    context = zmq.Context()
+    socket = connect(context)
+
+    msg = pickle.dumps(data, 4)
+    print(" sending ... ", end="")
+    socket.send(msg)
+
+    retries_left = 3
+    while True:
+        if (socket.poll(REQUEST_TIMEOUT) & zmq.POLLIN) != 0:
+            reply = socket.recv_json()
+
+            if reply["result"] == "success":
+                print("done")
+            else:
+                print("\n", reply["msg"])
+            break
+
+        retries_left -= 1
+
+        # Socket is confused. Close and remove it.
+        socket.setsockopt(zmq.LINGER, 0)
+        socket.close()
+        if retries_left == 0:
+            break
+
+        print("Reconnecting to server…")
+        # Create new connection
+        socket = connect(context)
+
+        print("Resending ...")
+        socket.send(msg)
 
 
 class Progress:
     def update(self):
-        print(".", end="")
+        print(".", end="", flush=True)
 
 
 def show(obj, **kwargs):
@@ -100,7 +129,8 @@ def show(obj, **kwargs):
         default_color=color,
     )
 
-    config = get_defaults()
+    # Do not send defaults for postion, rotation and zoom unless they are set in kwargs
+    config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation", "zoom")}
     for k, v in kwargs.items():
         if v is not None:
             config[k] = v
@@ -125,4 +155,4 @@ def show(obj, **kwargs):
         "count": part_group.count_shapes(),
     }
 
-    send_pickle(data)
+    send(data)
