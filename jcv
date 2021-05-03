@@ -1,3 +1,7 @@
 #!/bin/bash
+if [[ "$1" == "--port" ]]; then
+    export ZMQ_PORT=$2
+    echo "Using port $ZMQ_PORT"
+fi
 VIEWER_PATH=$(python -c "import os, jupyter_cadquery.viewer.server as c; print(os.path.dirname(c.__file__))")
 voila --enable_nbextensions=True $VIEWER_PATH/viewer.ipynb
