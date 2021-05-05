@@ -81,21 +81,23 @@ class BoundingBox(object):
             ]
         )
 
-    def update(self, bb):
+    def update(self, bb, minimize=False):
+        lower, upper = (max, min) if minimize else (min, max)
+
         if isinstance(bb, BoundingBox):
-            self.xmin = min(bb.xmin, self.xmin)
-            self.xmax = max(bb.xmax, self.xmax)
-            self.ymin = min(bb.ymin, self.ymin)
-            self.ymax = max(bb.ymax, self.ymax)
-            self.zmin = min(bb.zmin, self.zmin)
-            self.zmax = max(bb.zmax, self.zmax)
+            self.xmin = lower(bb.xmin, self.xmin)
+            self.xmax = upper(bb.xmax, self.xmax)
+            self.ymin = lower(bb.ymin, self.ymin)
+            self.ymax = upper(bb.ymax, self.ymax)
+            self.zmin = lower(bb.zmin, self.zmin)
+            self.zmax = upper(bb.zmax, self.zmax)
         elif isinstance(bb, dict):
-            self.xmin = min(bb["xmin"], self.xmin)
-            self.xmax = max(bb["xmax"], self.xmax)
-            self.ymin = min(bb["ymin"], self.ymin)
-            self.ymax = max(bb["ymax"], self.ymax)
-            self.zmin = min(bb["zmin"], self.zmin)
-            self.zmax = max(bb["zmax"], self.zmax)
+            self.xmin = lower(bb["xmin"], self.xmin)
+            self.xmax = upper(bb["xmax"], self.xmax)
+            self.ymin = lower(bb["ymin"], self.ymin)
+            self.ymax = upper(bb["ymax"], self.ymax)
+            self.zmin = lower(bb["zmin"], self.zmin)
+            self.zmax = upper(bb["zmax"], self.zmax)
         else:
             raise "Wrong bounding box param"
 

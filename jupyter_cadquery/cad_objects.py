@@ -120,8 +120,9 @@ class _Part(_CADObject):
 
         # After meshing the non optimal bounding box is much more exact
         with Timer(timeit, self.name, "bounding box:   ", 2) as t:
-            bb = bounding_box(self.shape, loc=loc, optimal=False)
-            t.info = str(bb)
+            bb2 = bounding_box(self.shape, loc=loc, optimal=False)
+            bb2.update(bb, minimize=True)
+            t.info = str(bb2)
 
         if progress:
             progress.update()
@@ -134,7 +135,7 @@ class _Part(_CADObject):
             "name": self.name,
             "shape": mesh,
             "color": color,
-            "bb": bb.to_dict(),
+            "bb": bb2.to_dict(),
         }
 
     def compound(self):
