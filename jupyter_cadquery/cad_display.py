@@ -122,6 +122,11 @@ class Info(object):
         self.number = 0
         self.chunks = []
 
+    def clear(self):
+        self.html.value = ""
+        self.number = 0
+        self.chunks = []
+
     def add_text(self, msg):
         self.add_html('<pre style="white-space: nowrap;">%s</pre>' % msg)
 
@@ -180,7 +185,7 @@ class Info(object):
 
         for t, a, c in zip(("x", "y", "z"), bb[:3], bb[3]):
             html += """<tr class="small_table">
-                <th>%s</th><td>%5.2f</td><td>%5.2f</td><td>%5.2f</td>
+                <th>%s</th><td align='right'>%5.2f</td><td align='right'>%5.2f</td><td align='right'>%5.2f</td>
             </tr>
             """ % (
                 t,
@@ -675,6 +680,7 @@ class CadqueryDisplay(object):
     def clear(self):
         if not self.clean:
             self.cq_view.clear()
+            self.info.clear()
 
             # clear tree
             self.tree_clipping.children = [Output(), self.tree_clipping.children[1]]
