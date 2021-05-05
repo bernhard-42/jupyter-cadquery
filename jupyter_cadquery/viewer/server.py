@@ -83,8 +83,8 @@ def start_viewer():
             socket = context.socket(zmq.REP)
             socket.bind(f"tcp://*:{ZMQ_PORT}")
             break
-        except:
-            print("retrying ...")
+        except Exception as ex:
+            print(f"retrying ... {ex}")
             time.sleep(1)
 
     ZMQ_SERVER = socket
@@ -116,7 +116,7 @@ def start_viewer():
                     create_args, add_shape_args = split_args(config)
                     CAD_DISPLAY.init_progress(data.get("count", 1))
                     CAD_DISPLAY._update_settings(**create_args)
-                    CAD_DISPLAY.add_shapes(**mesh_data, **add_shape_args, reset=False)
+                    CAD_DISPLAY.add_shapes(**mesh_data, **add_shape_args)
 
                     return_success(t)
 

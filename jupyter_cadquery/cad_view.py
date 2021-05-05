@@ -82,7 +82,13 @@ class CadqueryView(object):
         self.controller = None
         self.renderer = None
 
-        self.camera_position = None
+        self.position = None
+        self.rotation = None
+        self.zoom = None
+
+        self.initial_rotation = None
+        self.initial_position = None
+        self.initial_zoom = None
 
         self.savestate = ((0, 0, 0, "XYZ"), (0, 0, 0))
 
@@ -118,7 +124,6 @@ class CadqueryView(object):
 
     def _update(self):
         self.controller.exec_three_obj_method("update")
-        pass
 
     def _fix_camera(self):
         zoom = self.camera.zoom
@@ -126,11 +131,12 @@ class CadqueryView(object):
         self.camera.zoom = zoom + 1e-6
         self.camera.zoom = zoom
 
-    def _reset(self):
+    def _reset_camera(self):
         self.camera.rotation, self.controller.target = self.savestate
-        self.camera.position = self._add(self.bb.center, self._scale((1, 1, 1)))
-        self.camera.zoom = self.camera_initial_zoom
+        self.position = self.camera.position = self.initial_position
+        self.zoom = self.camera.zoom = self.initial_zoom
         self._update()
+        self._fix_camera()
 
     def _get_group(self, group_index):
         try:
@@ -316,16 +322,14 @@ class CadqueryView(object):
         position=None,
         rotation=None,
         zoom=None,
-        reset=True,
+        reset_camera=True,
     ):
+
         preset = lambda key, value: get_default(key) if value is None else value
 
         bb_factor = preset("bb_factor", bb_factor)
         ambient_intensity = preset("ambient_intensity", ambient_intensity)
         direct_intensity = preset("direct_intensity", direct_intensity)
-        position = preset("position", position)
-        rotation = preset("rotation", rotation)
-        self.zoom = preset("zoom", zoom)
 
         self.bbs = self._filter_shapes(shapes)
         self.bb = bb
@@ -338,19 +342,35 @@ class CadqueryView(object):
             bb_max = self.bb.max_dist_from_center()
             orbit_radius = 4 * bb_factor * bb_max
 
-            if reset:
-                self._reset()
-
-            # Calculate camera postion
-            if position is None and rotation is None:  # no new defaults
-                if self.camera_position is None:  # no existing position
-                    self.camera_position = self._add(self.bb.center, self._scale((1, 1, 1)))
+            if reset_camera:
+                self.initial_rotation = self.rotation = preset("rotation", rotation)
+                self.initial_position = self.position = self._add(
+                    self.bb.center, self._scale(rotate(preset("position", position), *self.rotation))
+                )
+                self.initial_zoom = self.zoom = preset("zoom", zoom)
             else:
-                position = rotate(position or (1, 1, 1), *(rotation or (0, 0, 0)))
-                self.camera_position = self._add(self.bb.center, self._scale(position))
+                if rotation is not None:
+                    self.rotation = rotation
+                if self.rotation is None:
+                    self.rotation = get_default("rotation")
+                if self.initial_rotation is None:
+                    self.initial_rotation = self.rotation
 
-            if self.zoom is None:
-                self.zoom = self.camera_initial_zoom
+                if position is not None:
+                    self.position = position
+                if self.position is None:
+                    self.position = self._add(
+                        self.bb.center, self._scale(rotate(preset("position", position), *self.rotation))
+                    )
+                if self.initial_position is None:
+                    self.initial_position = self.position
+
+                if zoom is not None:
+                    self.zoom = zoom
+                if self.zoom is None:
+                    self.zoom = get_default("zoom")
+                if self.initial_zoom is None:
+                    self.initial_zoom = self.zoom
 
             # Set up Helpers relative to bounding box
             xy_max = max(abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax)) * 1.2
@@ -385,7 +405,7 @@ class CadqueryView(object):
             self.renderer.controls = self.renderer.controls + [self.picker]
 
             # Set up camera
-            self.update_camera(self.camera_position, self.zoom, orbit_radius)
+            self.update_camera(self.position, self.zoom, orbit_radius)
 
             # Add objects to scene
             self._fix_camera()
@@ -424,7 +444,7 @@ class CadqueryView(object):
     def clear(self):
         # save camera position and zoom in case we want to keep it for the object
         self.zoom = self.camera.zoom
-        self.camera_position = self.camera.position
+        self.position = self.camera.position
 
         self.scene.remove(self.amb_light)
         self.scene.remove(self.key_lights)

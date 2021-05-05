@@ -386,7 +386,7 @@ class CadqueryDisplay(object):
 
     def change_view(self, typ, directions):
         def reset(b):
-            self.cq_view._reset()
+            self.cq_view._reset_camera()
 
         def refit(b):
             self.cq_view.camera.zoom = self.cq_view.camera_initial_zoom
@@ -597,7 +597,7 @@ class CadqueryDisplay(object):
         mapping,
         tree,
         bb,
-        reset=True,
+        reset_camera=True,
         bb_factor=None,
         ambient_intensity=None,
         direct_intensity=None,
@@ -617,7 +617,7 @@ class CadqueryDisplay(object):
                 shapes,
                 bb,
                 self.progress,
-                reset=reset,
+                reset_camera=reset_camera,
                 bb_factor=bb_factor,
                 ambient_intensity=ambient_intensity,
                 direct_intensity=direct_intensity,

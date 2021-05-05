@@ -55,6 +55,7 @@ class Defaults:
         - position:          Relative camera position that will be scaled (default=(1, 1, 1))
         - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
         - zoom:              Zoom factor of view (default=2.5)
+        - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
         - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
         - display:           Select display: "sidecar", "cell", "html"
         - tools:             Show the viewer tools like the object tree
@@ -101,6 +102,7 @@ class Defaults:
             "position": (1, 1, 1),
             "rotation": (0, 0, 0),
             "zoom": 2.5,
+            "reset_camera": True,
             "mac_scrollbar": True,
             "display": "cell",
             "tools": True,
@@ -156,6 +158,7 @@ def split_args(config):
             "position",
             "rotation",
             "zoom",
+            "reset_camera",
         ]
     }
     return create_args, add_shape_args
