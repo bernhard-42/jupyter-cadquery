@@ -214,7 +214,7 @@ for name in leg_names:
     hexapod.mate(f"{name}@faces@<Y", name=f"leg_{name}_hinge", origin=True, transforms=odict(rx=180, rz=-90))
     hexapod.mate(f"{name}/lower?{lower}", name=f"leg_{name}_lower_hole", origin=True)
 
-# show_object(hexapod, reset=False)
+# show_object(hexapod, reset_camera=False)
 
 # Assemble the parts
 for leg in leg_names:
@@ -226,4 +226,4 @@ hexapod.assemble("top", "bottom")
 for stand_name in stand_names:
     hexapod.assemble(f"{stand_name}", f"{stand_name}_bottom")
 
-show(hexapod, reset=False)
+show(hexapod, reset_camera=False)
