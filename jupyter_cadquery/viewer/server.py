@@ -84,7 +84,7 @@ def start_viewer():
             socket.bind(f"tcp://*:{ZMQ_PORT}")
             break
         except Exception as ex:
-            print(f"retrying ... {ex}")
+            print(f"{ex}: retrying ... ")
             time.sleep(1)
 
     ZMQ_SERVER = socket
