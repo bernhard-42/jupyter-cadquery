@@ -18,13 +18,14 @@ from jupyter_cadquery.cadquery.cad_objects import to_assembly
 from jupyter_cadquery.defaults import get_defaults
 from jupyter_cadquery.cad_objects import _combined_bb
 from jupyter_cadquery.defaults import get_default
-from jupyter_cadquery.cadquery import PartGroup
+from jupyter_cadquery.cadquery import PartGroup, Part
 
 import pickle
 import zmq
 
 ZMQ_PORT = 5555
 REQUEST_TIMEOUT = 2000
+OBJECTS = []
 
 
 def set_port(port):
@@ -165,3 +166,15 @@ def show(obj, **kwargs):
 
     data = _convert(obj, **kwargs)
     send(data)
+
+
+def show_object(obj):
+    global OBJECTS
+    OBJECTS.append(Part(obj, name=f"obj_{len(OBJECTS)}"))
+    show(PartGroup(OBJECTS))
+
+
+def reset():
+    global OBJECTS
+
+    OBJECTS = []
