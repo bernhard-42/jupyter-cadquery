@@ -18,6 +18,7 @@ from jupyter_cadquery.cadquery.cad_objects import to_assembly
 from jupyter_cadquery.defaults import get_defaults
 from jupyter_cadquery.cad_objects import _combined_bb
 from jupyter_cadquery.defaults import get_default
+from jupyter_cadquery.cadquery import PartGroup
 
 import pickle
 import zmq
@@ -78,6 +79,49 @@ class Progress:
         print(".", end="", flush=True)
 
 
+def _convert(obj, **kwargs):
+    color = kwargs.get("default_color")
+    if color is None:
+        color = get_default("default_color")
+
+    part_group = to_assembly(
+        obj,
+        render_mates=kwargs.get("render_mates"),
+        mate_scale=kwargs.get("mate_scale", 1),
+        default_color=color,
+    )
+
+    if len(part_group.objects) == 1 and isinstance(part_group.objects[0], PartGroup):
+        part_group = part_group.objects[0]
+
+    # Do not send defaults for postion, rotation and zoom unless they are set in kwargs
+    config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation", "zoom")}
+    for k, v in kwargs.items():
+        if v is not None:
+            config[k] = v
+
+    mapping = part_group.to_state()
+    shapes = part_group.collect_mapped_shapes(
+        mapping,
+        quality=config.get("quality"),
+        deviation=config.get("deviation"),
+        angular_tolerance=config.get("angular_tolerance"),
+        edge_accuracy=config.get("edge_accuracy"),
+        render_edges=config.get("render_edges"),
+        render_normals=config.get("render_normals"),
+        timeit=config.get("timeit"),
+        progress=Progress(),
+    )
+    tree = part_group.to_nav_dict()
+    data = {
+        "data": dict(mapping=mapping, shapes=shapes, tree=tree, bb=_combined_bb(shapes)),
+        "type": "data",
+        "config": config,
+        "count": part_group.count_shapes(),
+    }
+    return data
+
+
 def show(obj, **kwargs):
     """Show CAD objects in Jupyter
 
@@ -119,41 +163,5 @@ def show(obj, **kwargs):
     - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
 
-    color = kwargs.get("default_color")
-    if color is None:
-        color = get_default("default_color")
-
-    part_group = to_assembly(
-        obj,
-        render_mates=kwargs.get("render_mates"),
-        mate_scale=kwargs.get("mate_scale", 1),
-        default_color=color,
-    )
-
-    # Do not send defaults for postion, rotation and zoom unless they are set in kwargs
-    config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation", "zoom")}
-    for k, v in kwargs.items():
-        if v is not None:
-            config[k] = v
-
-    mapping = part_group.to_state()
-    shapes = part_group.collect_mapped_shapes(
-        mapping,
-        quality=config.get("quality"),
-        deviation=config.get("deviation"),
-        angular_tolerance=config.get("angular_tolerance"),
-        edge_accuracy=config.get("edge_accuracy"),
-        render_edges=config.get("render_edges"),
-        render_normals=config.get("render_normals"),
-        timeit=config.get("timeit"),
-        progress=Progress(),
-    )
-    tree = part_group.to_nav_dict()
-    data = {
-        "data": dict(mapping=mapping, shapes=shapes, tree=tree, bb=_combined_bb(shapes)),
-        "type": "data",
-        "config": config,
-        "count": part_group.count_shapes(),
-    }
-
+    data = _convert(obj, **kwargs)
     send(data)

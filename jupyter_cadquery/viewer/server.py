@@ -1,16 +1,18 @@
+import base64
+import base64
 from datetime import datetime
 from time import localtime
 import os
 import pickle
-import sys
 import threading
 import time
 import zmq
 
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from jupyter_cadquery.cad_display import CadqueryDisplay
+from jupyter_cadquery.cad_display import CadqueryDisplay, DISPLAY
 from jupyter_cadquery.defaults import split_args
+from jupyter_cadquery.logo import LOGO_DATA
 
 CAD_DISPLAY = None
 LOG_OUTPUT = None
@@ -57,6 +59,17 @@ def stop_viewer():
             error("Exception %s" % ex)
 
 
+def _display(data):
+    mesh_data = data["data"]
+    config = data["config"]
+
+    CAD_DISPLAY.init_progress(data.get("count", 1))
+    create_args, add_shape_args = split_args(config)
+    CAD_DISPLAY._update_settings(**create_args)
+    CAD_DISPLAY.add_shapes(**mesh_data, **add_shape_args)
+    info(create_args, add_shape_args)
+
+
 def start_viewer():
     global CAD_DISPLAY, LOG_OUTPUT, ZMQ_SERVER, ZMQ_PORT
 
@@ -70,6 +83,9 @@ def start_viewer():
     log_view.set_title(0, "Log")
     log_view.selected_index = None
     display(widgets.VBox([cad_view, log_view]))
+
+    logo = pickle.loads(base64.b64decode(LOGO_DATA))
+    _display(logo)
 
     stop_viewer()
 
@@ -110,14 +126,7 @@ def start_viewer():
             if data.get("type") == "data":
                 try:
                     t = time.time()
-                    mesh_data = data["data"]
-                    config = data["config"]
-                    info(config)
-                    create_args, add_shape_args = split_args(config)
-                    CAD_DISPLAY.init_progress(data.get("count", 1))
-                    CAD_DISPLAY._update_settings(**create_args)
-                    CAD_DISPLAY.add_shapes(**mesh_data, **add_shape_args)
-
+                    _display(data)
                     return_success(t)
 
                 except Exception as ex:
