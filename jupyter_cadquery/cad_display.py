@@ -106,6 +106,7 @@ def get_or_create_display(init=False, **kwargs):
         create_args, add_shape_args = split_args(config)
         DISPLAY._update_settings(**create_args)
         DISPLAY.add_shapes(**mesh_data, **add_shape_args)
+        DISPLAY.info.ready_msg(DISPLAY.cq_view.grid.step)
 
     else:
         # Use the existing Cad Display, so set the defaults and parameters again

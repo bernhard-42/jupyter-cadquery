@@ -68,6 +68,7 @@ def _display(data):
     CAD_DISPLAY._update_settings(**create_args)
     CAD_DISPLAY.add_shapes(**mesh_data, **add_shape_args)
     info(create_args, add_shape_args)
+    CAD_DISPLAY.info.ready_msg(CAD_DISPLAY.cq_view.grid.step)
 
 
 def start_viewer():
