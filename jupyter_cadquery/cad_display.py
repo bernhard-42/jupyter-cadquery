@@ -14,7 +14,9 @@
 # limitations under the License.
 #
 
+import base64
 from os.path import join, dirname
+import pickle
 from uuid import uuid4
 from IPython.display import display as ipy_display
 
@@ -24,7 +26,8 @@ from jupyter_cadquery_widgets.widgets import ImageButton, TreeView, UNSELECTED, 
 from .cad_view import CadqueryView
 from .utils import Timer, Progress
 from ._version import __version__
-from .defaults import set_defaults, get_default
+from .defaults import set_defaults, get_default, split_args
+from .logo import LOGO_DATA
 
 DISPLAY = None
 SIDECAR = None
@@ -62,7 +65,7 @@ def set_sidecar(title, init=False):
         set_defaults(display="sidecar")
 
         if init:
-            d = get_or_create_display()
+            d = get_or_create_display(init=True)
 
 
 def reset_sidecar(init=True):
@@ -83,7 +86,7 @@ def create_display(**kwargs):
     return d
 
 
-def get_or_create_display(**kwargs):
+def get_or_create_display(init=False, **kwargs):
     global DISPLAY
 
     if kwargs.get("display", get_default("display")) != "sidecar" or SIDECAR is None:
@@ -95,6 +98,15 @@ def get_or_create_display(**kwargs):
         SIDECAR.clear_output(True)
         with SIDECAR:
             ipy_display(widget)
+
+        data = pickle.loads(base64.b64decode(LOGO_DATA))
+        mesh_data = data["data"]
+        config = data["config"]
+        DISPLAY.init_progress(data.get("count", 1))
+        create_args, add_shape_args = split_args(config)
+        DISPLAY._update_settings(**create_args)
+        DISPLAY.add_shapes(**mesh_data, **add_shape_args)
+
     else:
         # Use the existing Cad Display, so set the defaults and parameters again
         DISPLAY._update_settings(**kwargs)
