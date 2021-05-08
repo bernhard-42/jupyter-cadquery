@@ -18,7 +18,7 @@ echo "[JCV] Signing the volia notebook"
 jupyter trust $JCV_PATH/viewer.ipynb
 
 echo "[JCV] Starting Jupyter CadQuery Viewer"
-voila \
+voila --show_tracebacks=True \
     --enable_nbextensions=True \
     --VoilaExecutor.kernel_name=jcv \
     $JCV_PATH/viewer.ipynb
