@@ -3,5 +3,22 @@ if [[ "$1" == "--port" ]]; then
     export ZMQ_PORT=$2
     echo "Using port $ZMQ_PORT"
 fi
+
+echo "[JCV] Creating a Jupyter kernel specification called 'jcv' for this conda environment"
+python -m ipykernel install --name jcv --display-name jcv
+
+JCV_PATH=~/.jcv
 VIEWER_PATH=$(python -c "import os, jupyter_cadquery.viewer.server as c; print(os.path.dirname(c.__file__))")
-voila --enable_nbextensions=True $VIEWER_PATH/viewer.ipynb
+
+echo "[JCV] Copying the voila notebook to $JCV_PATH"
+mkdir -p $JCV_PATH
+cp $VIEWER_PATH/viewer.ipynb $JCV_PATH
+
+echo "[JCV] Signing the volia notebook"
+jupyter trust $JCV_PATH/viewer.ipynb
+
+echo "[JCV] Starting Jupyter CadQuery Viewer"
+voila \
+    --enable_nbextensions=True \
+    --VoilaExecutor.kernel_name=jcv \
+    $JCV_PATH/viewer.ipynb
