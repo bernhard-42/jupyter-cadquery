@@ -185,7 +185,7 @@ show(a1, grid=False)  # overwrite grid default value
     - `position`:          Relative camera position that will be scaled (default=(1, 1, 1))
     - `rotation`:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
     - `zoom`:              Zoom factor of view (default=2.5)
-    - `mac_scrollbar`:     Prettify scrollbasrs on Macs (default=True)
+    - `mac_scrollbar`:     Prettify scrollbars (default=True)
     - `display`:           Select display: "sidecar", "cell", "html"
     - `tools`:             Show the viewer tools like the object tree
     - `timeit`:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)

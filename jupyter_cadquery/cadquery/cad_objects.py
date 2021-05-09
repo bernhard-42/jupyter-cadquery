@@ -395,7 +395,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
     - zoom:              Zoom factor of view (default=2.5)
     - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
-    - mac_scrollbar:     Prettify scrollbasrs on Macs (default=True)
+    - mac_scrollbar:     Prettify scrollbars (default=True)
     - display:           Select display: "sidecar", "cell", "html"
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)

@@ -102,7 +102,6 @@ def get_or_create_display(init=False, **kwargs):
         data = pickle.loads(base64.b64decode(LOGO_DATA))
         mesh_data = data["data"]
         config = data["config"]
-        print(config)
         DISPLAY.init_progress(data.get("count", 1))
         create_args, add_shape_args = split_args(config)
         DISPLAY._update_settings(**create_args)
@@ -521,6 +520,8 @@ class CadqueryDisplay(object):
         output_height = self.height * 0.4 - 20 + 2
         self.info = Info(self.tree_width, output_height - 6)
         self.info.html.add_class("scroll-area")
+        if self.mac_scrollbar:
+            self.info.html.add_class("mac-scrollbar")
 
         ## Threejs rendering of Cadquery objects
         self.cq_view = CadqueryView(
@@ -541,8 +542,8 @@ class CadqueryDisplay(object):
         self.output.layout = Layout(
             height="%dpx" % output_height,
             width="%dpx" % self.tree_width,
-            overflow_y="scroll",
-            overflow_x="scroll",
+            overflow_y="hidden",
+            overflow_x="hidden",
         )
         self.output.add_class("view_output")
 
