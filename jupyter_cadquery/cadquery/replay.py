@@ -373,7 +373,9 @@ class Replay(object):
             )
             tree = assembly.to_nav_dict()
 
-            self.display.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes))
+            self.display.add_shapes(
+                shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), reset_camera=False
+            )
 
 
 def replay(
