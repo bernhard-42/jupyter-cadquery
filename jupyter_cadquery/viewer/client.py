@@ -170,10 +170,10 @@ def show(obj, **kwargs):
     send(data)
 
 
-def show_object(obj):
+def show_object(obj, **kwargs):
     global OBJECTS
     OBJECTS.append(Part(obj, name=f"obj_{len(OBJECTS)}"))
-    show(PartGroup(OBJECTS))
+    show(PartGroup(OBJECTS), **kwargs)
 
 
 def reset():
