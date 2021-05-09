@@ -300,6 +300,7 @@ def _is_wirelist(cad_obj):
 
 
 def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
+    default_color = get_default("default_color") if default_color is None else default_color
     assembly = PartGroup([], "Group")
     obj_id = 0
     for cad_obj in cad_objs:
