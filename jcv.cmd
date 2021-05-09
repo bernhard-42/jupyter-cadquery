@@ -24,4 +24,4 @@ echo [JCV] Signing the voila notebook
 jupyter trust %JCV_PATH%\viewer.ipynb
 
 echo [JCV] Starting Jupyter CadQuery Viewer
-voila --enable_nbextensions=True --show_tracebacks=True --VoilaExecutor.kernel_name=jcv %JCV_PATH%\viewer.ipynb
+voila --enable_nbextensions=True --show_tracebacks=True --VoilaExecutor.kernel_name=jcv --VoilaConfiguration.file_whitelist="['.*\.js', 'favicon.ico']" %JCV_PATH%\viewer.ipynb

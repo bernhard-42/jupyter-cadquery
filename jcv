@@ -21,4 +21,8 @@ echo "[JCV] Starting Jupyter CadQuery Viewer"
 voila --show_tracebacks=True \
     --enable_nbextensions=True \
     --VoilaExecutor.kernel_name=jcv \
+    --VoilaConfiguration.file_whitelist="['.*\.js', 'favicon.ico']" \
     $JCV_PATH/viewer.ipynb
+
+
+
