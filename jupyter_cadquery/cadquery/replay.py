@@ -29,6 +29,7 @@ from jupyter_cadquery.cadquery.cqparts import is_cqparts_part, convert_cqparts
 from jupyter_cadquery.cad_display import CadqueryDisplay
 from .cad_objects import to_assembly
 from jupyter_cadquery.cad_objects import _combined_bb
+from jupyter_cadquery.defaults import get_default
 
 #
 # The Runtime part
@@ -367,6 +368,8 @@ class Replay(object):
                 deviation=self.deviation,
                 angular_tolerance=self.angular_tolerance,
                 edge_accuracy=self.edge_accuracy,
+                render_edges=get_default("render_edges"),
+                render_normals=get_default("render_normals"),
             )
             tree = assembly.to_nav_dict()
 
