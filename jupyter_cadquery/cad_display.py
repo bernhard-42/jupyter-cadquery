@@ -102,6 +102,7 @@ def get_or_create_display(init=False, **kwargs):
         data = pickle.loads(base64.b64decode(LOGO_DATA))
         mesh_data = data["data"]
         config = data["config"]
+        print(config)
         DISPLAY.init_progress(data.get("count", 1))
         create_args, add_shape_args = split_args(config)
         DISPLAY._update_settings(**create_args)
@@ -615,10 +616,12 @@ class CadqueryDisplay(object):
         mapping,
         tree,
         bb,
+        ticks=None,
         reset_camera=True,
         bb_factor=None,
         ambient_intensity=None,
         direct_intensity=None,
+        default_edgecolor=None,
         position=None,
         rotation=None,
         zoom=None,
@@ -634,11 +637,13 @@ class CadqueryDisplay(object):
             self.cq_view.add_shapes(
                 shapes,
                 bb,
+                ticks,
                 self.progress,
                 reset_camera=reset_camera,
                 bb_factor=bb_factor,
                 ambient_intensity=ambient_intensity,
                 direct_intensity=direct_intensity,
+                default_edgecolor=default_edgecolor,
                 position=position,
                 rotation=rotation,
                 zoom=zoom,

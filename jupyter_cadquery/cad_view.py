@@ -61,7 +61,7 @@ class CadqueryView(object):
 
         self.pick_color = Color("LightGreen")
         self.default_mesh_color = Color(get_default("default_color"))
-        self.default_edge_color = Color((128, 128, 128))
+        self.default_edge_color = Color(get_default("default_edgecolor"))
 
         self.camera_distance_factor = 6
         self.camera_initial_zoom = get_default("zoom")
@@ -179,7 +179,7 @@ class CadqueryView(object):
                 else:
                     if isinstance(obj, LineSegments2):
                         if obj.material.linewidth == 1:
-                            obj.material.color = "#000" if value else self.default_edge_color.web_color
+                            obj.material.color = "#000" if value else self.edge_color
 
         toggle(self.pickable_objects, value)
 
@@ -315,10 +315,12 @@ class CadqueryView(object):
         self,
         shapes,
         bb,
+        ticks,
         progress,
         bb_factor=None,
         ambient_intensity=None,
         direct_intensity=None,
+        default_edgecolor=None,
         position=None,
         rotation=None,
         zoom=None,
@@ -328,8 +330,11 @@ class CadqueryView(object):
         preset = lambda key, value: get_default(key) if value is None else value
 
         bb_factor = preset("bb_factor", bb_factor)
+        ticks = preset("ticks", ticks)
         ambient_intensity = preset("ambient_intensity", ambient_intensity)
         direct_intensity = preset("direct_intensity", direct_intensity)
+        self.edge_color = Color(preset("default_edgecolor", default_edgecolor)).web_color
+        self.cq_renderer.default_edge_color = self.edge_color
 
         self.bbs = self._filter_shapes(shapes)
         self.bb = bb
@@ -375,10 +380,7 @@ class CadqueryView(object):
             # Set up Helpers relative to bounding box
             xy_max = max(abs(self.bb.xmin), abs(self.bb.xmax), abs(self.bb.ymin), abs(self.bb.ymax)) * 1.2
             self.grid = Grid(
-                bb_center=self.bb.center,
-                maximum=xy_max,
-                colorCenterLine="#aaa",
-                colorGrid="#ddd",
+                bb_center=self.bb.center, maximum=xy_max, colorCenterLine="#aaa", colorGrid="#ddd", ticks=ticks
             )
             self.grid.set_visibility(False)
 

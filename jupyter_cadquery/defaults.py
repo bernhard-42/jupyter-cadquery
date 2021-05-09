@@ -34,6 +34,7 @@ class Defaults:
         - cad_width:         Width of CAD view part of the view (default=800)
         - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
         - default_color:     Default mesh color (default=(232, 176, 36))
+        - default_edgecolor: Default mesh color (default=(128, 128, 128))
         - render_edges:      Render edges  (default=True)
         - render_normals:    Render normals (default=False)
         - render_mates:      Render mates (for MAssemblies)
@@ -48,6 +49,7 @@ class Defaults:
         - axes:              Show axes (default=False)
         - axes0:             Show axes at (0,0,0) (default=False)
         - grid:              Show grid (default=False)
+        - ticks:             Hint for the number of ticks in both directions (default=10)
         - ortho:             Use orthographic projections (default=True)
         - transparent:       Show objects transparent (default=False)
         - ambient_intensity  Intensity of ambient ligth (default=1.0)
@@ -82,6 +84,7 @@ class Defaults:
             "cad_width": 800,
             "bb_factor": 1.0,
             "default_color": (232, 176, 36),
+            "default_edgecolor": (128, 128, 128),
             "render_edges": True,
             "render_normals": False,
             "render_mates": False,
@@ -94,6 +97,7 @@ class Defaults:
             "axes": False,
             "axes0": False,
             "grid": False,
+            "ticks": 10,
             "ortho": True,
             "transparent": False,
             "black_edges": False,
@@ -133,9 +137,9 @@ def split_args(config):
         if k
         in [
             "height",
-            "bb",
-            "tree",
-            "cad",
+            "bb_factor",
+            "tree_width",
+            "cad_width",
             "axes",
             "axes0",
             "grid",
@@ -153,6 +157,8 @@ def split_args(config):
         if k
         in [
             "bb_factor",
+            "ticks",
+            "default_edgecolor",
             "ambient_intensity",
             "direct_intensity",
             "position",
