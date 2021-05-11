@@ -17,7 +17,7 @@
 from jupyter_cadquery.cadquery.cad_objects import to_assembly
 from jupyter_cadquery.defaults import get_defaults
 from jupyter_cadquery.cad_objects import _combined_bb
-from jupyter_cadquery.defaults import get_default
+from jupyter_cadquery.defaults import get_default, get_defaults
 from jupyter_cadquery.cadquery import PartGroup, Part
 
 import pickle
@@ -95,8 +95,8 @@ def _convert(obj, **kwargs):
     if len(part_group.objects) == 1 and isinstance(part_group.objects[0], PartGroup):
         part_group = part_group.objects[0]
 
-    # Do not send defaults for postion, rotation and zoom unless they are set in kwargs
-    config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation", "zoom")}
+    # Do not send defaults for postion, rotation unless they are set in kwargs
+    config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation")}
     for k, v in kwargs.items():
         if v is not None:
             config[k] = v

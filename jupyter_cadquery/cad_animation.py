@@ -29,6 +29,7 @@ from pythreejs import (
     StringKeyframeTrack,
     VectorKeyframeTrack,
 )
+from .viewer.client import send
 
 
 def _d2r(x):
@@ -43,11 +44,22 @@ valid_transforms = ["t", "tx", "ty", "tz", "q", "rx", "ry", "rz"]
 
 
 class Animation:
-    def __init__(self, assembly):
-        self.root = assembly
+    def __init__(self, root=None, viewer=False):
+        if viewer and root is not None:
+            print("Viewer can only animate last root, so parameter has to be None")
+        elif not viewer and root is None:
+            print("root group of assembly needs to be provided")
+
+        self.viewer = viewer
+        self.root = root
         self.tracks = []
 
     def add_track(self, selector, action, times, values):
+
+        if self.viewer:
+            self.tracks.append((selector, action, times, values))
+            return
+
         if len(times) != len(values):
             raise AnimationException("times and values arrays need have the same lenght")
 
@@ -108,6 +120,11 @@ class Animation:
             )
 
     def animate(self, speed=1, autoplay=False):
+        if self.viewer:
+            data = {"tracks": self.tracks, "type": "animation", "speed": speed, "autoplay": autoplay}
+            send(data)
+            return
+
         if speed != 1:
             for track in self.tracks:
                 track.times = track.times / float(speed)

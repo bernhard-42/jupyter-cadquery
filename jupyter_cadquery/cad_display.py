@@ -87,7 +87,7 @@ def create_display(**kwargs):
 
 
 def get_or_create_display(init=False, **kwargs):
-    global DISPLAY
+    global DISPLAY, SPLASH
 
     if kwargs.get("display", get_default("display")) != "sidecar" or SIDECAR is None:
         return create_display(**kwargs)
@@ -107,6 +107,7 @@ def get_or_create_display(init=False, **kwargs):
         DISPLAY._update_settings(**create_args)
         DISPLAY.add_shapes(**mesh_data, **add_shape_args)
         DISPLAY.info.ready_msg(DISPLAY.cq_view.grid.step)
+        DISPLAY.splash = True
 
     else:
         # Use the existing Cad Display, so set the defaults and parameters again
@@ -315,6 +316,7 @@ class CadqueryDisplay(object):
         self._tools = True
         self.id = uuid4().hex[:10]
         self.clean = True
+        self.splash = False
 
     def _dump_config(self):
         print("\nCadDisplay:")
@@ -633,6 +635,11 @@ class CadqueryDisplay(object):
 
         self.tree_view = Output()
         self.tree_clipping.children = [self.tree_view, self.tree_clipping.children[1]]
+
+        # Force reset of camera to inhereit splash settings for first object
+        if self.splash:
+            reset_camera = True
+            self.splash = False
 
         with Timer(self.timeit, "", "mesh shapes", 2):
             self.cq_view.add_shapes(
