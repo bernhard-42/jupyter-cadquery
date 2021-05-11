@@ -1,10 +1,15 @@
 from collections import OrderedDict as odict
+from math import cos, sin
 
 import numpy as np
 
 import cadquery as cq
-from cadquery_massembly import Mate, MAssembly
+from cadquery_massembly import MAssembly, relocate
 from jupyter_cadquery.viewer.client import show
+from jupyter_cadquery import set_defaults
+from jupyter_cadquery.cad_animation import Animation
+
+set_defaults(grid=True, axes0=True, edge_accuracy=0.01, mate_scale=4, zoom=3.5, bb_factor=1.2)
 
 r_disk = 100
 dist_pivot = 200
@@ -70,9 +75,36 @@ disk_arm.mate("base@faces@>Z", name="arm_pivot")
 disk_arm.mate("disk@faces@>Z[-2]", name="disk", origin=True)
 disk_arm.mate("arm?mate", name="arm", origin=True)
 
-# show(disk_arm, reset_camera=False)
+relocate(disk_arm)
+
+# show(disk_arm)
 
 disk_arm.assemble("arm", "arm_pivot")
 disk_arm.assemble("disk", "disk_pivot")
 
-show(disk_arm, reset_camera=False)
+show(disk_arm, reset_camera=False, zoom=3.5)
+
+r_disk = 100
+dist_pivot = 200
+
+
+def angle_arm(angle_disk):
+    ra = np.deg2rad(angle_disk)
+    v = np.array((dist_pivot, 0)) - r_disk * np.array((cos(ra), sin(ra)))
+    return np.rad2deg(np.arctan2(*v[::-1]))
+
+
+animation = Animation(viewer=True)
+
+times = np.linspace(0, 5, 181)
+disk_angles = np.linspace(0, 360, 181)
+arm_angles = [angle_arm(d) for d in disk_angles]
+
+# move disk
+# Note, the selector must follow the path in the CAD view navigation hierarchy
+animation.add_track(f"base/disk", "rz", times, disk_angles)
+
+# move arm
+animation.add_track(f"base/arm", "rz", times, arm_angles)
+
+animation.animate(speed=4)

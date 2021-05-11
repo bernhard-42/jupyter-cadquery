@@ -1,7 +1,10 @@
+import numpy as np
+
 import cadquery as cq
-from cadquery_massembly import MAssembly
+from cadquery_massembly import MAssembly, relocate
 
 from jupyter_cadquery.viewer.client import show
+from jupyter_cadquery.cad_animation import Animation
 
 # Parts
 
@@ -214,7 +217,8 @@ for name in leg_names:
     hexapod.mate(f"{name}@faces@<Y", name=f"leg_{name}_hinge", origin=True, transforms=odict(rx=180, rz=-90))
     hexapod.mate(f"{name}/lower?{lower}", name=f"leg_{name}_lower_hole", origin=True)
 
-# show_object(hexapod, reset_camera=False)
+show(hexapod, reset_camera=False)
+relocate(hexapod)
 
 # Assemble the parts
 for leg in leg_names:
@@ -227,3 +231,45 @@ for stand_name in stand_names:
     hexapod.assemble(f"{stand_name}", f"{stand_name}_bottom")
 
 show(hexapod, reset_camera=False)
+
+# Animation
+
+horizontal_angle = 25
+
+
+def intervals(count):
+    r = [min(180, (90 + i * (360 // count)) % 360) for i in range(count)]
+    return r
+
+
+def times(end, count):
+    return np.linspace(0, end, count + 1)
+
+
+def vertical(count, end, offset, reverse):
+    ints = intervals(count)
+    heights = [round(35 * np.sin(np.deg2rad(x)) - 15, 1) for x in ints]
+    heights.append(heights[0])
+    return times(end, count), heights[offset:] + heights[1 : offset + 1]
+
+
+def horizontal(end, reverse):
+    factor = 1 if reverse else -1
+    return times(end, 4), [0, factor * horizontal_angle, 0, -factor * horizontal_angle, 0]
+
+
+leg_group = ("left_front", "right_middle", "left_back")
+
+animation = Animation(viewer=True)
+
+for name in leg_names:
+    # move upper leg
+    animation.add_track(f"bottom/{name}", "rz", *horizontal(4, "middle" in name))
+
+    # move lower leg
+    animation.add_track(f"bottom/{name}/lower", "rz", *vertical(8, 4, 0 if name in leg_group else 4, "left" in name))
+
+    # lift hexapod to run on grid
+    animation.add_track(f"bottom", "tz", [0, 4], [61.25] * 2)
+
+animation.animate(speed=3)
