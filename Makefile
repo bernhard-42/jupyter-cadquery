@@ -44,7 +44,7 @@ dist:
 release:
 	git add .
 	git status
-	git commit -m "Latest release: $(CURRENT_VERSION)" && echo ""
+	git diff-index --quiet HEAD || git commit -m "Latest release: $(CURRENT_VERSION)"
 	git tag -a v$(CURRENT_VERSION) -m "Latest release: $(CURRENT_VERSION)"
 
 install: dist
