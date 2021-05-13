@@ -12,7 +12,7 @@ from IPython.display import display, clear_output
 import ipywidgets as widgets
 from jupyter_cadquery.cad_display import CadqueryDisplay
 from jupyter_cadquery.cad_animation import Animation
-from jupyter_cadquery.defaults import get_default, split_args, set_defaults
+from jupyter_cadquery.defaults import get_default, get_defaults, split_args, set_defaults
 from jupyter_cadquery.logo import LOGO_DATA
 from jupyter_cadquery.utils import px
 
@@ -43,6 +43,10 @@ def error(*msg):
     _log("E", *msg)
 
 
+def debug(*msg):
+    _log("D", *msg)
+
+
 class Viewer:
     def __init__(self, zmq_port):
         self.zmq_port = zmq_port
@@ -58,21 +62,24 @@ class Viewer:
         config = data["config"]
         info(mesh_data["bb"])
 
-        if logo:
-            # ignore settings
+        if logo or config.get("cad_width") is None:
             config["cad_width"] = get_default("cad_width")
-            config["tree_width"] = get_default("tree_width")
-            config["height"] = get_default("height")
         else:
-            if config.get("cad_width") is not None and config.get("cad_width") < 640:
+            if config.get("cad_width") < 640:
                 warn("cad_width has to be >= 640, setting to 640")
                 config["cad_width"] = 640
 
-            if config.get("height") is not None and config.get("height") < 400:
+        if logo or config.get("height") is None:
+            config["height"] = get_default("height")
+        else:
+            if config.get("height") < 400:
                 warn("height has to be >= 400, setting to 400")
                 config["height"] = 400
 
-            if config.get("tree_width") is not None and config.get("tree_width") < 200:
+        if logo or config.get("tree_width") is not None:
+            config["tree_width"] = get_default("tree_width")
+        else:
+            if config.get("tree_width") < 200:
                 warn("tree_width has to be >= 200, setting to 200")
                 config["tree_width"] = 200
 
