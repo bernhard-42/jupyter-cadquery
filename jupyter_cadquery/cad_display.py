@@ -247,7 +247,7 @@ class Clipping(object):
         button = ImageButton(
             width=36,
             height=28,
-            image_path="%s/plane.png" % (self.image_path),
+            image_path=join(self.image_path, "plane.png"),
             tooltip="Set clipping plane",
             type=str(ind),
             layout=Layout(margin="0px 10px 0px 0px"),
@@ -277,7 +277,7 @@ class Clipping(object):
         self.normals.append(normal)
 
     def create(self):
-        return VBox(self.sliders)
+        return VBox(self.sliders, layout=Layout(overflow="hidden"))
 
 
 class CadqueryDisplay(object):
@@ -313,16 +313,16 @@ class CadqueryDisplay(object):
 
         self.image_paths = [
             {
-                UNSELECTED: "%s/no_shape.png" % self.image_path,
-                SELECTED: "%s/shape.png" % self.image_path,
-                MIXED: "%s/mix_shape.png" % self.image_path,
-                EMPTY: "%s/empty_shape.png" % self.image_path,
+                UNSELECTED: join(self.image_path, "no_shape.png"),
+                SELECTED: join(self.image_path, "shape.png"),
+                MIXED: join(self.image_path, "mix_shape.png"),
+                EMPTY: join(self.image_path, "empty_shape.png"),
             },
             {
-                UNSELECTED: "%s/no_mesh.png" % self.image_path,
-                SELECTED: "%s/mesh.png" % self.image_path,
-                MIXED: "%s/mix_mesh.png" % self.image_path,
-                EMPTY: "%s/empty_mesh.png" % self.image_path,
+                UNSELECTED: join(self.image_path, "no_mesh.png"),
+                SELECTED: join(self.image_path, "mesh.png"),
+                MIXED: join(self.image_path, "mix_mesh.png"),
+                EMPTY: join(self.image_path, "empty_mesh.png"),
             },
         ]
 
@@ -403,7 +403,7 @@ class CadqueryDisplay(object):
         button = ImageButton(
             width=36,
             height=28,
-            image_path="%s/%s.png" % (self.image_path, image_name),
+            image_path=join(self.image_path, f"{image_name}.png"),
             tooltip=tooltip,
             type=image_name,
         )
