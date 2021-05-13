@@ -295,6 +295,8 @@ class CadqueryView(object):
                 self.camera,
             ]
         )
+        if get_default("theme") == "dark":
+            self.scene.background = "#212121"
 
         # Set up Controllers
         camera_target = (0.0, 0.0, 0.0)

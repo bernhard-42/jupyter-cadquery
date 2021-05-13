@@ -24,17 +24,13 @@ from ipywidgets import Label, Checkbox, Layout, HBox, VBox, Box, FloatSlider, Ta
 
 from jupyter_cadquery_widgets.widgets import ImageButton, TreeView, UNSELECTED, SELECTED, MIXED, EMPTY
 from .cad_view import CadqueryView
-from .utils import Timer, Progress
+from .utils import Timer, Progress, px
 from ._version import __version__
 from .defaults import set_defaults, get_default, split_args
 from .logo import LOGO_DATA
 
 DISPLAY = None
 SIDECAR = None
-
-
-def px(w):
-    return f"{w}px"
 
 
 def has_sidecar():
@@ -611,6 +607,9 @@ class CadqueryDisplay(object):
             overflow_x="hidden",
         )
         self.output.add_class("view_output")
+        # TODO
+        # if get_default("theme") == "dark":
+        #     self.output.add_class("p-Collapse-contents")
 
         # Clipping tool
         self.clipping = Clipping(self.image_path, self.output, self.cq_view, self.tree_width)
