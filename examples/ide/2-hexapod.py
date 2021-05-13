@@ -2,9 +2,11 @@ import numpy as np
 
 import cadquery as cq
 from cadquery_massembly import MAssembly, relocate
-
+from jupyter_cadquery import set_defaults
 from jupyter_cadquery.viewer.client import show
 from jupyter_cadquery.cad_animation import Animation
+
+set_defaults(zoom=3.5)
 
 # Parts
 
@@ -200,6 +202,7 @@ def create_hexapod():
 from collections import OrderedDict as odict
 
 hexapod = create_hexapod()
+show(hexapod)
 
 hexapod.mate("bottom?top", name="bottom", origin=True)
 hexapod.mate("top?bottom", name="top", origin=True, transforms=odict(rx=180, tz=-(height + 2 * tol)))
@@ -230,7 +233,7 @@ hexapod.assemble("top", "bottom")
 for stand_name in stand_names:
     hexapod.assemble(f"{stand_name}", f"{stand_name}_bottom")
 
-show(hexapod, axes0=True, reset_camera=True, cad_width=700, height=600, zoom=3)
+show(hexapod)
 
 # Animation
 
