@@ -28,6 +28,7 @@ from .utils import Timer, Progress, px
 from ._version import __version__
 from .defaults import set_defaults, get_default, split_args
 from .logo import LOGO_DATA
+from .style import set_css
 
 DISPLAY = None
 SIDECAR = None
@@ -78,14 +79,6 @@ def reset_sidecar(init=True):
     set_sidecar(title, init)
 
 
-def create_display(**kwargs):
-    d = CadqueryDisplay()
-    widget = d.create(**kwargs)
-    ipy_display(widget)
-
-    return d
-
-
 def get_or_create_display(init=False, **kwargs):
     global DISPLAY
 
@@ -97,7 +90,11 @@ def get_or_create_display(init=False, **kwargs):
             DISPLAY.set_size(t, w, h)
 
     if kwargs.get("display", get_default("display")) != "sidecar" or SIDECAR is None:
-        return create_display(**kwargs)
+        d = CadqueryDisplay()
+        widget = d.create(**kwargs)
+        ipy_display(widget)
+        set_css(get_default("theme"))
+        return d
 
     if DISPLAY is None:
         DISPLAY = CadqueryDisplay()
@@ -116,14 +113,16 @@ def get_or_create_display(init=False, **kwargs):
         DISPLAY.add_shapes(**mesh_data, **add_shape_args)
         DISPLAY.info.ready_msg(DISPLAY.cq_view.grid.step)
         DISPLAY.splash = True
+        set_css(get_default("theme"), True)
 
     else:
         # Use the existing Cad Display, so set the defaults and parameters again
         DISPLAY._update_settings(**kwargs)
         resize()
+        set_css(get_default("theme"))
 
     # Change latest settings
-    DISPLAY._update_settings(**kwargs)
+    # DISPLAY._update_settings(**kwargs)
     DISPLAY.cq_view.timeit = kwargs.get("timeit", get_default("timeit"))
 
     return DISPLAY
