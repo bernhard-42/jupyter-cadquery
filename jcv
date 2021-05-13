@@ -41,6 +41,7 @@ jupyter trust $JCV_PATH/viewer.ipynb
 
 echo "[JCV] Starting Jupyter CadQuery Viewer"
 voila --theme $THEME \
+    --Voila.ip=0.0.0.0 \
     --show_tracebacks=True \
     --enable_nbextensions=True \
     --VoilaExecutor.kernel_name=jcv \
