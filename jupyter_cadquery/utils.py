@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import time
+import warnings
 from webcolors import name_to_rgb, hex_to_rgb, rgb_to_hex
 import ipywidgets as widgets
 
@@ -193,3 +194,14 @@ class Progress:
     def update(self):
         if self.progress.value < self.max:
             self.progress.value += 1
+
+
+def warn(msg):
+    def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+        return "%s: %s" % (category.__name__, message)
+
+    warn_format = warnings.formatwarning
+    warnings.formatwarning = warning_on_one_line
+    warnings.simplefilter("always", RuntimeWarning)
+    warnings.warn(msg + "\n", RuntimeWarning)
+    warnings.formatwarning = warn_format
