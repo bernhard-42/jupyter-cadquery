@@ -1,6 +1,10 @@
 @echo off
 
+set ZMQ_PORT=
+set CAD_HEIGHT=
+set CAD_WIDTH=
 set THEME=light
+
 :GETOPTS
 if /I "%1" == "-p" set ZMQ_PORT=%2 & shift
 if /I "%1" == "-h" set CAD_HEIGHT=%2 & shift
