@@ -33,6 +33,10 @@ DISPLAY = None
 SIDECAR = None
 
 
+def px(w):
+    return f"{w}px"
+
+
 def has_sidecar():
     if SIDECAR is not None:
         return SIDECAR.title
@@ -87,7 +91,14 @@ def create_display(**kwargs):
 
 
 def get_or_create_display(init=False, **kwargs):
-    global DISPLAY, SPLASH
+    global DISPLAY
+
+    def resize():
+        t = kwargs.get("tree_width")
+        w = kwargs.get("cad_width")
+        h = kwargs.get("height")
+        if w is not None or h is not None:
+            DISPLAY.set_size(t, w, h)
 
     if kwargs.get("display", get_default("display")) != "sidecar" or SIDECAR is None:
         return create_display(**kwargs)
@@ -95,6 +106,7 @@ def get_or_create_display(init=False, **kwargs):
     if DISPLAY is None:
         DISPLAY = CadqueryDisplay()
         widget = DISPLAY.create(**kwargs)
+        resize()
         SIDECAR.clear_output(True)
         with SIDECAR:
             ipy_display(widget)
@@ -112,6 +124,7 @@ def get_or_create_display(init=False, **kwargs):
     else:
         # Use the existing Cad Display, so set the defaults and parameters again
         DISPLAY._update_settings(**kwargs)
+        resize()
 
     # Change latest settings
     DISPLAY._update_settings(**kwargs)
@@ -125,8 +138,8 @@ class Info(object):
         self.html = HTML(
             value="",
             layout=Layout(
-                width=("%dpx" % width),
-                height=("%dpx" % height),
+                width=(px(width)),
+                height=(px(height)),
                 border="solid 1px #ddd",
                 overflow="scroll",
             ),
@@ -226,6 +239,11 @@ class Clipping(object):
         self.cq_view.set_plane(i)
         self.labels[i].value = "N=(%5.2f, %5.2f, %5.2f)" % tuple(self.cq_view.direction())
 
+    def set_width(self, width):
+        self.width = width
+        for slider in self.sliders:
+            slider.layout.width = px(width - 20)
+
     def slider(self, value, min, max, step, description):
         label = Label(description)
         self.labels.append(label)
@@ -252,7 +270,7 @@ class Clipping(object):
             orientation="horizontal",
             readout=True,
             readout_format=".2f",
-            layout=Layout(width="%dpx" % (self.width - 20)),
+            layout=Layout(width=px(self.width - 20)),
         )
 
         slider.observe(self.cq_view.clip(ind), "value")
@@ -317,6 +335,7 @@ class CadqueryDisplay(object):
         self.id = uuid4().hex[:10]
         self.clean = True
         self.splash = False
+        self.tree_clipping = None
 
     def _dump_config(self):
         print("\nCadDisplay:")
@@ -486,6 +505,50 @@ class CadqueryDisplay(object):
         self._display = preset("display", kwargs.get("display"))
         self._tools = preset("tools", kwargs.get("tools"))
 
+    def _info_height(self, height):
+        return int(height * 0.4) - 20 + 2
+
+    def _tree_clipping_height(self, height):
+        return int(height * 0.6) + 17
+
+    def _tree_height(self, height):
+        return int(height * 0.6) - 30
+
+    def set_size(self, tree_width, width, height):
+        if width is not None:
+            # adapt renderer
+            self.cad_width = width
+            self.cq_view.camera.width = width
+            self.cq_view.renderer.width = width
+
+        if height is not None:
+            # adapt renderer
+            self.height = height
+            self.cq_view.camera.height = height
+            self.cq_view.renderer.height = height
+            # adapt info box
+            info_height = self._info_height(height)
+            self.info.height = info_height
+            self.info.html.layout.height = px(info_height - 6)
+            self.output.layout.height = px(info_height)
+            # adapt tree and clipping
+            tree_clipping_height = self._tree_clipping_height(height)
+            self.tree_clipping.layout.height = px(tree_clipping_height)
+
+            tree_height = self._tree_height(height)
+            self.tree_view.layout.height = px(tree_height)
+
+        if tree_width is not None:
+            # adapt tree and clipping
+            self.tree_clipping.layout.width = px(tree_width)
+            self.tree_view.layout.width = px(tree_width)
+            self.clipping.set_width(tree_width)
+            # adapt info box
+            self.output.layout.width = px(tree_width)
+            self.info.html.layout.width = px(tree_width)
+            # adapt progress bar
+            self.progress.progress.layout.width = px(tree_width)
+
     def create(
         self,
         height=None,
@@ -519,7 +582,7 @@ class CadqueryDisplay(object):
         )
 
         # Output widget
-        output_height = self.height * 0.4 - 20 + 2
+        output_height = self._info_height(self.height)
         self.info = Info(self.tree_width, output_height - 6)
         self.info.html.add_class("scroll-area")
         if self.mac_scrollbar:
@@ -542,8 +605,8 @@ class CadqueryDisplay(object):
 
         self.output = Box([self.info.html])
         self.output.layout = Layout(
-            height="%dpx" % output_height,
-            width="%dpx" % self.tree_width,
+            height=px(output_height),
+            width=px(self.tree_width),
             overflow_y="hidden",
             overflow_x="hidden",
         )
@@ -560,7 +623,7 @@ class CadqueryDisplay(object):
 
         # Tab widget with Tree View and Clipping tools
         self.tree_clipping = Tab(
-            layout=Layout(height="%dpx" % (int(self.height * 0.6) + 17), width="%dpx" % self.tree_width)
+            layout=Layout(height=px(self._tree_clipping_height(self.height)), width=px(self.tree_width))
         )
         self.tree_clipping.children = [self.tree_view, self.clipping.create()]
         for i, c in enumerate(["Tree", "Clipping"]):
@@ -677,7 +740,7 @@ class CadqueryDisplay(object):
                 image_paths=self.image_paths,
                 tree=tree,
                 state=self.states,
-                layout=Layout(height="%dpx" % (self.height * 0.6 - 30), width="%dpx" % (self.tree_width - 20)),
+                layout=Layout(height=px(self._tree_height(self.height)), width=px(self.tree_width - 20)),
             )
             self.tree_view.add_class("view_tree")
             self.tree_view.add_class("scroll-area")

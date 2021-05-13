@@ -22,7 +22,7 @@ from jupyter_cadquery.cad_display import (
     has_sidecar,
 )
 from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
-from jupyter_cadquery.utils import Color, flatten, Timer
+from jupyter_cadquery.utils import Color, flatten, Timer, warn
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, BoundingBox, loc_to_tq
 from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality
 from jupyter_cadquery.defaults import get_default, split_args
@@ -403,6 +403,18 @@ def _show(part_group, **kwargs):
     for k in kwargs:
         if get_default(k, "n/a") == "n/a":
             raise KeyError(f"Paramater {k} is not a valid argument for show()")
+
+    if kwargs.get("cad_width") is not None and kwargs.get("cad_width") < 640:
+        warn("cad_width has to be >= 640, setting to 640")
+        kwargs["cad_width"] = 640
+
+    if kwargs.get("height") is not None and kwargs.get("height") < 400:
+        warn("height has to be >= 400, setting to 400")
+        kwargs["height"] = 400
+
+    if kwargs.get("tree_width") is not None and kwargs.get("tree_width") < 250:
+        warn("tree_width has to be >= 250, setting to 250")
+        kwargs["tree_width"] = 250
 
     # remove all tessellation and view parameters
     create_args, add_shape_args = split_args(kwargs)
