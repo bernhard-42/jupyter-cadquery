@@ -60,6 +60,7 @@ class Defaults:
         - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
         - mac_scrollbar:     Prettify scrollbars (default=True)
         - display:           Select display: "sidecar", "cell", "html"
+        - theme:             Theme "light" or "dark" (default="light")
         - tools:             Show the viewer tools like the object tree
         - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
 
@@ -109,6 +110,7 @@ class Defaults:
             "reset_camera": True,
             "mac_scrollbar": True,
             "display": "cell",
+            "theme": "light",
             "tools": True,
             "timeit": False,
         }

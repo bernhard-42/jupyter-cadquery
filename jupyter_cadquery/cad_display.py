@@ -295,7 +295,7 @@ class CadqueryDisplay(object):
         self.cq_view = None
         self.assembly = None
 
-        self.image_path = join(dirname(__file__), "icons")
+        self.image_path = join(dirname(__file__), "icons", get_default("theme"))
 
         self.image_paths = [
             {
