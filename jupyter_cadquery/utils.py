@@ -196,6 +196,10 @@ class Progress:
             self.progress.value += 1
 
 
+def px(w):
+    return f"{w}px"
+
+
 def warn(msg):
     def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
         return "%s: %s" % (category.__name__, message)
