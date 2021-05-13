@@ -1,13 +1,13 @@
 @echo off
 
-if [%1]==[--port] goto :port
-goto :viewer
-
-:port
-set ZMQ_PORT=%2
-echo [JCV] Using port %ZMQ_PORT%
-
-:viewer
+set THEME=light
+:GETOPTS
+if /I "%1" == "-p" set ZMQ_PORT=%2 & shift
+if /I "%1" == "-h" set CAD_HEIGHT=%2 & shift
+if /I "%1" == "-w" set CAD_WIDTH=%2 & shift
+if /I "%1" == "-d" set THEME=dark
+shift
+if not "%1" == "" goto GETOPTS
 
 echo [JCV] Creating a Jupyter kernel specification called 'jcv' for this conda environment
 python -m ipykernel install --name jcv --display-name jcv
@@ -24,9 +24,11 @@ echo [JCV] Signing the voila notebook
 jupyter trust %JCV_PATH%\viewer.ipynb
 
 echo [JCV] Starting Jupyter CadQuery Viewer
-voila --enable_nbextensions=True ^
+voila --theme=%THEME% ^
+    --enable_nbextensions=True ^
     --show_tracebacks=True ^
     --VoilaExecutor.kernel_name=jcv ^
     --VoilaConfiguration.file_whitelist="favicon.ico" ^
     --VoilaConfiguration.file_whitelist=".*\.js" ^
     %JCV_PATH%\viewer.ipynb
+
