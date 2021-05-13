@@ -80,13 +80,13 @@ class Progress:
         print(".", end="", flush=True)
 
 
-def _convert(obj, **kwargs):
+def _convert(*cad_objs, **kwargs):
     color = kwargs.get("default_color")
     if color is None:
         color = get_default("default_color")
 
     part_group = to_assembly(
-        obj,
+        *cad_objs,
         render_mates=kwargs.get("render_mates"),
         mate_scale=kwargs.get("mate_scale", 1),
         default_color=color,
@@ -123,7 +123,7 @@ def _convert(obj, **kwargs):
     return data
 
 
-def show(obj, **kwargs):
+def show(*cad_objs, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:
@@ -166,7 +166,7 @@ def show(obj, **kwargs):
     - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
 
-    data = _convert(obj, **kwargs)
+    data = _convert(*cad_objs, **kwargs)
     send(data)
 
 
