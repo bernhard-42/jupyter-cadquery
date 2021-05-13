@@ -217,7 +217,7 @@ for name in leg_names:
     hexapod.mate(f"{name}@faces@<Y", name=f"leg_{name}_hinge", origin=True, transforms=odict(rx=180, rz=-90))
     hexapod.mate(f"{name}/lower?{lower}", name=f"leg_{name}_lower_hole", origin=True)
 
-show(hexapod, reset_camera=False)
+# show(hexapod, reset_camera=False)
 relocate(hexapod)
 
 # Assemble the parts
@@ -230,7 +230,7 @@ hexapod.assemble("top", "bottom")
 for stand_name in stand_names:
     hexapod.assemble(f"{stand_name}", f"{stand_name}_bottom")
 
-show(hexapod, reset_camera=False)
+show(hexapod, axes0=True, reset_camera=True, cad_width=700, height=600, zoom=3)
 
 # Animation
 
@@ -270,6 +270,6 @@ for name in leg_names:
     animation.add_track(f"bottom/{name}/lower", "rz", *vertical(8, 4, 0 if name in leg_group else 4, "left" in name))
 
     # lift hexapod to run on grid
-    animation.add_track(f"bottom", "tz", [0, 4], [61.25] * 2)
+    # animation.add_track(f"bottom", "tz", [0, 4], [61.25] * 2)
 
 animation.animate(speed=3)
