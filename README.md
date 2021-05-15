@@ -9,7 +9,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.2.0rc1?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Relase v2.2.0rc1 (15.05.2021)
+## Release v2.2.0rc1 (15.05.2021)
 
 - **New features**
     - A new Viewer component based on [`voilà`](https://github.com/voila-dashboards/voila) allows to use *Jupyter-CadQuery* as viewer for any IDE
@@ -63,7 +63,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
 
     ![Sidecar](screenshots/sidecar.png)
 
-    To try this yourself, you can use the code [here](#-Example-Code)
+    To try this yourself, you can use the code [here](#example-code)
 
 2) **Animation system in JupyterLab**
 
