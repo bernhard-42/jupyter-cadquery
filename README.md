@@ -65,7 +65,11 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
 
     To try this yourself, you can use the code [here](#-Example-Code)
 
-2) **Debugging in VC Code with Standalone Viewer (dark theme)**
+2) **Animation system in JupyterLab**
+
+    ![Animated Hexapod in Sidecar](screenshots/hexapod-crawling.gif)
+
+3) **Debugging in VC Code with Standalone Viewer (dark theme)**
 
     ![Sidecar](screenshots/debugging.gif)
 
@@ -359,8 +363,6 @@ show(a1, grid=False)  # overwrite grid default value
     - Splits UI and shape rendering and shows a progress bar during rendering, especially useful for large assembblies
     - If you install `cadquery-massembly` (see below) then the class `MAssembly` (meaning "Mate base Assembly") is available, which is derived from `cadquery.Assembly` but similar to `cqparts` or FreeCad's `Assembly4` works with mates to manually connect instead of constraints and a numerical solver.
     - Comes with an animation system to simulate models built with `MAssembly`
-
-        ![Animated Hexapod in Sidecar](screenshots/hexapod-crawling.gif)
 
 - **Changes**
     - Deprecates *Jupyter-CadQuery*'s `Assembly` (too many assemblies in the meantime) and has renamed it to `PartGroup` (no semantic change). `Assembly` can still be used with warnings at the moment.
