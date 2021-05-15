@@ -157,7 +157,7 @@ door.mate("panel?hole1", name="handle_1")
 
 check_mates = True
 if check_mates:
-    show(door, name="door")
+    show(door)
 else:
     # Assemble the parts
     door.assemble("bottom_0", "con_bl_0")  # add bottom vslot to bottom-left connector
@@ -170,4 +170,4 @@ else:
     door.assemble("top_1", "con_tl_1")  # add top vslot to top-left connector
     door.assemble("handle_0", "handle_1")  # add handle
 
-    show(door, name="door")
+    show(door)

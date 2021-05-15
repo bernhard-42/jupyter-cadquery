@@ -63,11 +63,10 @@ for i in range(number_balls):
 check_mates = True
 if check_mates:
     # Assemble the parts
-    show(bearing, name="bearing")
-    show_mates(bearing, show, length=1)
+    show(bearing)
 else:
     bearing.assemble("inner", "outer")
     for i in range(number_balls):
         bearing.assemble(balls[i], "inner_%d" % i)
 
-    show(bearing, name="bearing")
+    show(bearing)

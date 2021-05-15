@@ -114,8 +114,7 @@ for name in link_list:
 
 check_mates = True
 if check_mates:
-    show(leg, name="leg")
-    show_mates(leg, show, length=3)
+    show(leg)
 else:
     # Assemble the parts
     alpha = 0
@@ -129,4 +128,4 @@ else:
         loc = abs_loc * leg.mates[name].mate.loc.inverse  # ... and center the mate of the link first
         leg.assemble(name, loc)
 
-    show(leg, name="leg")
+    show(leg)

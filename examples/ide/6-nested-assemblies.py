@@ -82,7 +82,7 @@ for obj, name in (
 
 check_mates = True
 if check_mates:
-    show(assy, name="assy")
+    show(assy)
 else:
     # Assemble the parts
     assy.assemble("cyl1_m0", "box0_m0")
