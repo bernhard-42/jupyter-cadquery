@@ -24,11 +24,12 @@ setup_args = {
     "install_requires": [
         "ipywidgets~=7.6",
         "webcolors~=1.11",
-        "notebook~=6.2",
+        "notebook~=6.3",
         "sidecar~=0.5",
-        "jupyter-cadquery-widgets~=2.0.2",
+        "jupyter-cadquery-widgets~=2.0",
         "pythreejs~=2.3",
         "voila~=0.2",
+        "cadquery_massembly~=0.9",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},
