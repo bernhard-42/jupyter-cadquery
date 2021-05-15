@@ -131,7 +131,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
         from jupyter_cadquery.viewer.client import show, show_object
         ```
 
-        `show` works as in JupyterLab, while `show_object` views objects oncrementally as in CQ-Editor
+        `show` works as in JupyterLab, while `show_object` views objects incrementally as in CQ-Editor
 
 
 2) **Using a docker image**
