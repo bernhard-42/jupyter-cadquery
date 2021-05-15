@@ -125,6 +125,15 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
         jcv -d  # dark theme
         ```
 
+        In your code import the `show` or `show_object` function from the viewer:
+
+        ```python
+        from jupyter_cadquery.viewer.client import show, show_object
+        ```
+
+        `show` works as in JupyterLab, while `show_object` views objects oncrementally as in CQ-Editor
+
+
 2) **Using a docker image**
 
     - Run the docker container (jupyter in the container will start in `/home/cq`)
