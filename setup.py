@@ -30,6 +30,7 @@ setup_args = {
         "pythreejs~=2.3",
         "voila~=0.2",
         "cadquery_massembly~=0.9",
+        "orbitcontrol-patch~=0.1.0",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},

@@ -29,11 +29,15 @@ with warnings.catch_warnings():
         AmbientLight,
         DirectionalLight,
         Scene,
-        OrbitControls,
         Renderer,
         Picker,
         Group,
     )
+
+    try:
+        from orbitcontrol_patch import OrbitControls
+    except:
+        from pythreejs import OrbitControls
 
 
 from jupyter_cadquery_widgets.widgets import state_diff
