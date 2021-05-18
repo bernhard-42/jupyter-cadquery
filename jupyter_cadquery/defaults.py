@@ -78,6 +78,13 @@ class Defaults:
                     v = 1 + 1e-6
                 self.defaults[k] = v
 
+        if kwargs.get("display") == "html":
+            self.defaults["tools"] = False
+            from IPython.display import HTML, display
+            from ipywidgets.embed import DEFAULT_EMBED_REQUIREJS_URL
+
+            display(HTML(f"""<script src="{DEFAULT_EMBED_REQUIREJS_URL}" crossorigin="anonymous"></script>"""))
+
     def reset_defaults(self):
         self.defaults = {
             "height": 600,
