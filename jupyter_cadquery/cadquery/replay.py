@@ -26,7 +26,7 @@ from ipywidgets import HBox, Output, SelectMultiple, Layout
 import cadquery as cq
 from jupyter_cadquery.cadquery import Part, show
 from jupyter_cadquery.cadquery.cqparts import is_cqparts_part, convert_cqparts
-from jupyter_cadquery.cad_display import CadqueryDisplay
+from jupyter_cadquery.cad_display import get_or_create_display
 from .cad_objects import to_assembly
 from jupyter_cadquery.cad_objects import _combined_bb
 from jupyter_cadquery.defaults import get_default
@@ -236,9 +236,7 @@ class Replay(object):
         self.debug = debug
         self.cad_width = cad_width
         self.height = height
-        self.display = CadqueryDisplay()
-        widget = self.display.create(height=height, cad_width=cad_width)
-        self.display.display(widget)
+        self.display = get_or_create_display()
 
     def format_steps(self, raw_steps):
         def to_code(step, results):
