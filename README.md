@@ -7,9 +7,9 @@ View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or i
 
 Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.2.0rc2?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.2.0rc3?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Release v2.2.0rc2 (15.05.2021)
+## Release v2.2.0rc3 (18.05.2021)
 
 - **New features**
     - A new Viewer component based on [`voilà`](https://github.com/voila-dashboards/voila) allows to use *Jupyter-CadQuery* as viewer for any IDE
@@ -94,7 +94,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
         - Install *Jupyter-CadQuery* (note, matplotlib is only used for the examples)
 
             ```bash
-            pip install jupyter-cadquery==2.2.0rc2 matplotlib
+            pip install jupyter-cadquery==2.2.0rc3 matplotlib
             ```
 
             Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -142,12 +142,12 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
         ```bash
         WORKDIR=/tmp/jupyter
         mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.2.0rc2
+        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.2.0rc3
         ```
 
         Notes: 
         - To start with examples, you can 
-            - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.2.0rc2` or
+            - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.2.0rc3` or
             - copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
         - If you want to change the Dockerfile, `make docker` will create a new docker image
 
