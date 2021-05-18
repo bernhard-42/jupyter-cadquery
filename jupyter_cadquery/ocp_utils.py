@@ -32,9 +32,24 @@ class BoundingBox(object):
         self.tol = tol
         if obj is None:
             self.xmin = self.xmax = self.ymin = self.ymax = self.zmin = self.zmax = 0
+        elif isinstance(obj, BoundingBox):
+            self.xmin = obj.xmin
+            self.xmax = obj.xmax
+            self.ymin = obj.ymin
+            self.ymax = obj.ymax
+            self.zmin = obj.zmin
+            self.zmax = obj.zmax
+        elif isinstance(obj, dict):
+            self.xmin = obj["xmin"]
+            self.xmax = obj["xmax"]
+            self.ymin = obj["ymin"]
+            self.ymax = obj["ymax"]
+            self.zmin = obj["zmin"]
+            self.zmax = obj["zmax"]    
         else:
             bbox = self._bounding_box(obj, tol)
             self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
+        
         self._calc()
 
     def _bounding_box(self, obj, tol=1e-5):

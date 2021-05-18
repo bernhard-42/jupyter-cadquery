@@ -390,12 +390,15 @@ def _combined_bb(shapes):
     def c_bb(shapes, bb):
         for shape in shapes["parts"]:
             if shape.get("parts") is None:
-                bb.update(shape["bb"])
+                if bb is None:
+                    bb = BoundingBox(shape["bb"])
+                else:
+                    bb.update(shape["bb"])
             else:
                 c_bb(shape, bb)
-
-    bb = BoundingBox()
-    c_bb(shapes, bb)
+        return bb
+    
+    bb = c_bb(shapes, None)
     return bb
 
 
