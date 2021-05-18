@@ -237,6 +237,7 @@ class Replay(object):
         self.cad_width = cad_width
         self.height = height
         self.display = get_or_create_display()
+        self.reset_camera = True
 
     def format_steps(self, raw_steps):
         def to_code(step, results):
@@ -372,8 +373,9 @@ class Replay(object):
             tree = assembly.to_nav_dict()
 
             self.display.add_shapes(
-                shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), reset_camera=False
+                shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), reset_camera=self.reset_camera
             )
+            self.reset_camera = False
 
 
 def replay(
