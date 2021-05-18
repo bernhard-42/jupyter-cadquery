@@ -34,6 +34,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
     - Fixed reset camera logic between different calls to `show`
     - Optimized bounding box calculation
     - Double scrollbars removed
+    - Fix html export (including OrbitControls fix)
 
 
 ## Key Features
@@ -234,7 +235,53 @@ Note, this is not supported in the standalone viewer for the time being.
     - `cad_width` (`default=600`): Width of the CAD view
     - `height` (`default=600`): Height of the CAD view
 
-### d) Export the rendered object as STL:
+### d) Export as HTML:
+
+1. Export full notebook
+
+    In the first cell of the notebook set output to "html"
+
+    ```python
+    set_defaults(display="html")
+    ```
+
+    and then use JupyterLab's *File -> Export Notebook as ... -> HTML* menu entry
+
+    Notes:
+    - `display="html"` will automatically turn off tools
+    - Browsers can only a set of 8-16 WebGL contexts. So try to have a small number of renderings. If there are too much, they will be shown as black box, that renders after hovering over it.
+
+2. Export single rendering view
+
+    A straight forward approach is to use
+
+    ```python
+    w = show(a1)
+    ```
+
+    adapt the cad view as wanted (axis, viewpoint, transparency, ...) and then call
+
+    ```python
+    from ipywidgets.embed import embed_minimal_html
+    embed_minimal_html('export.html', views=[w.cq_view.renderer], title='Renderer')
+    ```
+
+    Using `w.cq_view.renderer` this will save the exact state of the visible pythreejs view.
+
+    Of course, you can also call `w = show(a1, *params)` where `params` is the dict of show parameters you'd like to be used and then call the `embed_minimal_html` with `views=w.cq_view.renderer`
+
+    Notes:
+
+    - If you use `sidecar` then you need to close it first:
+
+        ```python
+        from jupyter_cadquery import cad_display
+        cad_display.SIDECAR.close()
+        ```
+
+    - Buttons and treeview can be exported, however the interaction logic of the UI is implemented in Python. So the treeview and the buttons won't have any effect in an exported HTML page. Best is to set `set_defaults(tools=False)` to omit all buttons and the tree
+
+### e) Export the rendered object as STL:
 
 - OCC
 
@@ -245,37 +292,6 @@ Note, this is not supported in the standalone viewer for the time being.
     ```
 
     Smaller `linear_deflection` and `angular_deflection` means more details.
-
-### e) Export the rendering view as HTML:
-
-A straight forward approach is to use
-
-```python
-w = show(a1)
-```
-
-adapt the cad view as wanted (axis, viewpoint, transparency, ...) and then call
-
-```python
-from ipywidgets.embed import embed_minimal_html
-embed_minimal_html('export.html', views=[w.cq_view.renderer], title='Renderer')
-```
-
-Using `w.cq_view.renderer` this will save the exact state of the visible pythreejs view.
-
-Of course, you can also call `w = show(a1, *params)` where `params` is the dict of show parameters you'd like to be used and then call the `embed_minimal_html` with `views=w.cq_view.renderer`
-
-Notes:
-
-1. If you use `sidecar`then you need to close it first:
-
-    ```
-    from jupyter_cadquery import cad_display
-    cad_display.SIDECAR.close()
-    ```
-
-2. Buttons and treeview can be exported, however the interaction logic of the UI is implemented in Python. So the treeview and the buttons won't have any effect in an exported HTML page.
-
 
 ## Jupyter-CadQuery classes
 
