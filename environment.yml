@@ -10,3 +10,4 @@ dependencies:
   - pip:
     - jupyter-cadquery==2.2.0rc2
     - cadquery-massembly~=0.9
+    - orbitcontrol-patch~=0.1.0
