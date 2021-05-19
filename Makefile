@@ -4,17 +4,27 @@ PYCACHE := $(shell find . -name '__pycache__')
 EGGS := $(wildcard *.egg-info)
 CURRENT_VERSION := $(shell awk '/current_version/ {print $$3}' setup.cfg)
 
+# https://github.com/jupyter/nbconvert/issues/637
+
+JQ_RULES := '(.cells[] | select(has("outputs")) | .outputs) = [] \
+| (.cells[] | select(has("execution_count")) | .execution_count) = null \
+| .metadata = { \
+	"language_info": {"name":"python", "pygments_lexer": "ipython3"}, \
+	"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"} \
+} \
+| .cells[].metadata = {}'
+
 clean_notebooks: ./examples/*.ipynb ./examples/assemblies/*.ipynb
 	@for file in $^ ; do \
 		echo "$${file}" ; \
-		jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace "$${file}"; \
+		jq --indent 1 $(JQ_RULES) "$${file}" > "$${file}_clean"; \
+		mv "$${file}_clean" "$${file}"; \
+		python validate_nb.py "$${file}"; \
 	done
-	# 
 
 clean: clean_notebooks
 	@echo "=> Cleaning"
 	@rm -fr build dist $(EGGS) $(PYCACHE)
-
 
 prepare: clean
 	git add .
