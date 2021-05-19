@@ -87,8 +87,8 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
         - If you don't have it already, create a new conda environment with CadQuery 2.1
 
             ```bash
-            conda create -n cq22 -c conda-forge -c cadquery python=3.8 cadquery
-            conda activate cq22
+            conda create -n jcq22 -c conda-forge -c cadquery python=3.8 cadquery
+            conda activate jcq22
             ```
 
         - Install *Jupyter-CadQuery* (note, matplotlib is only used for the examples)
@@ -106,7 +106,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
     - Run *Jupyter-CadQuery* in **JupyterLab**
 
         ```bash
-        conda activate cq22
+        conda activate jcq22
         jupyter lab
         ```
         
@@ -121,7 +121,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
     - Run *Jupyter-CadQuery* as **standalone viewer**
 
         ```bash
-        conda activate cq22
+        conda activate jcq22
         jcv     # light theme
         jcv -d  # dark theme
         ```
@@ -250,6 +250,7 @@ Note, this is not supported in the standalone viewer for the time being.
     Notes:
     - `display="html"` will automatically turn off tools
     - Browsers can only a set of 8-16 WebGL contexts. So try to have a small number of renderings. If there are too much, they will be shown as black box, that renders after hovering over it.
+    - In JupyterLab the widget state needs to be saved automatically for this to work (menu *Settings -> Save Widget State Automatically*)
 
 2. Export single rendering view
 
