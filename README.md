@@ -70,7 +70,7 @@ Click on the "launch binder" icon to start *Jupyter-CadQuery* on binder:
 
     ![Animated Hexapod in Sidecar](screenshots/hexapod-crawling.gif)
 
-3) **Debugging in VC Code with Standalone Viewer (dark theme)**
+3) **Debugging in VS Code with Standalone Viewer (dark theme)**
 
     ![Sidecar](screenshots/debugging.gif)
 
