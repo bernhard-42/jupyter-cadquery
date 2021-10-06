@@ -395,9 +395,9 @@ def _combined_bb(shapes):
                 else:
                     bb.update(shape["bb"])
             else:
-                c_bb(shape, bb)
+                bb = c_bb(shape, bb)
         return bb
-    
+
     bb = c_bb(shapes, None)
     return bb
 
