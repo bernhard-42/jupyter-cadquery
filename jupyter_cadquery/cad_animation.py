@@ -14,33 +14,35 @@
 # limitations under the License.
 #
 
-from math import pi
 import numpy as np
-from scipy.spatial.transform import Rotation as R
-from cadquery import Workplane, Location
+from pyquaternion import Quaternion
 from pythreejs import (
     NumberKeyframeTrack,
     AnimationAction,
     AnimationClip,
     AnimationMixer,
-    BooleanKeyframeTrack,
-    ColorKeyframeTrack,
     QuaternionKeyframeTrack,
-    StringKeyframeTrack,
-    VectorKeyframeTrack,
 )
-from .viewer.client import send
+from jupyter_cadquery.viewer.client import send
 
 
-def _d2r(x):
-    return x / 180 * pi
+def _three_to_pyquat(quat):
+    return Quaternion(quat[3], *quat[:3])
+
+
+def _pyquat_to_three(quat):
+    return (quat.x, quat.y, quat.z, quat.w)
+
+
+def _from_axis_angle(axis, angle):
+    return Quaternion(axis=axis, degrees=angle)
+
+
+valid_transforms = ["t", "tx", "ty", "tz", "q", "rx", "ry", "rz"]
 
 
 class AnimationException(BaseException):
     ...
-
-
-valid_transforms = ["t", "tx", "ty", "tz", "q", "rx", "ry", "rz"]
 
 
 class Animation:
@@ -91,22 +93,20 @@ class Animation:
 
         else:
             if action.startswith("r"):
-                r_values = np.array([_d2r(v) for v in values]).astype(np.float32)
-
-                actual = R.from_quat(group.quaternion)
+                actual = _three_to_pyquat(group.quaternion)
                 if action == "rx":
-                    rot_values = [R.from_rotvec((v, 0, 0)) for v in r_values]
+                    rot_values = [_from_axis_angle([1, 0, 0], v) for v in values]
                 elif action == "ry":
-                    rot_values = [R.from_rotvec((0, v, 0)) for v in r_values]
+                    rot_values = [_from_axis_angle([0, 1, 0], v) for v in values]
                 elif action == "rz":
-                    rot_values = [R.from_rotvec((0, 0, v)) for v in r_values]
+                    rot_values = [_from_axis_angle([0, 0, 1], v) for v in values]
                 else:
                     raise AnimationException(f"action {action} not supported")
-                new_values = [(actual * rot).as_quat() for rot in rot_values]
+                new_values = [_pyquat_to_three(actual * rot) for rot in rot_values]
 
             elif action == "q":
-                actual = R.from_quat(group.quaternion)
-                new_values = [tuple((actual * R.from_quat(q)).as_quat()) for q in values]
+                actual = _three_to_pyquat(group.quaternion)
+                new_values = [_pyquat_to_three(actual * _three_to_pyquat(q)) for q in values]
 
             else:
                 raise AnimationException(f"action {action} is not supported")
