@@ -16,7 +16,7 @@ LONG_DESCRIPTION = "An extension to render cadquery objects in JupyterLab via py
 
 setup_args = {
     "name": "jupyter_cadquery",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
     "long_description": LONG_DESCRIPTION,
     "include_package_data": True,
@@ -31,6 +31,7 @@ setup_args = {
         "voila~=0.2",
         "cadquery_massembly~=0.9",
         "orbitcontrol-patch~=0.1.0",
+        "pyquaternion~=0.9.9",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},
