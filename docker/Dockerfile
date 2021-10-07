@@ -10,15 +10,18 @@ RUN conda create -n cq -c default -c conda-forge -c cadquery python=3.8 cadquery
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 RUN . "/opt/conda/etc/profile.d/conda.sh" && conda activate cq && \
-    pip install jupyter-cadquery==2.2.0 cadquery-massembly~=0.9 orbitcontrol-patch~=0.1.0 && \
+    pip install jupyter-cadquery==2.2.1 cadquery-massembly~=0.9 voila~=0.2 orbitcontrol-patch~=0.1.0 && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 VOLUME /home/cq/
 WORKDIR /home/cq
 EXPOSE 8888
 
+USER cq 
+
 ADD --chown=cq:cq examples /home/cq
+ADD --chown=cq:cq viewer.ipynb /home/cq
+ADD --chown=cq:cq run.sh /tmp
+RUN chmod +x /tmp/run.sh
 
-USER cq
-
-CMD bash -l -c ". /opt/conda/bin/activate cq && jupyter lab --ip=0.0.0.0 --no-browser --NotebookApp.token='' --NotebookApp.allow_origin='*'"
+ENTRYPOINT ["/tmp/run.sh"]

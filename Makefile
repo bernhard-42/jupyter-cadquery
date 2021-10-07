@@ -70,8 +70,10 @@ upload:
 docker:
 	@rm -fr docker/examples
 	@cp -R examples docker/
+	@cp jupyter_cadquery/viewer/viewer.ipynb docker/
 	@cd docker && docker build -t bwalter42/jupyter_cadquery:$(CURRENT_VERSION) .
 	@rm -fr docker/examples
+	@rm -fr docker/viewer.ipynb
 
 upload_docker: 
 	@docker push bwalter42/jupyter_cadquery:$(CURRENT_VERSION)
