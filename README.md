@@ -6,7 +6,7 @@ View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or i
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.2.0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.2.1?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Release v2.2.1 (07.10.2021)
 
@@ -79,7 +79,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
      - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
        ```bash
-       pip install jupyter-cadquery==2.2.0 matplotlib
+       pip install jupyter-cadquery==2.2.1 matplotlib
        ```
 
        Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -130,14 +130,14 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.2.0
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.2.1
      ```
 
      Notes:
 
      - Jupyter in the container will start in directory `/home/cq`
      - To start with examples, you can
-       - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.2.0` or
+       - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.2.1` or
        - copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
      - If you want to change the Dockerfile, `make docker` will create a new docker image
 
