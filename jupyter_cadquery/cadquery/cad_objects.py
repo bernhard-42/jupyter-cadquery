@@ -15,6 +15,7 @@
 #
 
 import html
+import json
 
 try:
     from cadquery_massembly import MAssembly
@@ -26,14 +27,7 @@ import numpy as np
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import Workplane, Shape, Compound, Vector, Vertex, Location, Assembly as CqAssembly
 
-from jupyter_cadquery.cad_objects import (
-    _PartGroup,
-    _Part,
-    _Edges,
-    _Faces,
-    _Vertices,
-    _show,
-)
+from jupyter_cadquery.cad_objects import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group
 
 from jupyter_cadquery.cad_display import get_default
 from .cqparts import is_cqparts, convert_cqparts
@@ -246,11 +240,11 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
     ]
 
     if render_mates and cad_obj.mates is not None:
-        RGB = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
+        rgb = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
         parent.append(
             PartGroup(
                 [
-                    Edges(to_edge(mate_def.mate, scale=mate_scale), name=name, color=RGB)
+                    Edges(to_edge(mate_def.mate, scale=mate_scale), name=name, color=rgb)
                     for name, mate_def in top.mates.items()
                     if mate_def.assembly == cad_obj
                 ],
@@ -354,13 +348,81 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
             assembly.add_list(_from_vectorlist(cad_obj, obj_id))
 
         elif isinstance(cad_obj, Workplane):
-            assembly.add(_from_workplane(cad_obj, obj_id, default_color=default_color))
+            if len(cad_obj.vals()) == 1:
+                assembly.add(_from_workplane(cad_obj, obj_id, default_color=default_color))
+            else:
+                assembly2 = PartGroup([], name="Group_%s" % obj_id)
+                for j, obj in enumerate(cad_obj.vals()):
+                    assembly2.add(_from_workplane(Workplane(obj), j, default_color=default_color))
+                assembly.add(assembly2)
 
         else:
             raise NotImplementedError("Type:", cad_obj)
 
         obj_id += 1
     return assembly
+
+
+def to_json(obj, fd=None, indent=None):
+    def serializer(o):
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        return o
+
+    if fd is None:
+        return json.dumps(obj, indent=indent, default=serializer)
+    else:
+        json.dump(obj, fd, indent=indent, default=serializer)
+        return True
+
+
+def new_format(shapes):
+    def convert(shapes, states, prefix):
+        new_shapes = {}
+        new_states = {}
+        prefix = "/".join((prefix, shapes["name"]))
+        new_shapes["id"] = prefix
+        for k, v in shapes.items():
+            if k in ["type", "name", "loc", "color", "size"]:
+                new_shapes[k] = v
+            elif k == "shape":
+                if shapes["type"] == "shapes":
+                    new_shapes[k] = {
+                        "vertices": v["vertices"],
+                        "triangles": v["triangles"],
+                        "normals": v["normals"],
+                        "edges": v["edges"][0],  # !!!
+                    }
+                    new_states[prefix] = states[str(shapes["id"])]
+                elif shapes["type"] == "vertices":
+                    new_shapes[k] = v
+                    new_shapes["size"] = 6  # !!!
+                    st = states[str(shapes["id"])]
+                    new_states[prefix] = [st[1], st[0]]  # !!! flip state
+                elif shapes["type"] == "edges":
+                    new_shapes["width"] = 3  # !!!
+                    new_shapes[k] = v
+                    new_states[prefix] = states[str(shapes["id"])]
+                else:
+                    new_shapes[k] = v
+                    new_states[prefix] = states[str(shapes["id"])]
+            elif k == "parts":
+                results = [convert(el, states, prefix) for el in v]
+                new_shapes[k] = []
+                for shape, state in results:
+                    new_shapes[k].append(shape)
+                    new_states.update(state)
+
+        return new_shapes, new_states
+
+    group = to_assembly(shapes)
+    if len(group.objects) == 1 and isinstance(group.objects[0], PartGroup):
+        mapping, shapes, _ = _tessellate_group(group.objects[0])
+    else:
+        mapping, shapes, _ = _tessellate_group(group)
+    states = {k: v["state"] for k, v in mapping.items()}
+    new_shapes, new_states = convert(shapes, states, "")
+    return new_shapes, new_states
 
 
 def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):

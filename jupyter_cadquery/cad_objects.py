@@ -402,6 +402,27 @@ def _combined_bb(shapes):
     return bb
 
 
+def _tessellate_group(group, kwargs=None, progress=None, timeit=False):
+    preset = lambda key, value: get_default(key) if value is None else value
+    if kwargs is None:
+        kwargs = {}
+
+    mapping = group.to_state()
+    shapes = group.collect_mapped_shapes(
+        mapping,
+        quality=preset("quality", kwargs.get("quality")),
+        deviation=preset("deviation", kwargs.get("deviation")),
+        angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
+        edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
+        render_edges=preset("render_edges", kwargs.get("render_edges")),
+        render_normals=preset("render_normals", kwargs.get("render_normals")),
+        progress=progress,
+        timeit=timeit,
+    )
+    tree = group.to_nav_dict()
+    return mapping, shapes, tree
+
+
 def _show(part_group, **kwargs):
     for k in kwargs:
         if get_default(k, "n/a") == "n/a":
@@ -434,20 +455,7 @@ def _show(part_group, **kwargs):
             d.init_progress(2 * num_shapes)
 
         with Timer(timeit, "", "tessellate", 1):
-
-            mapping = part_group.to_state()
-            shapes = part_group.collect_mapped_shapes(
-                mapping,
-                quality=preset("quality", kwargs.get("quality")),
-                deviation=preset("deviation", kwargs.get("deviation")),
-                angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
-                edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
-                render_edges=preset("render_edges", kwargs.get("render_edges")),
-                render_normals=preset("render_normals", kwargs.get("render_normals")),
-                progress=d.progress,
-                timeit=timeit,
-            )
-            tree = part_group.to_nav_dict()
+            mapping, shapes, tree = _tessellate_group(part_group, kwargs, d.progress, timeit)
 
         with Timer(timeit, "", "show shapes", 1):
             d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), **add_shape_args)
