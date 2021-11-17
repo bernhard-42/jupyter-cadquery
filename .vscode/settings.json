@@ -3,5 +3,6 @@
     "python.formatting.blackArgs": [
         "--line-length",
         "119"
-    ]
+    ],
+    "python.linting.pylintArgs": ["--max-line-length=119", "--disable=C0103"]
 }
