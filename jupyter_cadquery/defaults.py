@@ -124,6 +124,7 @@ class Defaults:
             # "mac_scrollbar": True,
             "sidecar": None,
             "anchor": "right",
+            "pinning": False,
             "display": "cell",
             "theme": "light",
             "tools": True,
@@ -161,6 +162,7 @@ def create_args(config):
             # "display",
             "sidecar",
             "anchor",
+            "pinning",
             "tools",
             "timeit",
         ]
