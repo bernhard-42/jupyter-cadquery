@@ -29,8 +29,6 @@ from cadquery import Workplane, Shape, Compound, Vector, Vertex, Location, Assem
 
 from jupyter_cadquery.cad_objects import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group
 
-from jupyter_cadquery.cad_display import get_default
-from .cqparts import is_cqparts, convert_cqparts
 from ..utils import Color
 from ..ocp_utils import get_rgb
 from ..defaults import get_default
@@ -45,7 +43,9 @@ class Part(_Part):
     def to_assembly(self):
         return PartGroup([self])
 
-    def show(self, grid=False, axes=False):
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
         return show(self, grid=grid, axes=axes)
 
 
@@ -56,29 +56,35 @@ class Faces(_Faces):
     def to_assembly(self):
         return PartGroup([self])
 
-    def show(self, grid=False, axes=False):
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
         return show(self, grid=grid, axes=axes)
 
 
 class Edges(_Edges):
-    def __init__(self, edges, name="Edges", color=None):
-        super().__init__(_to_occ(edges), name, color)
+    def __init__(self, edges, name="Edges", color=None, width=1):
+        super().__init__(_to_occ(edges), name, color, width)
 
     def to_assembly(self):
         return PartGroup([self])
 
-    def show(self, grid=False, axes=False):
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
         return show(self, grid=grid, axes=axes)
 
 
 class Vertices(_Vertices):
-    def __init__(self, vertices, name="Vertices", color=None):
-        super().__init__(_to_occ(vertices), name, color)
+    def __init__(self, vertices, name="Vertices", color=None, size=1):
+        super().__init__(_to_occ(vertices), name, color, size)
 
     def to_assembly(self):
         return PartGroup([self])
 
-    def show(self, grid=False, axes=False):
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
         return show(self, grid=grid, axes=axes)
 
 
@@ -86,7 +92,9 @@ class PartGroup(_PartGroup):
     def to_assembly(self):
         return self
 
-    def show(self, grid=False, axes=False):
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
         return show(self, grid=grid, axes=axes)
 
     def add(self, cad_obj):
@@ -109,7 +117,7 @@ class Assembly(PartGroup):
 
 def _to_occ(cad_obj):
     # special case Wire, must be handled before Workplane
-    if _is_wirelist(cad_obj):
+    if _is_wirelist(cad_obj) or _is_edgelist(cad_obj):
         all_edges = []
         for edges in cad_obj.objects:
             all_edges += edges.Edges()
@@ -174,7 +182,7 @@ def _from_facelist(cad_obj, obj_id, name="Faces", show_parents=True):
 
 
 def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parents=True):
-    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))]
+    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)), width=3)]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
@@ -199,14 +207,14 @@ def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=
 
 
 def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
-    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))]
+    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)), size=6)]
     if show_parents:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
 def _from_wirelist(cad_obj, obj_id, name="Edges", color=None):
-    return Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))
+    return Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0), width=3))
 
 
 def to_edge(mate, loc=None, scale=1) -> Workplane:
@@ -230,28 +238,56 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
     else:
         color = Color(get_rgb(cad_obj.color))
 
-    parent = [
-        Part(
-            Workplane(shape),
-            "%s_%d" % (cad_obj.name, i),
-            color=color,
-        )
-        for i, shape in enumerate(cad_obj.shapes)
-    ]
+    # Special handling for edge lists in an MAssembly
+    is_edges = [isinstance(obj, Edge) for obj in cad_obj.shapes]
+    if is_edges and all(is_edges):
+        if cad_obj.color is None:
+            if default_color is None:
+                color = Color(get_default("default_edgecolor"))
+            else:
+                color = Color(default_color)
+        else:
+            color = Color(get_rgb(cad_obj.color))
+
+        workplane = Workplane()
+        workplane.objects = cad_obj.shapes
+        parent = [
+            Edges(
+                workplane,
+                name="%s_0" % cad_obj.name,
+                color=color,
+            )
+        ]
+    else:
+        if cad_obj.color is None:
+            if default_color is None:
+                color = Color(get_default("default_color"))
+            else:
+                color = Color(default_color)
+        else:
+            color = Color(get_rgb(cad_obj.color))
+        parent = [
+            Part(
+                Workplane(shape),
+                "%s_%d" % (cad_obj.name, i),
+                color=color,
+            )
+            for i, shape in enumerate(cad_obj.shapes)
+        ]
 
     if render_mates and cad_obj.mates is not None:
         rgb = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
-        parent.append(
-            PartGroup(
-                [
-                    Edges(to_edge(mate_def.mate, scale=mate_scale), name=name, color=rgb)
-                    for name, mate_def in top.mates.items()
-                    if mate_def.assembly == cad_obj
-                ],
-                name="mates",
-                loc=Location(),  # mates inherit the parent location, so actually add a no-op
-            )
+        pg = PartGroup(
+            [
+                Edges(to_edge(mate_def.mate, scale=mate_scale), name=name, color=rgb)
+                for name, mate_def in top.mates.items()
+                if mate_def.assembly == cad_obj
+            ],
+            name="mates",
+            loc=Location(),  # mates inherit the parent location, so actually add a no-op
         )
+        if pg.objects:
+            parent.append(pg)
 
     children = [from_assembly(c, top, loc, render_mates, mate_scale) for c in cad_obj.children]
     return PartGroup(parent + children, cad_obj.name, loc=render_loc)
@@ -322,9 +358,6 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
 
         elif isinstance(cad_obj, Vertex):
             assembly.add_list(_from_vertexlist(Workplane(cad_obj), obj_id))
-
-        elif is_cqparts(cad_obj):
-            assembly = convert_cqparts(cad_obj)
 
         elif _is_facelist(cad_obj):
             assembly.add_list(_from_facelist(cad_obj, obj_id))
@@ -432,7 +465,6 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - height:            Height of the CAD view (default=600)
     - tree_width:        Width of navigation tree part of the view (default=250)
     - cad_width:         Width of CAD view part of the view (default=800)
-    - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
     - default_color:     Default mesh color (default=(232, 176, 36))
     - default_edgecolor: Default mesh color (default=(128, 128, 128))
     - render_edges:      Render edges  (default=True)
@@ -440,7 +472,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - render_mates:      Render mates (for MAssemblies)
     - mate_scale:        Scale of rendered mates (for MAssemblies)
     - quality:           Linear deflection for tessellation (default=None)
-                         If None, uses bounding box as in (xlen + ylen + zlen) / 300 * deviation)
+                         If None, uses: (xlen + ylen + zlen) / 300 * deviation)
     - deviation:         Deviation from default for linear deflection value ((default=0.1)
     - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
     - edge_accuracy:     Presicion of edge discretizaion (default=None)
@@ -458,10 +490,16 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
     - zoom:              Zoom factor of view (default=2.5)
     - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
-    - mac_scrollbar:     Prettify scrollbars (default=True)
     - display:           Select display: "sidecar", "cell", "html"
+    - sidecar:           Name of sidecar view
+    - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
+    - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
+
+    NOT SUPPORTED ANY MORE:
+    - mac_scrollbar:     Prettify scrollbars (default=True)
+    - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
 
     For example isometric projection can be achieved in two ways:
     - position = (1, 1, 1)
@@ -471,16 +509,24 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     mate_scale = mate_scale or get_default("mate_scale")
     default_color = kwargs.get("default_color") or get_default("default_color")
 
-    assembly = to_assembly(*cad_objs, render_mates=render_mates, mate_scale=mate_scale, default_color=default_color)
+    if cad_objs:
 
-    if assembly is None:
-        raise ValueError("%s cannot be viewed" % cad_objs)
+        assembly = to_assembly(
+            *cad_objs, render_mates=render_mates, mate_scale=mate_scale, default_color=default_color
+        )
 
-    if len(assembly.objects) == 1 and isinstance(assembly.objects[0], PartGroup):
-        # omit leading "PartGroup" group
-        return _show(assembly.objects[0], **kwargs)
+        if assembly is None:
+            raise ValueError("%s cannot be viewed" % cad_objs)
+
+        if len(assembly.objects) == 1 and isinstance(assembly.objects[0], PartGroup):
+            # omit leading "PartGroup" group
+            return _show(assembly.objects[0], **kwargs)
+        else:
+            return _show(assembly, **kwargs)
+
     else:
-        return _show(assembly, **kwargs)
+
+        return _show(None, **kwargs)
 
 
 def auto_show():

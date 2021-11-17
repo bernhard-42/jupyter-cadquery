@@ -14,14 +14,10 @@
 # limitations under the License.
 #
 
-from ._version import __version_info__, __version__
+from cad_viewer_widget import get_viewer, get_viewers, set_viewer, close_viewer, close_viewers, AnimationTrack
+from .cadquery.cad_objects import show
 
-from .cad_display import (
-    set_sidecar,
-    reset_sidecar,
-    has_sidecar,
-    close_sidecar,
-)
+from ._version import __version_info__, __version__
 
 from .defaults import (
     get_default,
@@ -29,3 +25,27 @@ from .defaults import (
     set_defaults,
     reset_defaults,
 )
+
+
+def set_sidecar(
+    name,
+    height=None,
+    tree_width=None,
+    cad_width=None,
+    tools=None,
+    anchor="split-right",
+    init=False,
+):
+
+    if init:
+        preset = lambda key, value: get_default(key) if value is None else value
+        show(
+            sidecar=name,
+            anchor=anchor,
+            height=preset("height", height),
+            tree_width=preset("tree_width", tree_width),
+            cad_width=preset("cad_width", cad_width),
+            tools=preset("tools", tools),
+        )
+
+    set_viewer(name, anchor=anchor)
