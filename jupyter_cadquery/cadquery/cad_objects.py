@@ -141,7 +141,7 @@ def _parent(cad_obj, obj_id):
                 obj_id,
                 name="Parent",
                 color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                show_parent=False,
             )
         elif isinstance(cad_obj.parent.val(), Vertex):
             return _from_vertexlist(
@@ -149,7 +149,7 @@ def _parent(cad_obj, obj_id):
                 obj_id,
                 name="Parent",
                 color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                show_parent=False,
             )
         elif isinstance(cad_obj.parent.val(), Edge):
             return _from_edgelist(
@@ -157,7 +157,7 @@ def _parent(cad_obj, obj_id):
                 obj_id,
                 name="Parent",
                 color=Color((0.8, 0.8, 0.8)),
-                show_parents=False,
+                show_parent=False,
             )
         elif isinstance(cad_obj.parent.val(), Wire):
             return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color((0.8, 0.8, 0.8)))]
@@ -174,16 +174,16 @@ def _parent(cad_obj, obj_id):
         return []
 
 
-def _from_facelist(cad_obj, obj_id, name="Faces", show_parents=True):
+def _from_facelist(cad_obj, obj_id, name="Faces", show_parent=True):
     result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=Color((0.8, 0.0, 0.8)))]
-    if show_parents:
+    if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parents=True):
+def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
     result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)), width=3)]
-    if show_parents:
+    if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
@@ -194,27 +194,27 @@ def _from_vector(vec, obj_id, name="Vector"):
     return _from_vectorlist(obj, obj_id, name)
 
 
-def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
+def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=True):
     if cad_obj.vals():
         vectors = cad_obj.vals()
     else:
         vectors = [cad_obj.val()]
     obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in vectors])
-    result = [Vertices(obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)))]
-    if show_parents:
+    result = [Vertices(obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)), size=6)]
+    if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parents=True):
+def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=True):
     result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)), size=6)]
-    if show_parents:
+    if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_wirelist(cad_obj, obj_id, name="Edges", color=None):
-    return Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0), width=3))
+def _from_wirelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
+    return Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or (1.0, 0.0, 1.0)), width=3)
 
 
 def to_edge(mate, loc=None, scale=1) -> Workplane:
@@ -329,9 +329,9 @@ def _is_wirelist(cad_obj):
     )
 
 
-def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
+def to_assembly(*cad_objs, name="Group", render_mates=None, mate_scale=1, default_color=None, show_parent=True):
     default_color = get_default("default_color") if default_color is None else default_color
-    assembly = PartGroup([], "Group")
+    assembly = PartGroup([], name)
     obj_id = 0
     for cad_obj in cad_objs:
         if isinstance(cad_obj, (PartGroup, Part, Faces, Edges, Vertices)):
@@ -348,28 +348,28 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
             assembly.add(from_assembly(cad_obj, cad_obj, default_color=default_color))
 
         elif isinstance(cad_obj, Edge):
-            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id))
+            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
         elif isinstance(cad_obj, Face):
-            assembly.add_list(_from_facelist(Workplane(cad_obj), obj_id))
+            assembly.add_list(_from_facelist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
         elif isinstance(cad_obj, Wire):
-            assembly.add(_from_wirelist(Workplane(cad_obj), obj_id))
+            assembly.add(_from_wirelist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
         elif isinstance(cad_obj, Vertex):
-            assembly.add_list(_from_vertexlist(Workplane(cad_obj), obj_id))
+            assembly.add_list(_from_vertexlist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
         elif _is_facelist(cad_obj):
-            assembly.add_list(_from_facelist(cad_obj, obj_id))
+            assembly.add_list(_from_facelist(cad_obj, obj_id, show_parent=show_parent))
 
         elif _is_edgelist(cad_obj):
-            assembly.add_list(_from_edgelist(cad_obj, obj_id))
+            assembly.add_list(_from_edgelist(cad_obj, obj_id, show_parent=show_parent))
 
         elif _is_wirelist(cad_obj):
-            assembly.add(_from_wirelist(cad_obj, obj_id))
+            assembly.add(_from_wirelist(cad_obj, obj_id, show_parent=show_parent))
 
         elif _is_vertexlist(cad_obj):
-            assembly.add_list(_from_vertexlist(cad_obj, obj_id))
+            assembly.add_list(_from_vertexlist(cad_obj, obj_id, show_parent=show_parent))
 
         elif isinstance(cad_obj, Vector):
             assembly.add_list(_from_vector(cad_obj, obj_id))
@@ -378,7 +378,7 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
             assembly.add(_from_workplane(Workplane(cad_obj), obj_id, default_color=default_color))
 
         elif isinstance(cad_obj.val(), Vector):
-            assembly.add_list(_from_vectorlist(cad_obj, obj_id))
+            assembly.add_list(_from_vectorlist(cad_obj, obj_id, show_parent=show_parent))
 
         elif isinstance(cad_obj, Workplane):
             if len(cad_obj.vals()) == 1:
@@ -505,14 +505,20 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - position = (1, 1, 1)
     - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
+
     render_mates = render_mates or get_default("render_mates")
     mate_scale = mate_scale or get_default("mate_scale")
     default_color = kwargs.get("default_color") or get_default("default_color")
+    show_parent = kwargs.get("show_parent") or get_default("show_parent")
 
     if cad_objs:
 
         assembly = to_assembly(
-            *cad_objs, render_mates=render_mates, mate_scale=mate_scale, default_color=default_color
+            *cad_objs,
+            render_mates=render_mates,
+            mate_scale=mate_scale,
+            default_color=default_color,
+            show_parent=show_parent,
         )
 
         if assembly is None:
@@ -532,9 +538,9 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
 def auto_show():
     PartGroup._ipython_display_ = lambda self: self.show()
     Part._ipython_display_ = lambda self: self.show()
-    Faces._ipython_display_ = lambda self: self.show(grid=False, axes=False)
-    Edges._ipython_display_ = lambda self: self.show(grid=False, axes=False)
-    Vertices._ipython_display_ = lambda self: self.show(grid=False, axes=False)
+    Faces._ipython_display_ = lambda self: self.show(grid=None, axes=False)
+    Edges._ipython_display_ = lambda self: self.show(grid=None, axes=False)
+    Vertices._ipython_display_ = lambda self: self.show(grid=None, axes=False)
 
     print("Overwriting auto display for cadquery Workplane and Shape")
 

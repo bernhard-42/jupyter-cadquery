@@ -24,12 +24,11 @@ from IPython import get_ipython
 from ipywidgets import HBox, Output, SelectMultiple, Layout
 
 import cadquery as cq
-from jupyter_cadquery.cadquery import Part, show
-from jupyter_cadquery.cadquery.cqparts import is_cqparts_part, convert_cqparts
-from jupyter_cadquery.cad_display import get_or_create_display
-from .cad_objects import to_assembly
-from jupyter_cadquery.cad_objects import _combined_bb
+
+from jupyter_cadquery.cadquery import PartGroup, Part, show
 from jupyter_cadquery.defaults import get_default
+from .cad_objects import to_assembly
+
 
 #
 # The Runtime part
@@ -227,7 +226,7 @@ class Step:
 
 
 class Replay(object):
-    def __init__(self, quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height):
+    def __init__(self, quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar=None):
         self.debug_output = Output()
         self.quality = quality
         self.deviation = deviation
@@ -236,8 +235,10 @@ class Replay(object):
         self.debug = debug
         self.cad_width = cad_width
         self.height = height
-        self.display = get_or_create_display()
+        self.sidecar = sidecar
+        # self.viewer = show(cad_width=cad_width, height=height, sidecar=sidecar)
         self.reset_camera = True
+        self.indexes = []
 
     def format_steps(self, raw_steps):
         def to_code(step, results):
@@ -349,31 +350,27 @@ class Replay(object):
         self.debug_output.clear_output()
         with self.debug_output:
             self.indexes = indexes
-            cad_objs = [self.stack[i][1] for i in self.indexes]
+            steps = [(i, self.stack[i][1]) for i in self.indexes]
+            try:
+                cad_objs = [to_assembly(step[1], name="Step_%02d" % step[0], show_parent=False) for step in steps]
+            except Exception as ex:
+                print(ex)
 
         # Add hidden result to start with final size and allow for comparison
         if not isinstance(self.stack[-1][1].val(), cq.Vector):
             result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
-            objs = [result] + cad_objs
+            objs = PartGroup([result] + cad_objs, name="Replay")
         else:
-            objs = cad_objs
+            objs = PartGroup(cad_objs, name="Replay")
 
         with self.debug_output:
-            assembly = to_assembly(*objs)
-            mapping = assembly.to_state()
-            shapes = assembly.collect_mapped_shapes(
-                mapping,
+            show(
+                objs,
                 quality=self.quality,
                 deviation=self.deviation,
                 angular_tolerance=self.angular_tolerance,
                 edge_accuracy=self.edge_accuracy,
-                render_edges=get_default("render_edges"),
-                render_normals=get_default("render_normals"),
-            )
-            tree = assembly.to_nav_dict()
-
-            self.display.add_shapes(
-                shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), reset_camera=self.reset_camera
+                reset_camera=False,
             )
             self.reset_camera = False
 
@@ -388,6 +385,7 @@ def replay(
     debug=False,
     cad_width=600,
     height=600,
+    sidecar=None,
 ):
 
     if not REPLAY:
@@ -396,12 +394,10 @@ def replay(
     else:
         print("Use the multi select box below to select one or more steps you want to examine")
 
-    r = Replay(quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height)
+    r = Replay(quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar)
 
     if isinstance(cad_obj, cq.Workplane):
         workplane = cad_obj
-    elif is_cqparts_part(cad_obj):
-        workplane = convert_cqparts(cad_obj, replay=True)
     else:
         print("Cannot replay", cad_obj)
         return None
