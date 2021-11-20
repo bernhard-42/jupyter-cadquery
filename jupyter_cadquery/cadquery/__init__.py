@@ -25,8 +25,10 @@ from .cad_objects import (
     auto_show,
     show_accuracy,
     show_constraints,
+    web_color,
 )
 from .replay import replay, enable_replay, disable_replay, reset_replay
+
 
 try:
     from IPython import get_ipython

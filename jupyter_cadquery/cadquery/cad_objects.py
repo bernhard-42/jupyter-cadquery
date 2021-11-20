@@ -25,13 +25,18 @@ except:
     HAS_MASSEMBLY = False
 import numpy as np
 from cadquery.occ_impl.shapes import Face, Edge, Wire
-from cadquery import Workplane, Shape, Compound, Vector, Vertex, Location, Assembly as CqAssembly
+from cadquery import Workplane, Shape, Compound, Vector, Vertex, Location, Assembly as CqAssembly, Color as CqColor
 
 from jupyter_cadquery.cad_objects import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group
 
 from ..utils import Color
 from ..ocp_utils import get_rgb
 from ..defaults import get_default
+
+
+def web_color(name):
+    wc = Color(name)
+    return CqColor(*wc.percentage)
 
 
 class Part(_Part):
