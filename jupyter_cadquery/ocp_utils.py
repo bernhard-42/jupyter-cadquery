@@ -45,11 +45,11 @@ class BoundingBox(object):
             self.ymin = obj["ymin"]
             self.ymax = obj["ymax"]
             self.zmin = obj["zmin"]
-            self.zmax = obj["zmax"]    
+            self.zmax = obj["zmax"]
         else:
             bbox = self._bounding_box(obj, tol)
             self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
-        
+
         self._calc()
 
     def _bounding_box(self, obj, tol=1e-5):
