@@ -2,11 +2,9 @@ import numpy as np
 
 import cadquery as cq
 from cadquery_massembly import MAssembly, relocate
-from jupyter_cadquery import set_defaults
+from jupyter_cadquery.cadquery import web_color
 from jupyter_cadquery.viewer.client import show
 from jupyter_cadquery.cad_animation import Animation
-
-set_defaults(zoom=3.5)
 
 # Parts
 
@@ -177,7 +175,7 @@ lower_leg = create_lower_leg()
 def create_hexapod():
     # Some shortcuts
     L = lambda *args: cq.Location(cq.Vector(*args))
-    C = lambda *args: cq.Color(*args)
+    C = lambda name: web_color(name)
 
     # Leg assembly
     leg = MAssembly(upper_leg, name="upper", color=C("orange")).add(
@@ -185,10 +183,10 @@ def create_hexapod():
     )
     # Hexapod assembly
     hexapod = (
-        MAssembly(base, name="bottom", color=C("gray"), loc=L(0, 1.1 * width, 0))
-        .add(base, name="top", color=C(0.9, 0.9, 0.9), loc=L(0, -2.2 * width, 0))
-        .add(stand, name="front_stand", color=C(0.5, 0.8, 0.9), loc=L(40, 100, 0))
-        .add(stand, name="back_stand", color=C(0.5, 0.8, 0.9), loc=L(-40, 100, 0))
+        MAssembly(base, name="bottom", color=C("silver"), loc=L(0, 1.1 * width, 0))
+        .add(base, name="top", color=C("gainsboro"), loc=L(0, -2.2 * width, 0))
+        .add(stand, name="front_stand", color=C("SkyBlue"), loc=L(40, 100, 0))
+        .add(stand, name="back_stand", color=C("SkyBlue"), loc=L(-40, 100, 0))
     )
 
     for i, name in enumerate(leg_names):
@@ -202,7 +200,7 @@ def create_hexapod():
 from collections import OrderedDict as odict
 
 hexapod = create_hexapod()
-show(hexapod)
+# show(hexapod)
 
 hexapod.mate("bottom?top", name="bottom", origin=True)
 hexapod.mate("top?bottom", name="top", origin=True, transforms=odict(rx=180, tz=-(height + 2 * tol)))
@@ -263,14 +261,14 @@ def horizontal(end, reverse):
 
 leg_group = ("left_front", "right_middle", "left_back")
 
-animation = Animation(viewer=True)
+animation = Animation()
 
 for name in leg_names:
     # move upper leg
-    animation.add_track(f"bottom/{name}", "rz", *horizontal(4, "middle" in name))
+    animation.add_track(f"/bottom/{name}", "rz", *horizontal(4, "middle" in name))
 
     # move lower leg
-    animation.add_track(f"bottom/{name}/lower", "rz", *vertical(8, 4, 0 if name in leg_group else 4, "left" in name))
+    animation.add_track(f"/bottom/{name}/lower", "rz", *vertical(8, 4, 0 if name in leg_group else 4, "left" in name))
 
     # lift hexapod to run on grid
     # animation.add_track(f"bottom", "tz", [0, 4], [61.25] * 2)

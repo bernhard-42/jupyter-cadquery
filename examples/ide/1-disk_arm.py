@@ -6,10 +6,11 @@ import numpy as np
 import cadquery as cq
 from cadquery_massembly import MAssembly, relocate
 from jupyter_cadquery.viewer.client import show
+from jupyter_cadquery.cadquery import web_color
 from jupyter_cadquery import set_defaults
 from jupyter_cadquery.cad_animation import Animation
 
-set_defaults(grid=True, axes0=True, edge_accuracy=0.01, mate_scale=4, zoom=3.5, bb_factor=1.2)
+set_defaults(axes0=True, mate_scale=4)
 
 r_disk = 100
 dist_pivot = 200
@@ -59,10 +60,10 @@ arm.faces(">Z").wires(cq.NearestToPointSelector((0, 0))).tag("mate")
 
 def create_disk_arm():
     L = lambda *args: cq.Location(cq.Vector(*args))
-    C = lambda *args: cq.Color(*args)
+    C = lambda name: web_color(name)
 
     return (
-        MAssembly(base, name="base", color=C("gray"), loc=L(-dist_pivot / 2, 0, 0))
+        MAssembly(base, name="base", color=C("silver"), loc=L(-dist_pivot / 2, 0, 0))
         .add(disk, name="disk", color=C("MediumAquaMarine"), loc=L(r_disk, -1.5 * r_disk, 0))
         .add(arm, name="arm", color=C("orange"), loc=L(0, 10 * nr, 0))
     )
@@ -82,7 +83,7 @@ relocate(disk_arm)
 disk_arm.assemble("arm", "arm_pivot")
 disk_arm.assemble("disk", "disk_pivot")
 
-show(disk_arm, reset_camera=False, zoom=3.5)
+show(disk_arm, reset_camera=True)
 
 r_disk = 100
 dist_pivot = 200
@@ -94,7 +95,7 @@ def angle_arm(angle_disk):
     return np.rad2deg(np.arctan2(*v[::-1]))
 
 
-animation = Animation(viewer=True)
+animation = Animation()
 
 times = np.linspace(0, 5, 181)
 disk_angles = np.linspace(0, 360, 181)
@@ -102,9 +103,9 @@ arm_angles = [angle_arm(d) for d in disk_angles]
 
 # move disk
 # Note, the selector must follow the path in the CAD view navigation hierarchy
-animation.add_track(f"base/disk", "rz", times, disk_angles)
+animation.add_track("/base/disk", "rz", times, disk_angles)
 
 # move arm
-animation.add_track(f"base/arm", "rz", times, arm_angles)
+animation.add_track("/base/arm", "rz", times, arm_angles)
 
-animation.animate(speed=4)
+animation.animate(speed=2)

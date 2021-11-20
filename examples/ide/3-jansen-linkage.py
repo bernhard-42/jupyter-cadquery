@@ -1,6 +1,8 @@
 import cadquery as cq
-from cadquery_massembly import MAssembly
+from cadquery_massembly import MAssembly, relocate
 from jupyter_cadquery.viewer.client import show
+from jupyter_cadquery.cadquery import web_color
+from jupyter_cadquery.cad_animation import Animation
 
 # Jansen Linkage
 
@@ -54,7 +56,7 @@ x = 38.0
 y = 7.8
 
 links = {}
-links["link_1_2"] = {"len": 15.0, "lev": 3 * height, "col": "Blue4"}
+links["link_1_2"] = {"len": 15.0, "lev": 3 * height, "col": "DarkBlue"}
 links["link_2_3"] = {"len": 50.0, "lev": 4 * height, "col": "DarkGreen"}
 links["link_3_4"] = {"len": 55.8, "lev": 3 * height, "col": "Red"}
 links["link_4_0"] = {"len": 40.1, "lev": 1 * height, "col": "Red"}
@@ -96,7 +98,7 @@ parts = {
 
 def create_leg(x, y):
     L = lambda *args: cq.Location(cq.Vector(*args))
-    C = lambda *args: cq.Color(*args)
+    C = lambda name: web_color(name)
 
     leg = MAssembly(cq.Workplane("YZ").polyline([(0, 0), (x, 0), (x, y)]), name="base", color=C("Gray"))
     for i, name in enumerate(link_list):
@@ -111,21 +113,39 @@ leg = create_leg(x, y)
 for name in link_list:
     leg.mate(f"{name}?mate", name=name, origin=True)
 
+# Relocate
+relocate(leg)
 
-check_mates = True
-if check_mates:
-    show(leg)
-else:
-    # Assemble the parts
-    alpha = 0
-    joints = linkage(alpha, x, y, links)
+# Assemble the parts
+alpha = 0
+joints = linkage(alpha, x, y, links)
 
+for name in link_list:
+    v, a = link_loc(name, joints, links)
+    abs_loc = cq.Location(
+        cq.Workplane("YZ").plane.rotated((0, 0, a)), cq.Vector(*v)
+    )  # calculate the absolute location ...
+    loc = abs_loc * leg.mates[name].mate.loc.inverse  # ... and center the mate of the link first
+    leg.assemble(name, loc)
+
+cv = show(leg)
+
+
+alphas = {name: [] for name in link_list}
+positions = {name: [] for name in link_list}
+
+for alpha in range(0, -375, -15):
     for name in link_list:
-        v, a = link_loc(name, joints, links)
-        abs_loc = cq.Location(
-            cq.Workplane("YZ").plane.rotated((0, 0, a)), cq.Vector(*v)
-        )  # calculate the absolute location ...
-        loc = abs_loc * leg.mates[name].mate.loc.inverse  # ... and center the mate of the link first
-        leg.assemble(name, loc)
+        p, a = link_loc(name, linkage(alpha, x, y, links), links)
+        alphas[name].append(a)
+        positions[name].append(p)
 
-    show(leg)
+time = np.linspace(0, 4, 25)
+
+animation = Animation(cv)
+
+for name in link_list:
+    animation.add_track(f"/base/{name}", "t", time, [(p - positions[name][0]).tolist() for p in positions[name]])
+    animation.add_track(f"/base/{name}", "rz", time, [a - alphas[name][0] for a in alphas[name]])
+
+animation.animate(2)

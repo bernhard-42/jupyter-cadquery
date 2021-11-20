@@ -1,6 +1,9 @@
 import cadquery as cq
-from cadquery_massembly import MAssembly, Mate
+from cadquery_massembly import MAssembly, relocate
 from jupyter_cadquery.viewer.client import show
+from jupyter_cadquery import set_defaults
+
+set_defaults(axes=True, axes0=True, mate_scale=5)
 
 box0 = cq.Workplane("XY").box(10, 20, 10)
 box1 = cq.Workplane("XZ").box(10, 20, 10)
@@ -56,7 +59,6 @@ def create():
 
 assy = create()
 
-
 # Mates
 
 from collections import OrderedDict as odict
@@ -77,12 +79,17 @@ for obj, name in (
         transforms=odict(rx=180 if "c" in name else 0),
         origin=True,
     )
-    assy.mate(f"{obj}?{name}_m1", name=f"{name}_m1", transforms=odict(rx=0 if "b" in name else 180))
+    assy.mate(
+        f"{obj}?{name}_m1",
+        name=f"{name}_m1",
+        transforms=odict(rx=0 if "b" in name else 180),
+    )
 
+relocate(assy)
 
-check_mates = True
+check_mates = False
 if check_mates:
-    show(assy)
+    show(assy, render_mates=True)
 else:
     # Assemble the parts
     assy.assemble("cyl1_m0", "box0_m0")
@@ -93,3 +100,13 @@ else:
     assy.assemble("box3_m1", "cyl3_m1")
 
     show(assy)
+
+import numpy as np
+from jupyter_cadquery.cad_animation import Animation
+
+animation = Animation()
+animation.add_track("/box0/c", "rz", np.linspace(0, 6, 13), np.linspace(0, 360, 13))
+animation.add_track("/box0/c/b", "rz", np.linspace(0, 6, 13), np.linspace(0, 360, 13))
+animation.add_track("/box0/c/b/a", "rz", np.linspace(0, 6, 13), np.linspace(0, 360, 13))
+
+animation.animate(speed=3)
