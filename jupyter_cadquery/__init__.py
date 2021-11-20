@@ -14,7 +14,16 @@
 # limitations under the License.
 #
 
-from cad_viewer_widget import get_viewer, get_viewers, set_viewer, close_viewer, close_viewers, AnimationTrack
+import warnings
+
+from cad_viewer_widget import (
+    get_viewer,
+    get_viewers,
+    set_viewer as _set_viewer,
+    close_viewer,
+    close_viewers,
+    AnimationTrack,
+)
 from .cadquery.cad_objects import show
 
 from ._version import __version_info__, __version__
@@ -26,8 +35,10 @@ from .defaults import (
     reset_defaults,
 )
 
+from .utils import warn
 
-def set_sidecar(
+
+def set_viewer(
     name,
     height=None,
     tree_width=None,
@@ -48,4 +59,35 @@ def set_sidecar(
             tools=preset("tools", tools),
         )
 
-    set_viewer(name, anchor=anchor)
+    _set_viewer(name, anchor=anchor)
+
+
+def set_sidecar(title, init=False):
+    warn(
+        "set_sidecar(title, init=False) is deprecated, please use set_viewer(title, init=False)",
+        DeprecationWarning,
+        "once",
+    )
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("ignore", DeprecationWarning)
+        set_viewer(title, init=init)
+
+
+def close_sidecar(title):
+    warn(
+        "close_sidecar(title) is deprecated, please use close_viewer(title)",
+        DeprecationWarning,
+        "once",
+    )
+
+    close_viewer(title)
+
+
+def close_sidecars():
+    warn(
+        "close_sidecars() is deprecated, please use close_viewers()",
+        DeprecationWarning,
+        "once",
+    )
+
+    close_viewers()
