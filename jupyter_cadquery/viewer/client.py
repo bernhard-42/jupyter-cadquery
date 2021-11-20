@@ -15,10 +15,10 @@
 #
 
 from jupyter_cadquery.cadquery.cad_objects import to_assembly
-from jupyter_cadquery.defaults import get_defaults
-from jupyter_cadquery.cad_objects import _combined_bb
+from jupyter_cadquery.cad_objects import _tessellate_group
 from jupyter_cadquery.defaults import get_default, get_defaults
 from jupyter_cadquery.cadquery import PartGroup, Part
+from jupyter_cadquery.utils import Color
 
 import pickle
 import zmq
@@ -97,30 +97,39 @@ def _convert(*cad_objs, **kwargs):
 
     # Do not send defaults for postion, rotation and zoom unless they are set in kwargs
     config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation", "zoom")}
+
     for k, v in kwargs.items():
         if v is not None:
             config[k] = v
 
-    mapping = part_group.to_state()
-    shapes = part_group.collect_mapped_shapes(
-        mapping,
-        quality=config.get("quality"),
-        deviation=config.get("deviation"),
-        angular_tolerance=config.get("angular_tolerance"),
-        edge_accuracy=config.get("edge_accuracy"),
-        render_edges=config.get("render_edges"),
-        render_normals=config.get("render_normals"),
-        timeit=config.get("timeit"),
-        progress=Progress(),
-    )
-    tree = part_group.to_nav_dict()
+    config["edge_color"] = Color(config["default_edgecolor"]).web_color
+    del config["default_edgecolor"]
+
+    shapes, states = _tessellate_group(part_group, kwargs, Progress(), config.get("timeit"))
+
     data = {
-        "data": dict(mapping=mapping, shapes=shapes, tree=tree, bb=_combined_bb(shapes)),
+        "data": dict(shapes=shapes, states=states),
         "type": "data",
         "config": config,
         "count": part_group.count_shapes(),
     }
     return data
+
+
+import numpy as np
+
+
+def to_array(track):
+    return [track.path, track.action, track.times, track.values]
+
+
+def animate(tracks, speed):
+    data = {
+        "data": [to_array(track) for track in tracks],
+        "type": "animation",
+        "config": {"speed": speed},
+    }
+    send(data)
 
 
 def show(*cad_objs, **kwargs):
@@ -156,7 +165,6 @@ def show(*cad_objs, **kwargs):
     - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
     - zoom:              Zoom factor of view (default=2.5)
     - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
-    - mac_scrollbar:     Prettify scrollbars (default=True)
     - display:           Select display: "sidecar", "cell", "html"
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
