@@ -337,22 +337,6 @@ class _PartGroup(_CADObject):
         return Compound._makeCompound(self.compounds())  # pylint: disable=protected-access
 
 
-# def _combined_bb(shapes):
-#     def c_bb(shapes, bb):
-#         for shape in shapes["parts"]:
-#             if shape.get("parts") is None:
-#                 if bb is None:
-#                     bb = BoundingBox(shape["bb"])
-#                 else:
-#                     bb.update(shape["bb"])
-#             else:
-#                 bb = c_bb(shape, bb)
-#         return bb
-
-#     bb = c_bb(shapes, None)
-#     return bb
-
-
 def _tessellate_group(group, kwargs=None, progress=None, timeit=False):
     preset = lambda key, value: get_default(key) if value is None else value
     if kwargs is None:
