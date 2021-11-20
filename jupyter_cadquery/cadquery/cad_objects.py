@@ -30,7 +30,7 @@ from cadquery import Workplane, Shape, Compound, Vector, Vertex, Location, Assem
 from jupyter_cadquery.cad_objects import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group
 
 from ..utils import Color
-from ..ocp_utils import get_rgb
+from ..ocp_utils import get_rgb, is_compound
 from ..defaults import get_default
 
 
@@ -133,6 +133,9 @@ def _to_occ(cad_obj):
 
     elif isinstance(cad_obj, Shape):
         return [cad_obj.wrapped]
+
+    elif is_compound(cad_obj):
+        return [cad_obj]
 
     else:
         raise NotImplementedError(type(cad_obj))
@@ -381,6 +384,9 @@ def to_assembly(*cad_objs, name="Group", render_mates=None, mate_scale=1, defaul
 
         elif isinstance(cad_obj, (Shape, Compound)):
             assembly.add(_from_workplane(Workplane(cad_obj), obj_id, default_color=default_color))
+
+        elif is_compound(cad_obj):
+            assembly.add(_Part([cad_obj], color=default_color))
 
         elif isinstance(cad_obj.val(), Vector):
             assembly.add_list(_from_vectorlist(cad_obj, obj_id, show_parent=show_parent))
