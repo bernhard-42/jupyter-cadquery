@@ -200,12 +200,12 @@ def px(w):
     return f"{w}px"
 
 
-def warn(msg):
+def warn(message, warning=RuntimeWarning, when="always"):
     def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
         return "%s: %s" % (category.__name__, message)
 
     warn_format = warnings.formatwarning
     warnings.formatwarning = warning_on_one_line
-    warnings.simplefilter("always", RuntimeWarning)
-    warnings.warn(msg + "\n", RuntimeWarning)
+    warnings.simplefilter(when, warning)
+    warnings.warn(message + "\n", warning)
     warnings.formatwarning = warn_format
