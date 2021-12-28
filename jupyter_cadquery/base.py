@@ -16,14 +16,13 @@
 
 from cadquery import Compound, __version__
 
-from cad_viewer_widget import show as viewer_show, get_sidecar as get_viewer
+from cad_viewer_widget import show as viewer_show
 
 from jupyter_cadquery.utils import Color, flatten, Timer, warn
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox
 from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality, bbox_edges
 from jupyter_cadquery.defaults import (
     get_default,
-    get_defaults,
     apply_defaults,
     create_args,
     add_shape_args,

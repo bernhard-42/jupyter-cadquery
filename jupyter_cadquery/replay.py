@@ -16,7 +16,6 @@
 
 from dataclasses import dataclass, field
 from typing import Any, List, Dict
-import warnings
 
 from IPython.display import display
 from IPython import get_ipython
@@ -25,9 +24,7 @@ from ipywidgets import HBox, Output, SelectMultiple, Layout
 
 import cadquery as cq
 
-from jupyter_cadquery.utils import Color
-
-from .cad_objects import to_assembly, PartGroup, Part, show, Edges
+from .cad_objects import to_assembly, PartGroup, Part, show
 from .base import _combined_bb
 
 #
@@ -505,7 +502,17 @@ def replay(
     else:
         print("Use the multi select box below to select one or more steps you want to examine")
 
-    r = Replay(quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar, show_result)
+    r = Replay(
+        quality,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        debug,
+        cad_width,
+        height,
+        sidecar,
+        show_result,
+    )
 
     if isinstance(cad_obj, (cq.Workplane, cq.Sketch)):
         workplane = cad_obj
@@ -514,7 +521,7 @@ def replay(
         return None
 
     r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
-
+    print(r.stack)
     # save overall result
     r.result = Part(r.stack[-1][1], "Result", show_faces=True, show_edges=False)
 

@@ -22,7 +22,7 @@ try:
     HAS_MASSEMBLY = True
 except:
     HAS_MASSEMBLY = False
-import numpy as np
+
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import (
     Workplane,
@@ -36,7 +36,7 @@ from cadquery import (
     Color as CqColor,
 )
 
-from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group
+from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
 from .utils import Color, flatten
 from .ocp_utils import get_rgb, is_compound

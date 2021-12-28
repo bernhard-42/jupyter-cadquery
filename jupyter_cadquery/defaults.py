@@ -14,8 +14,6 @@
 # limitations under the License.
 #
 
-from .utils import Color
-
 
 class Defaults:
     def __init__(self):

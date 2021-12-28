@@ -1,5 +1,4 @@
 import itertools
-from cadquery.sketch import Sketch
 import numpy as np
 
 from OCP.Bnd import Bnd_Box
@@ -19,7 +18,7 @@ from OCP.TopExp import TopExp_Explorer
 
 from OCP.StlAPI import StlAPI_Writer
 
-from cadquery import Compound, Location, Workplane, Sketch
+from cadquery import Compound, Location
 from cadquery.occ_impl.shapes import downcast
 from .utils import distance
 
