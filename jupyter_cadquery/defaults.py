@@ -59,7 +59,8 @@ class Defaults:
         - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
         - zoom:              Zoom factor of view (default=2.5)
         - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
-        - display:           Select display: "sidecar", "cell", "html"
+        - show_parent:       Show the parent for edges, faces and vertices objects
+        - show_bbox:         Show bounding box (default=False)
         - sidecar:           Name of sidecar view
         - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
         - theme:             Theme "light" or "dark" (default="light")
@@ -70,38 +71,43 @@ class Defaults:
         NOT SUPPORTED ANY MORE:
         - mac_scrollbar:     Prettify scrollbars (default=True)
         - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
-
-        For example isometric projection can be achieved in two ways:
-        - position = (1, 1, 1)
-        - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
+        - display:           Select display: "sidecar", "cell", "html"
         """
 
         for k, v in kwargs.items():
             if self.get_default(k, "") == "":
                 print("Paramater %s is not a valid argument for show()" % k)
             else:
-                if k == "zoom" and v == 1.0:
-                    # for zoom == 1 viewing has a bug, so slightly increase it
-                    v = 1 + 1e-6
+                # if k == "zoom" and v == 1.0:
+                #     # for zoom == 1 viewing has a bug, so slightly increase it
+                #     v = 1 + 1e-6
                 self.defaults[k] = v
 
-        if kwargs.get("display") == "html":
-            self.defaults["tools"] = False
-            from IPython.display import HTML, display
-            from ipywidgets.embed import DEFAULT_EMBED_REQUIREJS_URL
+        # if kwargs.get("display") == "html":
+        #     self.defaults["tools"] = False
+        #     from IPython.display import HTML, display
+        #     from ipywidgets.embed import DEFAULT_EMBED_REQUIREJS_URL
 
-            display(HTML(f"""<script src="{DEFAULT_EMBED_REQUIREJS_URL}" crossorigin="anonymous"></script>"""))
+        #     display(HTML(f"""<script src="{DEFAULT_EMBED_REQUIREJS_URL}" crossorigin="anonymous"></script>"""))
 
     def reset_defaults(self):
         self.defaults = {
-            "height": 600,
-            "tree_width": 250,
+            #
+            # display options
+            "title": None,
+            "anchor": "right",
             "cad_width": 800,
-            # "bb_factor": 1.0,
+            "tree_width": 250,
+            "height": 600,
+            "theme": "light",
+            #
+            # render options
             "default_color": (232, 176, 36),
-            "default_edgecolor": (128, 128, 128),
-            "render_edges": True,
+            "default_edge_color": "#707070",
+            "ambient_intensity": 0.75,
+            "direct_intensity": 0.15,
             "render_normals": False,
+            "render_edges": True,
             "render_mates": False,
             "mate_scale": 1,
             "quality": None,
@@ -109,6 +115,10 @@ class Defaults:
             "angular_tolerance": 0.2,
             "edge_accuracy": None,
             "optimal_bb": False,
+            #
+            # viewer options
+            "tools": True,
+            "control": "trackball",
             "axes": False,
             "axes0": False,
             "grid": [False, False, False],
@@ -116,21 +126,17 @@ class Defaults:
             "ortho": True,
             "transparent": False,
             "black_edges": False,
-            "ambient_intensity": 0.65,
-            "direct_intensity": 0.16,
+            "reset_camera": True,
+            "show_parent": True,
+            "show_bbox": False,
             "position": None,
             "quaternion": None,
             "zoom": 1,
-            "reset_camera": True,
-            # "mac_scrollbar": True,
-            "sidecar": None,
-            "anchor": "right",
-            "pinning": False,
-            "display": "cell",
-            "theme": "light",
-            "tools": True,
+            "zoom_speed": 1.0,
+            "pan_speed": 1.0,
+            "rotate_speed": 1.0,
             "timeit": False,
-            "show_parent": True,
+            "js_debug": False,
         }
 
 
@@ -146,6 +152,16 @@ def set_defaults(**kwargs):
     DEFAULTS.set_defaults(**kwargs)
 
 
+def apply_defaults(**kwargs):
+    result = dict(get_defaults())
+    for k, v in kwargs.items():
+        if result.get(k, "") != "":
+            result[k] = v
+        else:
+            print(f"unknown parameter {k}")
+    return result
+
+
 def reset_defaults():
     DEFAULTS.reset_defaults()
 
@@ -156,17 +172,12 @@ def create_args(config):
         for k, v in config.items()
         if k
         in [
-            "height",
-            # "bb_factor",
-            "tree_width",
-            "cad_width",
-            # "mac_scrollbar",
-            # "display",
-            "sidecar",
+            "title",
             "anchor",
-            "pinning",
-            "tools",
-            "timeit",
+            "cad_width",
+            "tree_width",
+            "height",
+            "theme",
         ]
     }
 
@@ -177,29 +188,31 @@ def add_shape_args(config):
         for k, v in config.items()
         if k
         in [
-            "sidecar",
-            "anchor",
-            # "bb_factor",
+            "tools",
+            "control",
             "axes",
             "axes0",
             "grid",
             "ortho",
             "transparent",
+            "black_edges",
             "ticks",
-            "default_edgecolor",
-            "edge_color",
-            "ambient_intensity",
-            "direct_intensity",
+            "reset_camera",
             "position",
             "quaternion",
             "zoom",
-            "reset_camera",
+            "ambient_intensity",
+            "direct_intensity",
+            "zoom_speed",
+            "pan_speed",
+            "rotate_speed",
+            "clipIntersection",
+            "clipPlaneHelpers",
+            "clipNormal",
+            "timeit",
+            "js_debug",
         ]
     }
-
-    if args.get("default_edgecolor"):
-        args["edge_color"] = Color(args.get("default_edgecolor")).web_color
-        del args["default_edgecolor"]
 
     return args
 
@@ -217,9 +230,10 @@ def tessellation_args(config):
             "deviation",
             "optimal_bb",
             "edge_accuracy",
-            "render_normals",
+            "normal_len",
             "default_color",
-            "default_edgecolor",
+            "default_edge_color",
+            "default_opacity",
             "quality",
         ]
     }
@@ -228,7 +242,7 @@ def tessellation_args(config):
 def show_args(config):
     args = create_args(config)
     args.update(add_shape_args(config))
-    if config.get("normal_len", "") != "":
+    if config.get("normal_len") is not None:
         args["normal_len"] = config["normal_len"]
     return args
 

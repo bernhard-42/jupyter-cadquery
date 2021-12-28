@@ -17,7 +17,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
 from jupyter_cadquery.utils import Timer
-from jupyter_cadquery.ocp_utils import get_faces, bounding_box
+from jupyter_cadquery.ocp_utils import get_faces
 from cadquery.occ_impl.shapes import Compound
 
 # class RenderCache:
@@ -271,6 +271,23 @@ def tessellate(
         "normals": tess.get_normals(),
         "edges": tess.get_edges(),
     }
+
+
+def bbox_edges(bb):
+    return [
+        np.array([[bb["xmax"], bb["ymax"], bb["zmin"]], [bb["xmax"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmax"], bb["ymin"], bb["zmax"]], [bb["xmax"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmax"], bb["ymin"], bb["zmin"]], [bb["xmax"], bb["ymax"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmax"], bb["ymin"], bb["zmin"]], [bb["xmax"], bb["ymin"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymax"], bb["zmax"]], [bb["xmax"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymax"], bb["zmin"]], [bb["xmax"], bb["ymax"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymax"], bb["zmin"]], [bb["xmin"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmax"]], [bb["xmax"], bb["ymin"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmax"]], [bb["xmin"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmin"]], [bb["xmax"], bb["ymin"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmin"]], [bb["xmin"], bb["ymax"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmin"]], [bb["xmin"], bb["ymin"], bb["zmax"]]], dtype=np.float32),
+    ]
 
 
 def discretize_edge(edge, deflection=0.1):

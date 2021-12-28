@@ -25,10 +25,10 @@ from ipywidgets import HBox, Output, SelectMultiple, Layout
 
 import cadquery as cq
 
-from jupyter_cadquery.cadquery import PartGroup, Part, show
-from jupyter_cadquery.defaults import get_default
-from .cad_objects import to_assembly
+from jupyter_cadquery.utils import Color
 
+from .cad_objects import to_assembly, PartGroup, Part, show, Edges
+from .base import _combined_bb
 
 #
 # The Runtime part
@@ -57,23 +57,28 @@ def attributes(names):
     return wrapper
 
 
-@attributes(("func", "args", "kwargs", "obj", "children"))
+@attributes(("func", "args", "kwargs", "obj", "shadow_obj", "children"))
 class Context(object):
     def __init__(self):
         self.stack = []
         self.new()
 
-    def _to_dict(self, func, args, kwargs, obj, children):
+    def _to_dict(self, func, args, kwargs, obj, children, shadow_obj=None):
         return {
             "func": func,
             "args": args,
             "kwargs": kwargs,
             "obj": obj,
+            "shadow_obj": shadow_obj,
             "children": children,
         }
 
+    @property
+    def length(self):
+        return len(self.stack)
+
     def new(self):
-        self.push(None, None, None, None, [])
+        self.push(None, None, None, None, [], None)
 
     def clear(self):
         self.stack = []
@@ -92,18 +97,20 @@ class Context(object):
         else:
             raise ValueError("Empty context")
 
-    def push(self, func, args, kwargs, obj, children):
-        self.stack.append(self._to_dict(func, args, kwargs, obj, children))
+    def push(self, func, args, kwargs, obj, children, shadow_obj=None):
+        self.stack.append(self._to_dict(func, args, kwargs, obj, children, shadow_obj))
 
-    def append(self, func, args, kwargs, obj, children):
-        self.stack[-1].append(self._to_dict(func, args, kwargs, obj, children))
+    def append(self, func, args, kwargs, obj, children, shadow_obj=None):
+        self.stack[-1].append(self._to_dict(func, args, kwargs, obj, children, shadow_obj))
 
-    def update(self, func, args, kwargs, obj=None, children=None):
+    def update(self, func, args, kwargs, obj=None, children=None, shadow_obj=None):
         self.func = func
         self.args = args
         self.kwargs = kwargs
         if obj is not None:
             self.obj = obj
+        if shadow_obj is not None:
+            self.shadow_obj = shadow_obj
         if children is not None:
             self.children = children
 
@@ -111,30 +118,38 @@ class Context(object):
         self.stack[-1]["children"].append(context)
 
     def __repr__(self):
+        def join(a, b):
+            if a == "":
+                return b
+            elif b == "":
+                return a
+            else:
+                return f"{a}, {b}"
+
+        prefix = "    " * (self.length - 1)
         if self.is_empty():
-            result = "   >> Context empty"
+            result = f"{prefix}   >> Context empty"
         else:
             result = ""
             for i, e in enumerate(self.stack):
-                result += "  >> %d: %s(%s, %s); %s / %s\n" % (
-                    i,
-                    e["func"],
-                    e["args"],
-                    e["kwargs"],
-                    e["obj"],
-                    e["children"],
-                )
+                args = "" if e["args"] is None else f'{e["args"]}'[1:-1]
+                kwargs = "" if e["kwargs"] is None else ", ".join([f"{k}={v}" for k, v in e["kwargs"].items()])
+                result += f'{prefix} >> {i}: {e["func"]}({join(args, kwargs)}) -> {e["obj"]}, {e["shadow_obj"]}/ {e["children"]}\n'
         return result
 
 
 _CTX = Context()
-DEBUG = True
+DEBUG = False
 REPLAY = False
 
 
 def _trace(*objs):
     if DEBUG:
         print(*objs)
+
+
+def get_context():
+    return _CTX
 
 
 def _add_context(self, name):
@@ -152,23 +167,31 @@ def _add_context(self, name):
             "toSvg",
             "exportSvg",
             "largestDimension",
+            "Sketch",
+            "_edges",
+            "_faces",
+            "_selection",
+            "locs",
         )
 
     def _is_recursive(func):
-        return func in ["union", "cut", "intersect"]
+        return func in ["union", "cut", "intersect", "placeSketch", "sketch"]
 
-    def intercept(parent, func):
+    def _is_recursive_end(func):
+        return func in ["union", "cut", "intersect", "placeSketch", "finalize"]
+
+    def intercept(parent, func, prefix):
         def f(*args, **kwargs):
-            _trace("1  calling", func.__name__, args, kwargs)
+            _trace(prefix, f"Calling {func.__name__}{args + (kwargs,)}")
             _trace(_CTX)
 
-            if _is_recursive(func.__name__):
+            if _is_recursive_end(func.__name__):
                 _ = _CTX.pop()
-                _trace("  --> level down")
+                _trace(prefix, "--> level down")
                 _trace(_CTX)
 
             if _CTX.args is None:
-                _trace("2  updating")
+                _trace(prefix, "Updating")
                 _CTX.update(func.__name__, args, kwargs)
                 _trace(_CTX)
 
@@ -176,17 +199,41 @@ def _add_context(self, name):
 
             if func.__name__ == _CTX.func:
                 _CTX.obj = result
+                context = _CTX.pop()
 
-                if _CTX.is_top_level():
-                    result._caller = _CTX.pop()
-                    _trace("<== _caller", func.__name__, result._caller)
+                if isinstance(result, cq.Sketch):
+                    # Now deep clone the current state of the Sketch object
+                    new_obj = cq.Sketch()
+                    new_obj._faces = context["obj"]._faces.copy()
+                    new_obj._edges = [edge.copy() for edge in context["obj"]._edges]
+                    new_obj._selection = [
+                        (sel if isinstance(sel, cq.Location) else sel.copy()) for sel in context["obj"]._selection
+                    ]
+                    new_obj.locs = [loc for loc in context["obj"].locs]
+                    context["shadow_obj"] = new_obj
+
+                    # for copy, moved, located, which create a copy of the object, copy the _caller stack
+                    if func.__self__ != result:
+                        result._caller = func.__self__._caller
+
+                if _CTX.is_empty():
+                    if isinstance(result, cq.Sketch):
+                        # to not conflict with overridden __getattribute__ us try...except
+                        try:
+                            result._caller.append(context)
+                        except Exception as ex:
+                            result._caller = [context]
+                    else:
+                        result._caller = context
+
+                    _trace(prefix, f"<== finished {func.__name__}, _caller={result._caller}")
                 else:
-                    context = _CTX.pop()
-                    _CTX.append_child(context)
-                    _trace("<== added child", context)
+                    if context["func"] != "sketch":
+                        _CTX.append_child(context)
+                        _trace("<== added child", context)
                 _CTX.new()
 
-            _trace("3  leaving", func.__name__)
+            _trace(prefix, "Leaving", func.__name__)
             _trace(_CTX)
             return result
 
@@ -194,14 +241,15 @@ def _add_context(self, name):
 
     attr = object.__getattribute__(self, name)
     if callable(attr):
+        prefix = "    " * (_CTX.length - 1)
         if not _blacklist(attr.__name__):
-            _trace("==> intercepting", attr.__name__)
+            _trace(prefix, "==> intercepting", attr.__name__)
             if _is_recursive(attr.__name__):
-                _trace("  --> level up")
+                _trace(prefix, "--> level up")
                 _CTX.new()
             _trace(_CTX)
 
-            return intercept(self, attr)
+            return intercept(self, attr, prefix)
     return attr
 
 
@@ -220,13 +268,25 @@ class Step:
     var: str = ""
     result_name: str = ""
     result_obj: Any = None
+    shadow_obj: Any = None
 
     def clear_func(self):
         self.func = self.args = self.kwargs = ""
 
 
 class Replay(object):
-    def __init__(self, quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar=None):
+    def __init__(
+        self,
+        quality,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        debug,
+        cad_width,
+        height,
+        sidecar=None,
+        show_result=True,
+    ):
         self.debug_output = Output()
         self.quality = quality
         self.deviation = deviation
@@ -236,14 +296,14 @@ class Replay(object):
         self.cad_width = cad_width
         self.height = height
         self.sidecar = sidecar
-        # self.viewer = show(cad_width=cad_width, height=height, sidecar=sidecar)
+        self.show_result = show_result
         self.reset_camera = True
         self.indexes = []
 
     def format_steps(self, raw_steps):
         def to_code(step, results):
             def to_name(obj):
-                if isinstance(obj, cq.Workplane):
+                if isinstance(obj, (cq.Workplane, cq.Sketch)):
                     name = results.get(obj, None)
                 else:
                     name = str(obj)
@@ -273,33 +333,46 @@ class Replay(object):
         entries = []
         obj_index = 1
 
-        results = {step.result_obj: None for step in raw_steps}
+        _trace("\nraw_steps")
+        for s in raw_steps:
+            _trace(s)
 
-        for i in range(len(raw_steps)):
-            step = raw_steps[i]
-            next_level = step.level if i == (len(raw_steps) - 1) else raw_steps[i + 1].level
+        # Build a lookup table of all Sketch and Workplane result objects
+        results = {}
+        for step in raw_steps:
+            results[step.result_obj] = None
+            if step.shadow_obj != None:
+                results[step.shadow_obj] = None
 
-            # level change, so add/use the variable name
-            if step.level > 0 and step.level != next_level and step.result_name == "":
-                obj_name = "_v%d" % obj_index
-                obj_index += 1
-                step.result_name = obj_name
+        # Check all args whether they are Sketch or Workplane objects
+        # and provide a variable name
+        for step in raw_steps:
+            for arg in step.args:
+                if isinstance(arg, (cq.Workplane, cq.Sketch)):
+                    results[arg] = "_v%d" % obj_index
+                    obj_index += 1
+
+        _trace("\nresults")
+        for k, v in results.items():
+            _trace(k, v)
+
+        for step in raw_steps:
+            if results[step.result_obj] is not None:
+                step.result_name = results[step.result_obj]
             steps.append(step)
 
-        for step in steps:
-            if results[step.result_obj] is None:
-                # first occurence, take note and keep
-                results[step.result_obj] = step.result_name
-            else:
-                # next occurences remove function and add variable name
-                step.var = results[step.result_obj]
-                step.clear_func()
+        _trace("\nsteps")
+        for s in steps:
+            _trace(s)
 
         last_level = 1000000
+
         for step in reversed(steps):
             if step.level < last_level:
                 last_level = 1000000
-                entries.insert(0, (to_code(step, results), step.result_obj))
+                entries.insert(
+                    0, (to_code(step, results), step.result_obj if step.shadow_obj is None else step.shadow_obj)
+                )
                 if step.var != "":
                     last_level = step.level
 
@@ -315,6 +388,7 @@ class Replay(object):
                     kwargs=caller["kwargs"],
                     result_name=result_name,
                     result_obj=caller["obj"],
+                    shadow_obj=caller["shadow_obj"],
                 )
             ]
             for child in reversed(caller["children"]):
@@ -332,12 +406,31 @@ class Replay(object):
             caller = getattr(obj, "_caller", None)
             result_name = getattr(obj, "name", "")
             if caller is not None:
-                stack = walk(caller, level, result_name) + stack
-                for arg in caller["args"]:
-                    if isinstance(arg, cq.Workplane):
-                        result_name = getattr(arg, "name", "")
-                        stack = self.to_array(arg, level=level + 1, result_name=result_name) + stack
+                if isinstance(caller, (list, tuple)):
+                    stack = [
+                        Step(
+                            level,
+                            func=c["func"],
+                            args=c["args"],
+                            kwargs=c["kwargs"],
+                            result_name=result_name,
+                            result_obj=c["obj"],
+                            shadow_obj=c["shadow_obj"],
+                        )
+                        for c in caller
+                    ]
+                else:
+                    stack = walk(caller, level, result_name) + stack
+                    for arg in caller["args"]:
+                        if isinstance(arg, (cq.Workplane, cq.Sketch)):
+                            result_name = getattr(arg, "name", "")
+                            stack = self.to_array(arg, level=level + 1, result_name=result_name) + stack
+
             obj = obj.parent
+
+        _trace("to_array")
+        for s in stack:
+            _trace(s)
 
         return stack
 
@@ -352,27 +445,42 @@ class Replay(object):
             self.indexes = indexes
             steps = [(i, self.stack[i][1]) for i in self.indexes]
             try:
-                cad_objs = [to_assembly(step[1], name="Step_%02d" % step[0], show_parent=False) for step in steps]
+                cad_objs = [to_assembly(step[1], name="Step[%02d]" % step[0], show_parent=False) for step in steps]
             except Exception as ex:
+                import traceback
+
                 print(ex)
+                traceback.print_exc()
 
         # Add hidden result to start with final size and allow for comparison
-        if not isinstance(self.stack[-1][1].val(), cq.Vector):
-            result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
-            objs = PartGroup([result] + cad_objs, name="Replay")
+
+        if self.show_result and (
+            isinstance(self.stack[-1][1], cq.Sketch) or not isinstance(self.stack[-1][1].val(), cq.Vector)
+        ):
+            # result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
+            objs = PartGroup(cad_objs + [self.result], name="Replay")
+            show_bbox = False
         else:
             objs = PartGroup(cad_objs, name="Replay")
+            show_bbox = self.bbox
 
         with self.debug_output:
-            show(
-                objs,
-                quality=self.quality,
-                deviation=self.deviation,
-                angular_tolerance=self.angular_tolerance,
-                edge_accuracy=self.edge_accuracy,
-                reset_camera=False,
-            )
-            self.reset_camera = False
+            try:
+                show(
+                    objs,
+                    quality=self.quality,
+                    deviation=self.deviation,
+                    angular_tolerance=self.angular_tolerance,
+                    edge_accuracy=self.edge_accuracy,
+                    reset_camera=self.reset_camera,
+                    show_parent=False,
+                    show_bbox=show_bbox,
+                )
+                self.reset_camera = False
+            except Exception as ex:
+                import traceback
+
+                print("\nWarning: object cannot be shown", traceback.format_exc())
 
 
 def replay(
@@ -386,7 +494,10 @@ def replay(
     cad_width=600,
     height=600,
     sidecar=None,
+    show_result=False,
 ):
+    while not _CTX.is_top_level:
+        _CTX.pop()
 
     if not REPLAY:
         print("Replay is not enabled. To do so call 'enable_replay()'. Falling back to 'show()'")
@@ -394,15 +505,32 @@ def replay(
     else:
         print("Use the multi select box below to select one or more steps you want to examine")
 
-    r = Replay(quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar)
+    r = Replay(quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar, show_result)
 
-    if isinstance(cad_obj, cq.Workplane):
+    if isinstance(cad_obj, (cq.Workplane, cq.Sketch)):
         workplane = cad_obj
     else:
         print("Cannot replay", cad_obj)
         return None
 
     r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
+
+    # save overall result
+    r.result = Part(r.stack[-1][1], "Result", show_faces=True, show_edges=False)
+
+    # tessellate and get bounding box
+    shapes = PartGroup([r.result], loc=cq.Location()).collect_shapes(
+        "",
+        cq.Location(),
+        quality=None,
+        deviation=0.1,
+        angular_tolerance=0.2,
+        edge_accuracy=0.01,
+        render_edges=False,
+    )
+    # save bounding box of overall result
+    r.bbox = _combined_bb(shapes).to_dict()
+
     if index == -1:
         r.indexes = [len(r.stack) - 1]
     else:
@@ -430,15 +558,6 @@ def replay(
 
 
 def reset_replay():
-    def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
-        return "%s: %s" % (category.__name__, message)
-
-    warn_format = warnings.formatwarning
-    warnings.formatwarning = warning_on_one_line
-    warnings.simplefilter("always", RuntimeWarning)
-    warnings.warn("jupyter_cadquery replay is enabled, turn off with disable_replay()", RuntimeWarning)
-    warnings.formatwarning = warn_format
-
     _CTX.clear()
     _CTX.new()
 
@@ -450,6 +569,7 @@ def enable_replay(warning=True, debug=False):
 
     print("\nEnabling jupyter_cadquery replay")
     cq.Workplane.__getattribute__ = _add_context
+    cq.Sketch.__getattribute__ = _add_context
 
     if warning:
         print("Note: To get rid of this warning, use 'enable_replay(False)'")

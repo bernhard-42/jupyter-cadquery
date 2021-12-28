@@ -209,3 +209,5 @@ def warn(message, warning=RuntimeWarning, when="always"):
     warnings.simplefilter(when, warning)
     warnings.warn(message + "\n", warning)
     warnings.formatwarning = warn_format
+    warnings.simplefilter("ignore", warning)
+    

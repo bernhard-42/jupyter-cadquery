@@ -17,16 +17,29 @@
 import warnings
 
 from cad_viewer_widget import (
-    get_viewer,
-    get_viewers,
-    set_viewer as _set_viewer,
-    close_viewer,
-    close_viewers,
+    open_viewer as cvw_open_viewer,
     AnimationTrack,
 )
-from .cadquery.cad_objects import show
+
+from cad_viewer_widget.sidecar import (
+    get_sidecar as get_viewer,
+    get_sidecars as get_viewers,
+    close_sidecar as close_viewer,
+    close_sidecars as close_viewers,
+)
 
 from ._version import __version_info__, __version__
+
+from .cad_objects import (
+    Assembly,
+    PartGroup,
+    Part,
+    Faces,
+    Edges,
+    Vertices,
+    show,
+    web_color,
+)
 
 from .defaults import (
     get_default,
@@ -36,41 +49,38 @@ from .defaults import (
 )
 
 from .utils import warn
+from .tools import auto_show
 
 
-def set_viewer(
-    name,
-    height=None,
-    tree_width=None,
-    cad_width=None,
-    tools=None,
-    anchor="split-right",
-    init=False,
-):
+def open_viewer(title=None, default=True, **kwargs):
+    cv = cvw_open_viewer(title=title, **kwargs)
+    set_defaults(reset_camera=True)
 
-    if init:
-        preset = lambda key, value: get_default(key) if value is None else value
-        show(
-            sidecar=name,
-            anchor=anchor,
-            height=preset("height", height),
-            tree_width=preset("tree_width", tree_width),
-            cad_width=preset("cad_width", cad_width),
-            tools=preset("tools", tools),
-        )
+    if kwargs.get("cad_width") is not None:
+        set_defaults(cad_width=kwargs["cad_width"])
+    if kwargs.get("tree_width") is not None:
+        set_defaults(tree_width=kwargs["tree_width"])
+    if kwargs.get("height") is not None:
+        set_defaults(height=kwargs["height"])
+    if kwargs.get("theme") is not None:
+        set_defaults(theme=kwargs["theme"])
 
-    _set_viewer(name, anchor=anchor)
+    if default:
+        set_defaults(title=title)
+    show(title=title)
+    return cv
 
 
-def set_sidecar(title, init=False):
+def set_sidecar(title, anchor="right", init=False):
     warn(
-        "set_sidecar(title, init=False) is deprecated, please use set_viewer(title, init=False)",
+        "set_sidecar(title, init=False) is deprecated, please use: open_viewer(title='CadQuery', **kwargs)",
         DeprecationWarning,
         "once",
     )
-    with warnings.catch_warnings(record=True):
-        warnings.simplefilter("ignore", DeprecationWarning)
-        set_viewer(title, init=init)
+    if init:
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter("ignore", DeprecationWarning)
+            open_viewer(title=title, default=True, anchor=anchor)
 
 
 def close_sidecar(title):
@@ -91,3 +101,13 @@ def close_sidecars():
     )
 
     close_viewers()
+
+
+try:
+    from IPython import get_ipython
+
+    shell_name = get_ipython().__class__.__name__
+    if shell_name == "ZMQInteractiveShell":
+        auto_show()
+except Exception as ex:
+    ...

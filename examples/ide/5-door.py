@@ -2,7 +2,7 @@ from collections import OrderedDict as odict
 import cadquery as cq
 from cadquery_massembly import MAssembly
 from jupyter_cadquery.viewer.client import show
-from jupyter_cadquery.cadquery import web_color
+from jupyter_cadquery import web_color
 
 # Note: Download https://www.matronics.dk/data/longship/files/products/vslot-2020_1.dxf first
 # if you don't have it at hand

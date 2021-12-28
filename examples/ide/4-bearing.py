@@ -1,7 +1,7 @@
 import cadquery as cq
 from cadquery_massembly import MAssembly, Mate
 from jupyter_cadquery.viewer.client import show
-from jupyter_cadquery.cadquery import web_color
+from jupyter_cadquery import web_color
 
 # Avoid clean error
 cq.occ_impl.shapes.Shape.clean = lambda x: x

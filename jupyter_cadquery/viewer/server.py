@@ -10,7 +10,7 @@ import zmq
 
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from jupyter_cadquery.cadquery.cad_objects import show
+from jupyter_cadquery import show
 from jupyter_cadquery import AnimationTrack
 from jupyter_cadquery.defaults import get_default, create_args, add_shape_args, set_defaults
 from jupyter_cadquery.logo import LOGO_DATA

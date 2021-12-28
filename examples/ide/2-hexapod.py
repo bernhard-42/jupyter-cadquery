@@ -2,9 +2,9 @@ import numpy as np
 
 import cadquery as cq
 from cadquery_massembly import MAssembly, relocate
-from jupyter_cadquery.cadquery import web_color
+from jupyter_cadquery import web_color
 from jupyter_cadquery.viewer.client import show
-from jupyter_cadquery.cad_animation import Animation
+from jupyter_cadquery.animation import Animation
 
 # Parts
 
