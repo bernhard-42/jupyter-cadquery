@@ -524,7 +524,7 @@ def replay(
         return None
 
     r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
-    print(r.stack)
+
     # save overall result
     r.result = Part(r.stack[-1][1], "Result", show_faces=True, show_edges=False)
 
