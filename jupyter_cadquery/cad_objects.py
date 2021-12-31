@@ -269,7 +269,7 @@ def _from_sketch(cad_obj, obj_id, name="Sketch", color=None, show_parent=True, s
         for loc in locs:
             workplane.objects += cad_obj._faces.moved(loc).Faces()
         result += _from_facelist(workplane, obj_id, name="Faces", show_parent=show_parent)
-    else:
+    elif cad_obj._edges:
         workplane.objects = [edge.moved(loc) for edge in cad_obj._edges for loc in locs]
         result += _from_edgelist(workplane, obj_id, name="Edges", show_parent=show_parent)
 
