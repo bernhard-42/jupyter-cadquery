@@ -211,7 +211,10 @@ def _add_context(self, name):
 
                     # for copy, moved, located, which create a copy of the object, copy the _caller stack
                     if func.__self__ != result:
-                        result._caller = func.__self__._caller
+                        try:
+                            result._caller = func.__self__._caller
+                        except:
+                            pass
 
                 if _CTX.is_empty():
                     if isinstance(result, cq.Sketch):
