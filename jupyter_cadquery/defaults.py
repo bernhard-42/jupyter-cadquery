@@ -59,7 +59,7 @@ class Defaults:
         - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
         - show_parent:       Show the parent for edges, faces and vertices objects
         - show_bbox:         Show bounding box (default=False)
-        - sidecar:           Name of sidecar view
+        - viewer:            Name of the sidecar viewer
         - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
         - theme:             Theme "light" or "dark" (default="light")
         - tools:             Show the viewer tools like the object tree
@@ -92,7 +92,7 @@ class Defaults:
         self.defaults = {
             #
             # display options
-            "title": None,
+            "viewer": None,
             "anchor": "right",
             "cad_width": 800,
             "tree_width": 250,
@@ -165,11 +165,14 @@ def reset_defaults():
 
 
 def create_args(config):
+    adapt = lambda key: "title" if key == "viewer" else key
+
     return {
-        k: v
+        adapt(k): v
         for k, v in config.items()
         if k
         in [
+            "viewer",
             "title",
             "anchor",
             "cad_width",
@@ -240,6 +243,7 @@ def tessellation_args(config):
 def show_args(config):
     args = create_args(config)
     args.update(add_shape_args(config))
+
     if config.get("normal_len") is not None:
         args["normal_len"] = config["normal_len"]
     return args

@@ -52,8 +52,8 @@ from .utils import warn
 from .tools import auto_show
 
 
-def open_viewer(title=None, default=True, **kwargs):
-    cv = cvw_open_viewer(title=title, **kwargs)
+def open_viewer(viewer=None, default=True, **kwargs):
+    cv = cvw_open_viewer(title=viewer, **kwargs)
     set_defaults(reset_camera=True)
 
     if kwargs.get("cad_width") is not None:
@@ -66,8 +66,9 @@ def open_viewer(title=None, default=True, **kwargs):
         set_defaults(theme=kwargs["theme"])
 
     if default:
-        set_defaults(title=title)
-    show(title=title)
+        set_defaults(viewer=viewer)
+
+    show(viewer=viewer)
     return cv
 
 

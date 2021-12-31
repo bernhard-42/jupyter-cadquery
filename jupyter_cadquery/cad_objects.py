@@ -555,7 +555,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - show_parent:       Show the parent for edges, faces and vertices objects
     - show_bbox:         Show bounding box (default=False)
     - display:           Select display: "sidecar", "cell", "html"
-    - sidecar:           Name of sidecar view
+    - viewer:            Name of the sidecar viewer
     - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
     - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
