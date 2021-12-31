@@ -64,12 +64,11 @@ class Defaults:
         - theme:             Theme "light" or "dark" (default="light")
         - tools:             Show the viewer tools like the object tree
         - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
-        - show_parent:       Show parent object. Helpful for edges, faces and vertices (default=True)
 
         NOT SUPPORTED ANY MORE:
-        - mac_scrollbar:     Prettify scrollbars (default=True)
-        - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
-        - display:           Select display: "sidecar", "cell", "html"
+        - mac_scrollbar      The default now
+        - bb_factor:         Removed
+        - display            Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
         """
 
         for k, v in kwargs.items():

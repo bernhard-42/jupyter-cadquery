@@ -554,7 +554,6 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
     - show_parent:       Show the parent for edges, faces and vertices objects
     - show_bbox:         Show bounding box (default=False)
-    - display:           Select display: "sidecar", "cell", "html"
     - viewer:            Name of the sidecar viewer
     - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
     - theme:             Theme "light" or "dark" (default="light")
@@ -562,12 +561,9 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
 
     NOT SUPPORTED ANY MORE:
-    - mac_scrollbar:     Prettify scrollbars (default=True)
-    - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
-
-    For example isometric projection can be achieved in two ways:
-    - position = (1, 1, 1)
-    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
+    - mac_scrollbar      The default now
+    - bb_factor:         Removed
+    - display            Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
     """
     preset = lambda key, value: get_default(key) if value is None else value
 
