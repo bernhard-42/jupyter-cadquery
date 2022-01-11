@@ -26,6 +26,11 @@ import numpy as np
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import Workplane, Shape, Compound, Vector, Vertex, Location, Assembly as CqAssembly
 
+try:
+    from cadquery import Sketch
+except ImportError:
+    pass
+
 from jupyter_cadquery.cad_objects import (
     _PartGroup,
     _Part,
@@ -126,6 +131,9 @@ def _to_occ(cad_obj):
 
     elif isinstance(cad_obj, Shape):
         return [cad_obj.wrapped]
+
+    elif isinstance(cad_obj, Sketch):
+        return [cad_obj._faces.wrapped]
 
     else:
         raise NotImplementedError(type(cad_obj))
@@ -266,6 +274,9 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
 def _from_workplane(cad_obj, obj_id, name="Part", default_color=None):
     return Part(cad_obj, "%s_%d" % (name, obj_id), color=Color(default_color))
 
+def _from_sketch(cad_obj, obj_id, name="Sketch", default_color=None):
+    return Part(cad_obj, "%s_%d" % (name, obj_id), color=Color(default_color))
+
 
 def _is_facelist(cad_obj):
     return (
@@ -349,6 +360,9 @@ def to_assembly(*cad_objs, render_mates=None, mate_scale=1, default_color=None):
 
         elif isinstance(cad_obj, (Shape, Compound)):
             assembly.add(_from_workplane(Workplane(cad_obj), obj_id, default_color=default_color))
+
+        elif isinstance(cad_obj, Sketch):
+            assembly.add(_from_sketch(cad_obj, obj_id, default_color=default_color))
 
         elif isinstance(cad_obj.val(), Vector):
             assembly.add_list(_from_vectorlist(cad_obj, obj_id))
