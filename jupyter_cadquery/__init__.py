@@ -86,9 +86,7 @@ def set_sidecar(title, anchor="right", init=False):
 
 def close_sidecar(title):
     warn(
-        "close_sidecar(title) is deprecated, please use close_viewer(title)",
-        DeprecationWarning,
-        "once",
+        "close_sidecar(title) is deprecated, please use close_viewer(title)", DeprecationWarning, "once",
     )
 
     close_viewer(title)
@@ -96,9 +94,7 @@ def close_sidecar(title):
 
 def close_sidecars():
     warn(
-        "close_sidecars() is deprecated, please use close_viewers()",
-        DeprecationWarning,
-        "once",
+        "close_sidecars() is deprecated, please use close_viewers()", DeprecationWarning, "once",
     )
 
     close_viewers()

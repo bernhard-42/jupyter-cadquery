@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+from .utils import warn
+
 
 class Defaults:
     def __init__(self):
@@ -146,6 +148,12 @@ def get_default(key, default_value=None):
 
 
 def set_defaults(**kwargs):
+    if isinstance(kwargs.get("grid"), bool):
+        warn(
+            "Using bool for grid is deprecated, please use (xy-grid, xz-grid. yz-grid)", DeprecationWarning, "once",
+        )
+        kwargs["grid"] = (kwargs["grid"], False, False)
+
     DEFAULTS.set_defaults(**kwargs)
 
 

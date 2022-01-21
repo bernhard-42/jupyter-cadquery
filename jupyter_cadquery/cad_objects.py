@@ -572,6 +572,12 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     default_color = preset("default_color", kwargs.get("default_color"))
     show_parent = preset("show_parent", kwargs.get("show_parent"))
 
+    if isinstance(kwargs.get("grid"), bool):
+        warn(
+            "Using bool for grid is deprecated, please use (xy-grid, xz-grid. yz-grid)", DeprecationWarning, "once",
+        )
+        kwargs["grid"] = (kwargs["grid"], False, False)
+
     if cad_objs:
 
         assembly = to_assembly(
