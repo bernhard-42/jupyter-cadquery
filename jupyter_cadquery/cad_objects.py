@@ -38,7 +38,7 @@ from cadquery import (
 
 from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
-from .utils import Color, flatten
+from .utils import Color, flatten, warn
 from .ocp_utils import get_rgb, is_compound
 from .defaults import get_default
 
@@ -177,40 +177,15 @@ def _to_occ(cad_obj):
 def _parent(cad_obj, obj_id):
     if cad_obj.parent is not None:
         if isinstance(cad_obj.parent.val(), Vector):
-            return _from_vectorlist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color(EDGE_COLOR),
-                show_parent=False,
-            )
+            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR), show_parent=False,)
         elif isinstance(cad_obj.parent.val(), Vertex):
-            return _from_vertexlist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color(EDGE_COLOR),
-                show_parent=False,
-            )
+            return _from_vertexlist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR), show_parent=False,)
         elif isinstance(cad_obj.parent.val(), Edge):
-            return _from_edgelist(
-                cad_obj.parent,
-                obj_id,
-                name="Parent",
-                color=Color(EDGE_COLOR),
-                show_parent=False,
-            )
+            return _from_edgelist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR), show_parent=False,)
         elif isinstance(cad_obj.parent.val(), Wire):
             return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR))]
         else:
-            return [
-                Part(
-                    cad_obj.parent,
-                    "Parent_%d" % obj_id,
-                    show_edges=True,
-                    show_faces=False,
-                )
-            ]
+            return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False,)]
     else:
         return []
 
@@ -333,13 +308,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
 
         workplane = Workplane()
         workplane.objects = cad_obj.shapes
-        parent = [
-            Edges(
-                workplane,
-                name="%s_0" % cad_obj.name,
-                color=color,
-            )
-        ]
+        parent = [Edges(workplane, name="%s_0" % cad_obj.name, color=color,)]
     else:
         if cad_obj.color is None:
             if default_color is None:
@@ -349,12 +318,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
         else:
             color = Color(get_rgb(cad_obj.color))
         parent = [
-            Part(
-                Workplane(shape),
-                "%s_%d" % (cad_obj.name, i),
-                color=color,
-            )
-            for i, shape in enumerate(cad_obj.shapes)
+            Part(Workplane(shape), "%s_%d" % (cad_obj.name, i), color=color,) for i, shape in enumerate(cad_obj.shapes)
         ]
 
     if render_mates and cad_obj.mates is not None:
@@ -443,13 +407,7 @@ def to_assembly(*cad_objs, name="Group", render_mates=None, mate_scale=1, defaul
 
         elif isinstance(cad_obj, Sketch):
             _debug(f"CAD Obj {obj_id}: Sketch")
-            assembly.add_list(
-                _from_sketch(
-                    cad_obj,
-                    obj_id,
-                    show_parent=show_parent,
-                )
-            )
+            assembly.add_list(_from_sketch(cad_obj, obj_id, show_parent=show_parent,))
 
         elif isinstance(cad_obj, Face):
             _debug(f"CAD Obj {obj_id}: Face")

@@ -177,16 +177,7 @@ def create_args(config):
     return {
         adapt(k): v
         for k, v in config.items()
-        if k
-        in [
-            "viewer",
-            "title",
-            "anchor",
-            "cad_width",
-            "tree_width",
-            "height",
-            "theme",
-        ]
+        if k in ["viewer", "title", "anchor", "cad_width", "tree_width", "height", "theme",]
     }
 
 

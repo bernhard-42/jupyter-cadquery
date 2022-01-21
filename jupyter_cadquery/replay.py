@@ -505,17 +505,7 @@ def replay(
     else:
         print("Use the multi select box below to select one or more steps you want to examine")
 
-    r = Replay(
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        debug,
-        cad_width,
-        height,
-        sidecar,
-        show_result,
-    )
+    r = Replay(quality, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar, show_result,)
 
     if isinstance(cad_obj, (cq.Workplane, cq.Sketch)):
         workplane = cad_obj
@@ -530,13 +520,7 @@ def replay(
 
     # tessellate and get bounding box
     shapes = PartGroup([r.result], loc=cq.Location()).collect_shapes(
-        "",
-        cq.Location(),
-        quality=None,
-        deviation=0.1,
-        angular_tolerance=0.2,
-        edge_accuracy=0.01,
-        render_edges=False,
+        "", cq.Location(), quality=None, deviation=0.1, angular_tolerance=0.2, edge_accuracy=0.01, render_edges=False,
     )
     # save bounding box of overall result
     r.bbox = _combined_bb(shapes).to_dict()
