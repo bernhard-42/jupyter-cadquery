@@ -81,7 +81,7 @@ def set_sidecar(title, anchor="right", init=False):
     if init:
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("ignore", DeprecationWarning)
-            open_viewer(title=title, default=True, anchor=anchor)
+            open_viewer(viewer=title, default=True, anchor=anchor)
 
 
 def close_sidecar(title):
