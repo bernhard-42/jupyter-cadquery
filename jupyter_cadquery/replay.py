@@ -458,7 +458,7 @@ class Replay(object):
             isinstance(self.stack[-1][1], cq.Sketch) or not isinstance(self.stack[-1][1].val(), cq.Vector)
         ):
             # result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
-            objs = PartGroup(cad_objs + [self.result], name="Replay")
+            objs = PartGroup([self.result] + cad_objs, name="Replay")
             show_bbox = False
         else:
             objs = PartGroup(cad_objs, name="Replay")
