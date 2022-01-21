@@ -9,6 +9,8 @@ class Animation:
         self.reset()
 
     def add_track(self, path, action, times, values):
+        if path[0] != "/":
+            path = f"/{path}"
         if self.viewer is None:
             self.tracks.append(AnimationTrack(path, action, times, values))
         else:
