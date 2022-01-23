@@ -12,17 +12,41 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 - **New features**
 
-  - The docker container now supports Viewer mode (added new flags `-v` and `-d`)
+  - tbd
 
 - **Fixes**
 
-  - Fix [#47](https://github.com/bernhard-42/jupyter-cadquery/issues/47) Unable to see cadquery.Assembly when top level object of an Assembly is empty
-  - Fix [#52](https://github.com/bernhard-42/jupyter-cadquery/issues/52) add `zoom` to ignored attributes for `reset_camera=False`
-  - Fix [#53](https://github.com/bernhard-42/jupyter-cadquery/issues/53) Replaced `scipy` with `pyquaternion` for less heavyweight dependencies (and since CadQuery dropped `scipy`)
+  - tbd
+
+## Migration from 2.x
+
+Deprecations:
+
+- Import structure changed:
+  - `from jupyter_cadquery.cadquery import show, ...` will raise a deprecation error. Use `from jupyter_cadquery import show, ...` instead.
+  - `from jupyter_cadquery.occ import show, ...` will raise a deprecation error. Use `from jupyter_cadquery import show, ...` instead.
+  - `from jupyter_cadquery.animation import Animation` will raise a deprecation error. Use `from jupyter_cadquery.cad_animation import Animation` instead.
+- `set_sidecar(title, init=True)` will raise a deprecation error: Use `open_viewer(title)` instead.
+- `close_sidecar()` will raise a deprecation error: Use `close_viewer(title)` instead.
+- `close_sidecars()` will raise a deprecation error: Use `close_viewers(title)` instead.
+- Parameter `grid` is now a tuple `(xy-grid, xz-grid, yz-grid)` instead of a boolean. A deprecation warning will be shown and the tuple `(grid, False, False)` used to invoke the old behaviour.
+
+Changed behaviour:
+
+- The replay mode now shows the result's bounding box as top level step by default instead of the result. Use `show_result=True` for the old behaviour.
+- New parameters `viewer` and `anchor` of function `show` set a sidecar (with title <viewer>) and `anchor` to determine location of the sidecar (`right`, `split-right`, `split-left`, `split-top`, `split-bottom`).
+- The parameter `rotation` of function `show` has been replaced by `quaternion`, since the new viewer uses quaternions instead of Euler angles.
+- In 7.5 of opencascade something changed with color handling, so some colors might be different.
+
+Not supported any more:
+
+- Parameter `mac_scrollbar` of function `show` and `set_defaults`: Used as default now.
+- Parameter `bb_factor` of function `show` and `set_defaults`: Not necessary any more, removed.
+- Parameter `display` of function `show` and `set_defaults`: Use `viewer="<viewer title>"` (for sidecar display) or `viewer=None` (for cell display).
 
 ## Key Features
 
-- Support for _CadQuery 2.1_ and _OCP_
+- Support for _CadQuery >= 2.1_ (including master at least as of 2021-01-18)
 - Viewing options:
   - Directly in the JupyterLab output cell
   - In a central Jupyterlab sidecar for any JupyterLab cell (see example 1 below)
@@ -36,6 +60,8 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 - Assemblies
   - Supports [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
   - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of models
+- Sketches
+  - Support Sketch class for both `show` and `replay`
 - Auto display of _CadQuery_ shapes
 - Visual debugging by
   - displaying selected _CadQuery_ faces and edges
@@ -72,8 +98,8 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
      - If you don't have it already, create a new conda environment with CadQuery 2.1
 
        ```bash
-       conda create -n jcq22 -c conda-forge -c cadquery python=3.8 cadquery
-       conda activate jcq22
+       conda create -n jcq3 -c conda-forge -c cadquery python=3.8 cadquery
+       conda activate jcq3
        ```
 
      - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
@@ -91,7 +117,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
    - Run _Jupyter-CadQuery_ in **JupyterLab**
 
      ```bash
-     conda activate jcq22
+     conda activate jcq3
      jupyter lab
      ```
 
@@ -106,7 +132,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
    - Run _Jupyter-CadQuery_ as **standalone viewer**
 
      ```bash
-     conda activate jcq22
+     conda activate jcq3
      jcv     # light theme
      jcv -d  # dark theme
      ```
@@ -190,19 +216,16 @@ _(animated gifs)_
   - `height`: Height of the CAD view (default=600)
   - `tree_width`: Width of navigation tree part of the view (default=250)
   - `cad_width`: Width of CAD view part of the view (default=800)
-  - `bb_factor`: Scale bounding box to ensure compete rendering (default=1.5)
   - `default_color`: Default mesh color (default=(232, 176, 36))
   - `default_edgecolor`: Default mesh color (default=(128, 128, 128))
   - `render_edges`: Render edges (default=True)
   - `render_normals`: Render normals (default=False)
   - `render_mates`: Render mates (for MAssemblies)
   - `mate_scale`: Scale of rendered mates (for MAssemblies)
-  - `quality`: Linear deflection for tessellation (default=None)
-    If None, uses bounding box as in (xlen + ylen + zlen) / 300 \* deviation)
+  - `quality`: Linear deflection for tessellation (default=None). If None, uses: (xlen + ylen + zlen) / 300 \* deviation)
   - `deviation`: Deviation from default for linear deflection value ((default=0.1)
   - `angular_tolerance`: Angular deflection in radians for tessellation (default=0.2)
-  - `edge_accuracy`: Presicion of edge discretizaion (default=None)
-    If None, uses: quality / 100
+  - `edge_accuracy`: Presicion of edge discretizaion (default=None). If None, uses: quality / 100
   - `optimal_bb`: Use optimal bounding box (default=False)
   - `axes`: Show axes (default=False)
   - `axes0`: Show axes at (0,0,0) (default=False)
@@ -216,15 +239,13 @@ _(animated gifs)_
   - `rotation`: z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
   - `zoom`: Zoom factor of view (default=2.5)
   - `reset_camera`: Reset camera position, rotation and zoom to default (default=True)
-  - `mac_scrollbar`: Prettify scrollbars (default=True)
-  - `display`: Select display: "sidecar", "cell", "html"
+  - `show_parent`: Show the parent for edges, faces and vertices objects
+  - `show_bbox`: Show bounding box (default=False)
+  - `viewer`: Name of the sidecar viewer
+  - `anchor`: How to open sidecar: "right", "split-right", "split-bottom", ...
+  - `theme`: Theme "light" or "dark" (default="light")
   - `tools`: Show the viewer tools like the object tree
   - `timeit`: Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
-
-  For example isometric projection can be achieved in two ways:
-
-  - `position = (1, 1, 1)`
-  - `position = (0, 0, 1)` and `rotation = (45, 35.264389682, 0)`
 
 ### b) Manage default values
 
