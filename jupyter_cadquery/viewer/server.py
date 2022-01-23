@@ -94,8 +94,8 @@ class Viewer:
             self.splash = False
 
         kwargs = add_shape_args(config)
-        del kwargs["sidecar"]
-        del kwargs["anchor"]
+        # del kwargs["viewer"]
+        # del kwargs["anchor"]
         self.viewer.add_shapes(**mesh_data, **kwargs)
         info(create_args(config), add_shape_args(config))
         # self.viewer.info.ready_msg(self.viewer.cq_view.grid.step)

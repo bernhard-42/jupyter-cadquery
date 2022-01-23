@@ -102,8 +102,8 @@ def _convert(*cad_objs, **kwargs):
         if v is not None:
             config[k] = v
 
-    config["edge_color"] = Color(config["default_edgecolor"]).web_color
-    del config["default_edgecolor"]
+    # config["edge_color"] = Color(config["default_edge_color"]).web_color
+    # del config["default_edgecolor"]
 
     shapes, states = _tessellate_group(part_group, kwargs, Progress(), config.get("timeit"))
 
@@ -139,7 +139,6 @@ def show(*cad_objs, **kwargs):
     - height:            Height of the CAD view (default=600)
     - tree_width:        Width of navigation tree part of the view (default=250)
     - cad_width:         Width of CAD view part of the view (default=800)
-    - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
     - default_color:     Default mesh color (default=(232, 176, 36))
     - default_edgecolor: Default mesh color (default=(128, 128, 128))
     - render_edges:      Render edges  (default=True)
@@ -165,13 +164,11 @@ def show(*cad_objs, **kwargs):
     - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
     - zoom:              Zoom factor of view (default=2.5)
     - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
-    - display:           Select display: "sidecar", "cell", "html"
+    - show_parent:       Show the parent for edges, faces and vertices objects
+    - show_bbox:         Show bounding box (default=False)    
+    - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
-
-    For example isometric projection can be achieved in two ways:
-    - position = (1, 1, 1)
-    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
     """
 
     data = _convert(*cad_objs, **kwargs)
