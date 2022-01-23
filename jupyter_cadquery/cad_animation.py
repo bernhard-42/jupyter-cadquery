@@ -14,11 +14,10 @@
 # limitations under the License.
 #
 from .utils import warn
-from .animation import *
+from .animation import *  # pylint:disable=unused-wildcard-import,wildcard-import
 
 warn(
     "jupyter_cadquery.cad_animation is deprecated, please use jupyter_cadquery.animation for import",
     DeprecationWarning,
     "once",
 )
-

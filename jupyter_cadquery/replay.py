@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import traceback
 from dataclasses import dataclass, field
 from typing import Any, List, Dict
 
@@ -54,11 +55,18 @@ def attributes(names):
     return wrapper
 
 
+# pylint: disable=protected-access
 @attributes(("func", "args", "kwargs", "obj", "shadow_obj", "children"))
 class Context(object):
     def __init__(self):
         self.stack = []
         self.new()
+        self.func = None
+        self.args = None
+        self.kwargs = None
+        self.obj = None
+        self.shadow_obj = None
+        self.children = None
 
     def _to_dict(self, func, args, kwargs, obj, children, shadow_obj=None):
         return {
@@ -177,7 +185,7 @@ def _add_context(self, name):
     def _is_recursive_end(func):
         return func in ["union", "cut", "intersect", "placeSketch", "finalize"]
 
-    def intercept(parent, func, prefix):
+    def intercept(func, prefix):
         def f(*args, **kwargs):
             _trace(prefix, f"Calling {func.__name__}{args + (kwargs,)}")
             _trace(_CTX)
@@ -213,7 +221,7 @@ def _add_context(self, name):
                     if func.__self__ != result:
                         try:
                             result._caller = func.__self__._caller
-                        except:
+                        except:  # pylint:disable=bare-except
                             pass
 
                 if _CTX.is_empty():
@@ -221,7 +229,7 @@ def _add_context(self, name):
                         # to not conflict with overridden __getattribute__ us try...except
                         try:
                             result._caller.append(context)
-                        except Exception as ex:
+                        except Exception:  # pylint:disable=bare-except,broad-except
                             result._caller = [context]
                     else:
                         result._caller = context
@@ -249,7 +257,7 @@ def _add_context(self, name):
                 _CTX.new()
             _trace(_CTX)
 
-            return intercept(self, attr, prefix)
+            return intercept(attr, prefix)
     return attr
 
 
@@ -299,6 +307,10 @@ class Replay(object):
         self.show_result = show_result
         self.reset_camera = True
         self.indexes = []
+        self.stack = None
+        self.result = None
+        self.bbox = None
+        self.select_box = None
 
     def format_steps(self, raw_steps):
         def to_code(step, results):
@@ -446,9 +458,7 @@ class Replay(object):
             steps = [(i, self.stack[i][1]) for i in self.indexes]
             try:
                 cad_objs = [to_assembly(step[1], name="Step[%02d]" % step[0], show_parent=False) for step in steps]
-            except Exception as ex:
-                import traceback
-
+            except Exception as ex:  # pylint:disable=broad-except
                 print(ex)
                 traceback.print_exc()
 
@@ -477,9 +487,7 @@ class Replay(object):
                     show_bbox=show_bbox,
                 )
                 self.reset_camera = False
-            except Exception as ex:
-                import traceback
-
+            except Exception:  # pylint:disable=broad-except
                 print("\nWarning: object cannot be shown", traceback.format_exc())
 
 
@@ -557,7 +565,7 @@ def reset_replay():
 
 
 def enable_replay(warning=True, debug=False):
-    global DEBUG, REPLAY
+    global DEBUG, REPLAY  # pylint:disable=global-statement
 
     DEBUG = debug
 
@@ -574,7 +582,7 @@ def enable_replay(warning=True, debug=False):
 
 
 def disable_replay():
-    global REPLAY
+    global REPLAY  # pylint:disable=global-statement
     print("Removing replay from cadquery.Workplane (will show a final RuntimeWarning if not suppressed)")
     cq.Workplane.__getattribute__ = object.__getattribute__
 

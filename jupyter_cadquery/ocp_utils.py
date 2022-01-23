@@ -13,7 +13,6 @@ from OCP.TopAbs import (
     TopAbs_FACE,
 )
 from OCP.TopoDS import TopoDS_Compound
-from OCP.TopAbs import TopAbs_FACE
 from OCP.TopExp import TopExp_Explorer
 
 from OCP.StlAPI import StlAPI_Writer
@@ -139,7 +138,7 @@ class BoundingBox(object):
 
 def bounding_box(objs, loc=None, optimal=False):
     if isinstance(objs, (list, tuple)):
-        compound = Compound._makeCompound(objs)
+        compound = Compound._makeCompound(objs)  # pylint: disable=protected-access
     else:
         compound = objs
 
@@ -178,9 +177,9 @@ def _get_topo(shape, topo):
     hashes = {}
     while explorer.More():
         item = explorer.Current()
-        hash = item.HashCode(HASH_CODE_MAX)
-        if hashes.get(hash) is None:
-            hashes[hash] = True
+        hash_value = item.HashCode(HASH_CODE_MAX)
+        if hashes.get(hash_value) is None:
+            hashes[hash_value] = True
             yield downcast(item)
         explorer.Next()
 

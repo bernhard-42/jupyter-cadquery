@@ -1,10 +1,11 @@
 import html
 
 import numpy as np
-from jupyter_cadquery import Part, PartGroup, Faces, Edges, Vertices, show
 import cadquery as cq
+from jupyter_cadquery import Part, PartGroup, Faces, Edges, Vertices, show
 
-
+# pylint: disable=protected-access
+# pylint: disable=unnecessary-lambda
 def auto_show():
     PartGroup._ipython_display_ = lambda self: self.show()
     Part._ipython_display_ = lambda self: self.show()
@@ -14,12 +15,10 @@ def auto_show():
 
     print("Overwriting auto display for cadquery Workplane and Shape")
 
-    import cadquery as cq
-
     try:
-        del cq.Workplane._repr_html_
-        del cq.Shape._repr_html_
-    except:
+        del cq.Workplane._repr_html_  # pylint: disable=no-member
+        del cq.Shape._repr_html_  # pylint: disable=no-member
+    except:  # pylint: disable=bare-except
         pass
     cq.Workplane._ipython_display_ = lambda cad_obj: show(cad_obj)
     cq.Shape._ipython_display_ = lambda cad_obj: show(cad_obj)

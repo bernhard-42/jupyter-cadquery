@@ -71,37 +71,19 @@ def rad(deg):
 
 def rotate_x(vector, angle):
     angle = rad(angle)
-    mat = np.array(
-        [
-            [1, 0, 0],
-            [0, math.cos(angle), -math.sin(angle)],
-            [0, math.sin(angle), math.cos(angle)],
-        ]
-    )
+    mat = np.array([[1, 0, 0], [0, math.cos(angle), -math.sin(angle)], [0, math.sin(angle), math.cos(angle)],])
     return tuple(np.matmul(mat, vector))
 
 
 def rotate_y(vector, angle):
     angle = rad(angle)
-    mat = np.array(
-        [
-            [math.cos(angle), 0, math.sin(angle)],
-            [0, 1, 0],
-            [-math.sin(angle), 0, math.cos(angle)],
-        ]
-    )
+    mat = np.array([[math.cos(angle), 0, math.sin(angle)], [0, 1, 0], [-math.sin(angle), 0, math.cos(angle)],])
     return tuple(np.matmul(mat, vector))
 
 
 def rotate_z(vector, angle):
     angle = rad(angle)
-    mat = np.array(
-        [
-            [math.cos(angle), -math.sin(angle), 0],
-            [math.sin(angle), math.cos(angle), 0],
-            [0, 0, 1],
-        ]
-    )
+    mat = np.array([[math.cos(angle), -math.sin(angle), 0], [math.sin(angle), math.cos(angle), 0], [0, 0, 1],])
     return tuple(np.matmul(mat, vector))
 
 
@@ -120,7 +102,7 @@ def pp_vec(v):
     return "(" + ", ".join([f"{o:10.5f}" for o in v]) + ")"
 
 
-def pp_loc(loc, format=True):
+def pp_loc(loc, format=True):  # pylint: disable=redefined-builtin
     T = loc.wrapped.Transformation()
     t = T.Transforms()
     q = T.GetRotation()
@@ -201,7 +183,9 @@ def px(w):
 
 
 def warn(message, warning=RuntimeWarning, when="always"):
-    def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+    def warning_on_one_line(
+        message, category, filename, lineno, file=None, line=None
+    ):  # pylint: disable=unused-argument
         return "%s: %s" % (category.__name__, message)
 
     warn_format = warnings.formatwarning
@@ -210,4 +194,4 @@ def warn(message, warning=RuntimeWarning, when="always"):
     warnings.warn(message + "\n", warning)
     warnings.formatwarning = warn_format
     warnings.simplefilter("ignore", warning)
-    
+

@@ -14,13 +14,11 @@
 # limitations under the License.
 #
 
-import json
-
 try:
     from cadquery_massembly import MAssembly
 
     HAS_MASSEMBLY = True
-except:
+except ImportError:
     HAS_MASSEMBLY = False
 
 from cadquery.occ_impl.shapes import Face, Edge, Wire
@@ -138,10 +136,10 @@ class Assembly(PartGroup):
 def _to_occ(cad_obj):
     def sketch_to_occ(sketch):
         locs = sketch.locs if sketch.locs else [Location()]
-        if sketch._faces:
-            objs = flatten([sketch._faces.moved(loc).Faces() for loc in locs])
+        if sketch._faces:  # pylint:disable=protected-access
+            objs = flatten([sketch._faces.moved(loc).Faces() for loc in locs])  # pylint:disable=protected-access
         else:
-            objs = [edge.moved(loc) for edge in sketch._edges for loc in locs]
+            objs = [edge.moved(loc) for edge in sketch._edges for loc in locs]  # pylint:disable=protected-access
 
         return [obj.wrapped for obj in objs]
 
@@ -205,7 +203,10 @@ def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
 
 
 def _from_wirelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
-    return Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)
+    result = Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)
+    if show_parent:
+        result = _parent(cad_obj, obj_id) + result
+    return result
 
 
 def _from_vector(vec, obj_id, name="Vector"):
@@ -233,7 +234,8 @@ def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=T
     return result
 
 
-def _from_sketch(cad_obj, obj_id, name="Sketch", color=None, show_parent=True, show_selection=True):
+# pylint:disable=protected-access
+def _from_sketch(cad_obj, obj_id, show_parent=True, show_selection=True):
 
     result = []
 
@@ -340,7 +342,10 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
 
 
 def _from_workplane(cad_obj, obj_id, name="Part", default_color=None, show_parent=False):
-    return Part(cad_obj, "%s_%d" % (name, obj_id), color=Color(default_color))
+    result = Part(cad_obj, "%s_%d" % (name, obj_id), color=Color(default_color))
+    # if show_parent:
+    #     result = _parent(cad_obj, obj_id) + result
+    return result
 
 
 def _is_facelist(cad_obj):

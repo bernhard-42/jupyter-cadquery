@@ -75,7 +75,7 @@ class Defaults:
 
         for k, v in kwargs.items():
             if self.get_default(k, "") == "":
-                print("Paramater %s is not a valid argument for show()" % k)
+                print(f"Paramater {k} is not a valid argument for show()")
             else:
                 # if k == "zoom" and v == 1.0:
                 #     # for zoom == 1 viewing has a bug, so slightly increase it
