@@ -26,9 +26,8 @@ HASH_CODE_MAX = 2147483647
 
 
 class BoundingBox(object):
-    def __init__(self, obj=None, optimal=False, tol=1e-5):
+    def __init__(self, obj=None, optimal=False):
         self.optimal = optimal
-        self.tol = tol
         if obj is None:
             self.xmin = self.xmax = self.ymin = self.ymax = self.zmin = self.zmax = 0
         elif isinstance(obj, BoundingBox):
@@ -46,12 +45,12 @@ class BoundingBox(object):
             self.zmin = obj["zmin"]
             self.zmax = obj["zmax"]
         else:
-            bbox = self._bounding_box(obj, tol)
+            bbox = self._bounding_box(obj)
             self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax = bbox
 
         self._calc()
 
-    def _bounding_box(self, obj, tol=1e-5):
+    def _bounding_box(self, obj):
         bbox = Bnd_Box()
         if self.optimal:
             BRepTools.Clean_s(obj)
@@ -72,7 +71,7 @@ class BoundingBox(object):
         )
         self.max = max([abs(x) for x in (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax)])
 
-    def is_empty(self, eps=0.01):
+    def is_empty(self):
         return (
             (abs(self.xmax - self.xmin) < 0.01)
             and (abs(self.ymax - self.ymin) < 0.01)
