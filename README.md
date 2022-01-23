@@ -6,7 +6,7 @@ View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or i
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v3.0.0rc0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/release3?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Release v3.0.0rc0 (23.01.2022)
 
