@@ -139,8 +139,8 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
    Note:
 
-   - the top half is the standalone viewer in a browser window
-   - the bottom half is the CadQuery code being debugged in VS Code
+   - The top half is the CadQuery code being debugged in VS Code
+   - The bottom half is the standalone viewer in a browser window
    - The `show` command in the code will tessellate the objects and send them via [zmq](https://pyzmq.readthedocs.io/en/latest/) to the standalone viewer
 
 ## Installation and Usage
