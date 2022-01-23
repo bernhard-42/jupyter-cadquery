@@ -2,47 +2,101 @@
 
 View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or in a standalone viewer for any IDE
 
-![Overview](screenshots/0_intro.png)
+![Overview](screenshots/jupyter-cadquery.png)
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v3.0.0rc0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Release v3.0.0rc0 (07.10.2021)
+## Release v3.0.0rc0 (23.01.2022)
 
-- **New features**
+Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[pythreejs](https://github.com/jupyter-widgets/pythreejs)_ and JupyterLab's _[sidecar](https://github.com/jupyter-widgets/jupyterlab-sidecar)_ looked reasonable in 2019, it turned out they had too many limitations. _pythreejs_ is stuck with an outdated version of _[threejs](https://github.com/mrdoob/three.js/)_ and the _sidecar_ project did not improve usability to a level I would have liked to have.
 
-  - tbd
+_Jupyter-CadQuery_ is now a 3 layer project:
 
-- **Fixes**
+1. **[three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)**
+   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html).
 
-  - tbd
+2. **[cad-view-widget](https://github.com/bernhard-42/cad-viewer-widget)**
+   A thin layer on top of _cad-viewer-widget_ that wraps the CAD viewer into an [ipywidget](https://github.com/jupyter-widgets/ipywidgets). The API documentation can be found [here](https://bernhard-42.github.io/cad-viewer-widget/cad_viewer_widget/index.html)
+
+3. **jupyter-cadquery** (this repository)
+   The actual CadQuery viewer, collecting and tessellating CadQuery objects, using _cad-view-widget_ to visualize the objects. It was written with the intent to be as compatible with Jupyter-CadQuery 2.x as reasonable. For changes se the migration section below.
+
+**New features**
+
+- CadQuery feature support
+
+  - Supports the latest **CadQuery Sketch class**.
+
+- New CAD View Controller
+
+  - Besides the _orbit_ controller (with z-axis being restricted to show up) it now also supports a **_trackball_ controller** with full freedom of moving the CAD objects. The trackball controller uses the holroyd algorithm (see e.g. [here](https://www.mattkeeter.com/projects/rotation/)) to have better control of movements and avoid the usual trackball tumpling.
+
+- A full reimplementation of Sidecar:
+
+  - Will be **reused based on name** of the sidecar
+  - **Supports differnet anchors** (_right_, _split-right_, _split-left_, _split-top_, _split-bottom_).
+
+- WebGL contexts
+
+  - In a browser only a limited number of WebGL context can be shown at the same time (e.g. 16 in Chrome on my Mac). Hence, _Jupyter-CadQuery_ now thoroughly tracks WebGL contexts, i.e. **releases WebGL context** when sidecar gets closed.
+
+- Replay mode
+
+  - Supports **CadQuery Sketch class**.
+  - Replay mode now can **show bounding box** instead of result to compare step with result.
+
+- New features
+
+  - _Jupyter-CadQuery_ now allows to **show all three grids (xy, xz, yz)**
+  - CAD viewer icons are scalable svg icons.
+
+- Clipping
+
+  - Clipping supports an **intersection mode**.
+
+- Animation Controller
+  - The animation controller is now part of the Javascript component.
+
+**Fixes**
+
+- more than I can remember (or am willing to read out of git log) ...
 
 ## Migration from 2.x
 
-Deprecations:
+**Deprecations:**
 
 - Import structure changed:
-  - `from jupyter_cadquery.cadquery import show, ...` will raise a deprecation error. Use `from jupyter_cadquery import show, ...` instead.
-  - `from jupyter_cadquery.occ import show, ...` will raise a deprecation error. Use `from jupyter_cadquery import show, ...` instead.
-  - `from jupyter_cadquery.animation import Animation` will raise a deprecation error. Use `from jupyter_cadquery.cad_animation import Animation` instead.
-- `set_sidecar(title, init=True)` will raise a deprecation error: Use `open_viewer(title)` instead.
-- `close_sidecar()` will raise a deprecation error: Use `close_viewer(title)` instead.
-- `close_sidecars()` will raise a deprecation error: Use `close_viewers(title)` instead.
-- Parameter `grid` is now a tuple `(xy-grid, xz-grid, yz-grid)` instead of a boolean. A deprecation warning will be shown and the tuple `(grid, False, False)` used to invoke the old behaviour.
+  - `from jupyter_cadquery.cadquery import show, ...` will raise a deprecation error:
+    Use `from jupyter_cadquery import show, ...` instead.
+  - `from jupyter_cadquery.occ import show, ...` will raise a deprecation error:
+    Use `from jupyter_cadquery import show, ...` instead.
+  - `from jupyter_cadquery.animation import Animation` will raise a deprecation error:
+    Use `from jupyter_cadquery.cad_animation import Animation` instead.
+- Sidecar handling changed
+  - `set_sidecar(title, init=True)` will raise a deprecation error:
+    Use `open_viewer(title)` instead.
+  - `close_sidecar()` will raise a deprecation error:
+    Use `close_viewer(title)` instead.
+  - `close_sidecars()` will raise a deprecation error:
+    Use `close_viewers(title)` instead.
+- Change parameters:
+  - Parameter `grid` is now a tuple `(xy-grid, xz-grid, yz-grid)` instead of a boolean. A deprecation warning will be shown and the tuple `(grid, False, False)` used to invoke the old behaviour.
 
-Changed behaviour:
+**Changed behaviour:**
 
 - The replay mode now shows the result's bounding box as top level step by default instead of the result. Use `show_result=True` for the old behaviour.
 - New parameters `viewer` and `anchor` of function `show` set a sidecar (with title <viewer>) and `anchor` to determine location of the sidecar (`right`, `split-right`, `split-left`, `split-top`, `split-bottom`).
 - The parameter `rotation` of function `show` has been replaced by `quaternion`, since the new viewer uses quaternions instead of Euler angles.
 - In 7.5 of opencascade something changed with color handling, so some colors might be different.
+- The default view does not render the back material, making transparent views brighter. When switching to clipping view, the back material will set to the edge color to give the impression of cut planes. This means that transparent object look darker.
 
-Not supported any more:
+**Parameters of function `show` and `set_defaults` not supported any more:**
 
-- Parameter `mac_scrollbar` of function `show` and `set_defaults`: Used as default now.
-- Parameter `bb_factor` of function `show` and `set_defaults`: Not necessary any more, removed.
-- Parameter `display` of function `show` and `set_defaults`: Use `viewer="<viewer title>"` (for sidecar display) or `viewer=None` (for cell display).
+- `mac_scrollbar`: This is used as default now.
+- `bb_factor`: Not necessary any more.
+- `display`: For sidecar display use `viewer="<viewer title>"` and for cell display use `viewer=None`.
 
 ## Key Features
 
