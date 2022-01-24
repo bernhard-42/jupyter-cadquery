@@ -464,7 +464,7 @@ def _show(part_group, **kwargs):
                 else:
                     bb = _combined_bb(shapes).to_dict()
 
-                # derive the top level stes path part
+                # derive the top level states path part
                 prefix = list(states)[0].split("/")[1]
 
                 bbox = {

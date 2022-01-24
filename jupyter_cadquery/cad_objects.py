@@ -500,7 +500,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
                          If None, uses: (xlen + ylen + zlen) / 300 * deviation)
     - deviation:         Deviation from default for linear deflection value ((default=0.1)
     - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
-    - edge_accuracy:     Presicion of edge discretizaion (default=None)
+    - edge_accuracy:     Precision of edge discretization (default=None)
                          If None, uses: quality / 100
     - optimal_bb:        Use optimal bounding box (default=False)
     - axes:              Show axes (default=False)
@@ -509,7 +509,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - ticks:             Hint for the number of ticks in both directions (default=10)
     - ortho:             Use orthographic projections (default=True)
     - transparent:       Show objects transparent (default=False)
-    - ambient_intensity  Intensity of ambient ligth (default=1.0)
+    - ambient_intensity  Intensity of ambient light (default=1.0)
     - direct_intensity   Intensity of direct lights (default=0.12)
     - position:          Relative camera position that will be scaled (default=(1, 1, 1))
     - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))

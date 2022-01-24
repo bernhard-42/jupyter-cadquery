@@ -15,7 +15,7 @@ Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[
 _Jupyter-CadQuery_ is now a 3 layer project:
 
 1. **[three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)**
-   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html). This layer ould alos serve as the viewer for a CadQuery integration into VS Code (anybody willing to give it a try?)
+   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html). This layer could also serve as the viewer for a CadQuery integration into VS Code (anybody willing to give it a try?)
 
 2. **[cad-view-widget](https://github.com/bernhard-42/cad-viewer-widget)**
    A thin layer on top of _cad-viewer-widget_ that wraps the CAD viewer into an [ipywidget](https://github.com/jupyter-widgets/ipywidgets). The API documentation can be found [here](https://bernhard-42.github.io/cad-viewer-widget/cad_viewer_widget/index.html)
@@ -35,12 +35,13 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
 - New CAD View Controller
 
-  - Besides the _orbit_ controller (with z-axis being restricted to show up) it now also supports a **_trackball_ controller** with full freedom of moving the CAD objects. The trackball controller uses the holroyd algorithm (see e.g. [here](https://www.mattkeeter.com/projects/rotation/)) to have better control of movements and avoid the usual trackball tumpling.
+  - Besides the _orbit_ controller (with z-axis being restricted to show up) it now also supports a **_trackball_ controller** with full freedom of moving the CAD objects. The trackball controller uses the holroyd algorithm (see e.g. [here](https://www.mattkeeter.com/projects/rotation/)) to have better control of movements and avoid the usual trackball tumbling.
 
-- A full reimplementation of Sidecar:
+- A full re-implementation of Sidecar:
 
-  - Will be **reused based on name** of the sidecar
-  - **Supports differnet anchors** (_right_, _split-right_, _split-left_, _split-top_, _split-bottom_).
+  - Sidecars will be **reused based on name** of the sidecar
+  - **Supports different anchors** (_right_, _split-right_, _split-left_, _split-top_, _split-bottom_).
+  - Sidecars open "right" will adapt the size to the the size of the CAD view
 
 - WebGL contexts
 
@@ -86,11 +87,11 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - `close_sidecars()` will raise a deprecation error:
     Use `close_viewers(title)` instead.
 - Change parameters:
-  - Parameter `grid` is now a tuple `(xy-grid, xz-grid, yz-grid)` instead of a boolean. A deprecation warning will be shown and the tuple `(grid, False, False)` used to invoke the old behaviour.
+  - Parameter `grid` is now a tuple `(xy-grid, xz-grid, yz-grid)` instead of a boolean. A deprecation warning will be shown and the tuple `(grid, False, False)` used to invoke the old behavior.
 
-**Changed behaviour:**
+**Changed behavior:**
 
-- The replay mode now shows the result's bounding box as top level step by default instead of the result. Use `show_result=True` for the old behaviour.
+- The replay mode now shows the result's bounding box as top level step by default instead of the result. Use `show_result=True` for the old behavior.
 - New parameters `viewer` and `anchor` of function `show` set a sidecar (with title <viewer>) and `anchor` to determine location of the sidecar (`right`, `split-right`, `split-left`, `split-top`, `split-bottom`).
 - The parameter `rotation` of function `show` has been replaced by `quaternion`, since the new viewer uses quaternions instead of Euler angles.
 - In 7.5 of opencascade something changed with color handling, so some colors might be different.
@@ -110,7 +111,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - In a central Jupyterlab sidecar for any JupyterLab cell (see example 1 below)
   - As a standalone viewer for use from any IDE (see example 2 below)
 - Viewer features
-  - Toggle visibilty of shapes and edges
+  - Toggle visibility of shapes and edges
   - Orthographic and perspective view
   - Clipping with max 3 clipping planes (of free orientation)
   - Transparency mode
@@ -198,7 +199,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      In your code import the `show` or `show_object` function from the viewer:
 
      ```python
-     import cadqueray as cq
+     import cadquery as cq
      from jupyter_cadquery.viewer.client import show, show_object
 
      obj = cq. ...
@@ -234,7 +235,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      In your code import the `show` or `show_object` function from the viewer:
 
      ```python
-     import cadqueray as cq
+     import cadquery as cq
      from jupyter_cadquery.viewer.client import show, show_object
 
      obj = cq. ...
@@ -283,7 +284,7 @@ _(animated gifs)_
   - `quality`: Linear deflection for tessellation (default=None). If None, uses: (xlen + ylen + zlen) / 300 \* deviation)
   - `deviation`: Deviation from default for linear deflection value ((default=0.1)
   - `angular_tolerance`: Angular deflection in radians for tessellation (default=0.2)
-  - `edge_accuracy`: Presicion of edge discretizaion (default=None). If None, uses: quality / 100
+  - `edge_accuracy`: Precision of edge discretizaion (default=None). If None, uses: quality / 100
   - `optimal_bb`: Use optimal bounding box (default=False)
   - `axes`: Show axes (default=False)
   - `axes0`: Show axes at (0,0,0) (default=False)
@@ -291,7 +292,7 @@ _(animated gifs)_
   - `ticks`: Hint for the number of ticks in both directions (default=10)
   - `ortho`: Use orthographic projections (default=True)
   - `transparent`: Show objects transparent (default=False)
-  - `ambient_intensity` Intensity of ambient ligth (default=1.0)
+  - `ambient_intensity` Intensity of ambient light (default=1.0)
   - `direct_intensity` Intensity of direct lights (default=0.12)
   - `position`: Relative camera position that will be scaled (default=(1, 1, 1))
   - `rotation`: z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
