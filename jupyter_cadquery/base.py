@@ -474,6 +474,7 @@ def _show(part_group, **kwargs):
                     "shape": bbox_edges(bb),
                     "color": "#808080",
                     "width": 1,
+                    "bb": bb,
                 }
                 # inject bounding box into shapes
                 shapes["parts"].insert(0, bbox)

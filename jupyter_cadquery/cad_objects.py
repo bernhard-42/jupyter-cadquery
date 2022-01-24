@@ -530,8 +530,8 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     """
     preset = lambda key, value: get_default(key) if value is None else value
 
-    render_mates = preset("render_mates", kwargs.get("render_mates"))
-    mate_scale = preset("mate_scale", kwargs.get("mate_scale"))
+    render_mates = preset("render_mates", render_mates)
+    mate_scale = preset("mate_scale", mate_scale)
     default_color = preset("default_color", kwargs.get("default_color"))
     show_parent = preset("show_parent", kwargs.get("show_parent"))
 
