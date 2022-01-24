@@ -6,7 +6,7 @@ View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or i
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v3.0.0rc0?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/release3?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
 ## Release v3.0.0rc0 (23.01.2022)
 
@@ -15,7 +15,7 @@ Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[
 _Jupyter-CadQuery_ is now a 3 layer project:
 
 1. **[three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)**
-   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html).
+   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html). This layer ould alos serve as the viewer for a CadQuery integration into VS Code (anybody willing to give it a try?)
 
 2. **[cad-view-widget](https://github.com/bernhard-42/cad-viewer-widget)**
    A thin layer on top of _cad-viewer-widget_ that wraps the CAD viewer into an [ipywidget](https://github.com/jupyter-widgets/ipywidgets). The API documentation can be found [here](https://bernhard-42.github.io/cad-viewer-widget/cad_viewer_widget/index.html)
@@ -24,6 +24,10 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    The actual CadQuery viewer, collecting and tessellating CadQuery objects, using _cad-view-widget_ to visualize the objects. It was written with the intent to be as compatible with Jupyter-CadQuery 2.x as reasonable. For changes se the migration section below.
 
 **New features**
+
+- Performance
+
+  - By removing the back and forth communication from pythreejs (Python) to Javascript (threejs), the new version is significantly faster in showing multi object assemblies.
 
 - CadQuery feature support
 
