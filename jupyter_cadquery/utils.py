@@ -1,3 +1,4 @@
+import json
 import math
 import numpy as np
 import time
@@ -56,6 +57,21 @@ def explode(edge_list):
 
 def flatten(nested_list):
     return [y for x in nested_list for y in x]
+
+
+def numpy_to_json(obj, indent=None):
+    class NumpyArrayEncoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, np.integer):
+                return int(o)
+            if isinstance(o, np.floating):
+                return float(o)
+            if isinstance(o, np.ndarray):
+                return o.tolist()
+
+            return super(NumpyArrayEncoder, self).default(o)
+
+    return json.dumps(obj, cls=NumpyArrayEncoder, indent=indent)
 
 
 # CAD helpers
