@@ -10,7 +10,7 @@ RUN conda create -n cq -c default -c conda-forge -c cadquery python=3.8 cadquery
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 RUN . "/opt/conda/etc/profile.d/conda.sh" && conda activate cq && \
-    pip install jupyter-cadquery==3.0.0rc0 cadquery-massembly~=0.9 voila~=0.2 orbitcontrol-patch~=0.1.0 && \
+    pip install jupyter-cadquery==3.0.0rc1 cadquery-massembly~=0.9 voila~=0.2 orbitcontrol-patch~=0.1.0 && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 VOLUME /home/cq/
