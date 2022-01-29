@@ -66,7 +66,7 @@ class Context(object):
         self.kwargs = None
         self.obj = None
         self.shadow_obj = None
-        self.children = None
+        self.children = []
 
     def _to_dict(self, func, args, kwargs, obj, children, shadow_obj=None):
         return {
