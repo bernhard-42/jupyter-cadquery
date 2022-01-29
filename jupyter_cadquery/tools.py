@@ -2,7 +2,11 @@ import html
 
 import numpy as np
 import cadquery as cq
+
 from jupyter_cadquery import Part, PartGroup, Faces, Edges, Vertices, show
+from jupyter_cadquery.cad_objects import to_assembly
+from jupyter_cadquery.base import _tessellate_group
+from .utils import numpy_to_json
 
 # pylint: disable=protected-access
 # pylint: disable=unnecessary-lambda
@@ -159,3 +163,8 @@ def show_accuracy(assy, cs):
         results.append((kind, label, nrm_dist, nrm_angle, pnt_dist))
 
     print_metric(results)
+
+
+def cq_to_json(obj, indent=None):
+    shapes, states = _tessellate_group(to_assembly(obj), {}, None, False)
+    return [numpy_to_json(shapes, indent=indent), states]
