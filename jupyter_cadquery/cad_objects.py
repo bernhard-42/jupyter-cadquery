@@ -56,6 +56,7 @@ class Part(_Part):
     def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
         if color is None:
             color = get_default("default_color")
+        self.cq_shape = shape
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -69,6 +70,7 @@ class Part(_Part):
 
 class Faces(_Faces):
     def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
+        self.cq_shape = faces
         super().__init__(_to_occ(faces.combine()), name, color, show_faces, show_edges)
 
     def to_assembly(self):
@@ -82,6 +84,7 @@ class Faces(_Faces):
 
 class Edges(_Edges):
     def __init__(self, edges, name="Edges", color=None, width=1):
+        self.cq_shape = edges
         super().__init__(_to_occ(edges), name, color, width)
 
     def to_assembly(self):
@@ -95,6 +98,7 @@ class Edges(_Edges):
 
 class Vertices(_Vertices):
     def __init__(self, vertices, name="Vertices", color=None, size=1):
+        self.cq_shape = vertices
         super().__init__(_to_occ(vertices), name, color, size)
 
     def to_assembly(self):
@@ -120,6 +124,13 @@ class PartGroup(_PartGroup):
 
     def add_list(self, cad_objs):
         self.objects += cad_objs
+
+    def get_pick(self, pick):
+        objs = [o for o in self.objects if o.id == f'{pick["path"]}/{pick["name"]}']
+        if objs:
+            return objs[0].cq_shape
+        else:
+            print(f"no object found for pick {pick}")
 
 
 class Assembly(PartGroup):
