@@ -56,13 +56,10 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
   - _Jupyter-CadQuery_ now allows to **show all three grids (xy, xz, yz)**
   - CAD viewer icons are scalable svg icons.
-
-- Clipping
-
   - Clipping supports an **intersection mode**.
-
-- Animation Controller
   - The animation controller is now part of the Javascript component.
+  - export_html exports the whole view (with tools) as a HTML page
+  - export_png export the CAD view (without tools) as a PNG
 
 **Fixes**
 
