@@ -231,7 +231,7 @@ hexapod.assemble("top", "bottom")
 for stand_name in stand_names:
     hexapod.assemble(f"{stand_name}", f"{stand_name}_bottom")
 
-show(hexapod)
+show(hexapod, render_mates=True, mate_scale=5)
 
 # Animation
 
