@@ -54,6 +54,8 @@ class Viewer:
         self.interactive = None
         self.zmq_server = None
         self.log_output = widgets.Output(layout=widgets.Layout(height="400px", overflow="scroll"))
+        self.splash = None
+        self.log_view = None
 
     def _display(self, data, logo=False):
         mesh_data = data["data"]
@@ -94,11 +96,11 @@ class Viewer:
             self.splash = False
 
         kwargs = add_shape_args(config)
-        # del kwargs["viewer"]
-        # del kwargs["anchor"]
+
+        self.viewer.clear_tracks()
         self.viewer.add_shapes(**mesh_data, **kwargs)
-        info(create_args(config), add_shape_args(config))
-        # self.viewer.info.ready_msg(self.viewer.cq_view.grid.step)
+        info(create_args(config))
+        info(add_shape_args(config))
 
     def start_viewer(self, cad_width, cad_height, theme):
         info(f"zmq_port:   {self.zmq_port}")
@@ -165,8 +167,8 @@ class Viewer:
                     try:
                         t = time.time()
                         for track in data["data"]:
-                            info(track)
                             self.viewer.add_track(AnimationTrack(*track))
+
                         self.viewer.animate(data["config"]["speed"])
                         return_success(t)
 
