@@ -107,6 +107,14 @@ def _convert(*cad_objs, **kwargs):
 
     shapes, states = _tessellate_group(part_group, kwargs, Progress(), config.get("timeit"))
 
+    config["normal_len"] = get_normal_len(
+        preset("render_normals", config.get("render_normals")), shapes, preset("deviation", config.get("deviation")),
+    )
+
+    show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
+    if show_bbox:
+        insert_bbox(show_bbox, shapes, states)
+
     data = {
         "data": dict(shapes=shapes, states=states),
         "type": "data",

@@ -395,6 +395,40 @@ def get_accuracy(shapes):
     return accuracies
 
 
+def get_normal_len(render_normals, shapes, deviation):
+    if render_normals:
+        accuracies = get_accuracies(shapes)
+        normal_len = max(accuracies.values()) / deviation * 4
+    else:
+        normal_len = 0
+
+    return normal_len
+
+
+def insert_bbox(show_bbox, shapes, states):
+    if isinstance(show_bbox, dict):
+        bb = show_bbox
+    else:
+        bb = _combined_bb(shapes).to_dict()
+
+    # derive the top level states path part
+    prefix = list(states)[0].split("/")[1]
+
+    bbox = {
+        "id": f"/{prefix}/BoundingBox",
+        "type": "edges",
+        "name": "BoundingBox",
+        "shape": bbox_edges(bb),
+        "color": "#808080",
+        "width": 1,
+        "bb": bb,
+    }
+    # inject bounding box into shapes
+    shapes["parts"].insert(0, bbox)
+    # and states
+    states[f"/{prefix}/BoundingBox"] = [3, 1]
+
+
 def _show(part_group, **kwargs):
     preset = lambda key, value: get_default(key) if value is None else value
 
@@ -449,37 +483,16 @@ def _show(part_group, **kwargs):
                 shapes, states = _tessellate_group(part_group, tessellation_args(config), progress, timeit)
 
             # Calculate normal length
-            render_normals = preset("render_normals", config.get("render_normals"))
 
-            if render_normals:
-                accuracies = get_accuracy(shapes)
-                config["normal_len"] = max(accuracies.values()) / preset("deviation", config.get("deviation")) * 4
-            else:
-                config["normal_len"] = 0
+            config["normal_len"] = get_normal_len(
+                preset("render_normals", config.get("render_normals")),
+                shapes,
+                preset("deviation", config.get("deviation")),
+            )
 
             show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
             if show_bbox:
-                if isinstance(show_bbox, dict):
-                    bb = show_bbox
-                else:
-                    bb = _combined_bb(shapes).to_dict()
-
-                # derive the top level states path part
-                prefix = list(states)[0].split("/")[1]
-
-                bbox = {
-                    "id": f"/{prefix}/BoundingBox",
-                    "type": "edges",
-                    "name": "BoundingBox",
-                    "shape": bbox_edges(bb),
-                    "color": "#808080",
-                    "width": 1,
-                    "bb": bb,
-                }
-                # inject bounding box into shapes
-                shapes["parts"].insert(0, bbox)
-                # and states
-                states[f"/{prefix}/BoundingBox"] = [3, 1]
+                insert_bbox(show_bbox, shapes, states)
 
         with Timer(timeit, "", "show shapes", 1):
             cv = viewer_show(shapes, states, **show_args(config))
