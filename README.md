@@ -54,7 +54,8 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
 - New features
 
-  - _Jupyter-CadQuery_ now allows to **show all three grids (xy, xz, yz)**
+  - _Jupyter-CadQuery_ now allows to **show all three grids (xy, xz, yz)**.
+  - `show_bbox` additionally shows the bounding box.
   - CAD viewer icons are scalable svg icons.
   - Clipping supports an **intersection mode**.
   - The animation controller is now part of the Javascript component.
@@ -91,6 +92,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 - The replay mode now shows the result's bounding box as top level step by default instead of the result. Use `show_result=True` for the old behavior.
 - New parameters `viewer` and `anchor` of function `show` set a sidecar (with title <viewer>) and `anchor` to determine location of the sidecar (`right`, `split-right`, `split-left`, `split-top`, `split-bottom`).
 - The parameter `rotation` of function `show` has been replaced by `quaternion`, since the new viewer uses quaternions instead of Euler angles.
+- The parameter `quality` is ignored. Use `deviation` to control smoothness of rendered edges.
 - In 7.5 of opencascade something changed with color handling, so some colors might be different.
 - The default view does not render the back material, making transparent views brighter. When switching to clipping view, the back material will set to the edge color to give the impression of cut planes. This means that transparent object look darker.
 
