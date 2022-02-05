@@ -16,9 +16,9 @@
 
 from jupyter_cadquery import PartGroup, Part
 from jupyter_cadquery.cad_objects import to_assembly
-from jupyter_cadquery.base import _tessellate_group
-from jupyter_cadquery.defaults import get_default, get_defaults
-from jupyter_cadquery.utils import Color
+from jupyter_cadquery.base import _tessellate_group, get_normal_len, insert_bbox
+from jupyter_cadquery.defaults import get_default, get_defaults, preset
+
 
 import pickle
 import zmq
@@ -102,9 +102,6 @@ def _convert(*cad_objs, **kwargs):
         if v is not None:
             config[k] = v
 
-    # config["edge_color"] = Color(config["default_edge_color"]).web_color
-    # del config["default_edgecolor"]
-
     shapes, states = _tessellate_group(part_group, kwargs, Progress(), config.get("timeit"))
 
     config["normal_len"] = get_normal_len(
@@ -153,12 +150,9 @@ def show(*cad_objs, **kwargs):
     - render_normals:    Render normals (default=False)
     - render_mates:      Render mates (for MAssemblies)
     - mate_scale:        Scale of rendered mates (for MAssemblies)
-    - quality:           Linear deflection for tessellation (default=None)
-                         If None, uses bounding box as in (xlen + ylen + zlen) / 300 * deviation)
     - deviation:         Deviation from default for linear deflection value ((default=0.1)
     - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
-    - edge_accuracy:     Presicion of edge discretizaion (default=None)
-                         If None, uses: quality / 100
+    - edge_accuracy:     Presicion of edge discretizaion (default=None). If None, uses: quality / 100
     - optimal_bb:        Use optimal bounding box (default=False)
     - axes:              Show axes (default=False)
     - axes0:             Show axes at (0,0,0) (default=False)
@@ -177,6 +171,12 @@ def show(*cad_objs, **kwargs):
     - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
+    
+    NOT SUPPORTED ANY MORE:
+    - mac_scrollbar      The default now
+    - bb_factor:         Removed
+    - display            Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
+    - quality            Use 'deviation'to control smoothness of rendered egdes
     """
 
     data = _convert(*cad_objs, **kwargs)

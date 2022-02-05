@@ -63,6 +63,7 @@ class Defaults:
         - show_bbox:         Show bounding box (default=False)
         - viewer:            Name of the sidecar viewer
         - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
+        - pinning:           Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
         - theme:             Theme "light" or "dark" (default="light")
         - tools:             Show the viewer tools like the object tree
         - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
@@ -77,17 +78,7 @@ class Defaults:
             if self.get_default(k, "") == "":
                 print(f"Paramater {k} is not a valid argument for show()")
             else:
-                # if k == "zoom" and v == 1.0:
-                #     # for zoom == 1 viewing has a bug, so slightly increase it
-                #     v = 1 + 1e-6
                 self.defaults[k] = v
-
-        # if kwargs.get("display") == "html":
-        #     self.defaults["tools"] = False
-        #     from IPython.display import HTML, display
-        #     from ipywidgets.embed import DEFAULT_EMBED_REQUIREJS_URL
-
-        #     display(HTML(f"""<script src="{DEFAULT_EMBED_REQUIREJS_URL}" crossorigin="anonymous"></script>"""))
 
     def reset_defaults(self):
         self.defaults = {
@@ -99,6 +90,7 @@ class Defaults:
             "tree_width": 250,
             "height": 600,
             "theme": "light",
+            "pinning": False,
             #
             # render options
             "default_color": (232, 176, 36),
@@ -177,7 +169,7 @@ def create_args(config):
     return {
         adapt(k): v
         for k, v in config.items()
-        if k in ["viewer", "title", "anchor", "cad_width", "tree_width", "height", "theme",]
+        if k in ["viewer", "title", "anchor", "cad_width", "tree_width", "height", "theme", "pinning"]
     }
 
 
@@ -202,6 +194,8 @@ def add_shape_args(config):
             "zoom",
             "ambient_intensity",
             "direct_intensity",
+            "default_edge_color",
+            "normal_len",
             "zoom_speed",
             "pan_speed",
             "rotate_speed",
@@ -245,6 +239,10 @@ def show_args(config):
     if config.get("normal_len") is not None:
         args["normal_len"] = config["normal_len"]
     return args
+
+
+def preset(key, value):
+    return get_default(key) if value is None else value
 
 
 DEFAULTS = Defaults()

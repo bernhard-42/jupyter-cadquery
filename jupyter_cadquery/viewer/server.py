@@ -111,7 +111,7 @@ class Viewer:
         # remove jupyter cadquery start message
         clear_output()
 
-        self.viewer = show(theme=theme, cad_width=cad_width, height=cad_height)
+        self.viewer = show(theme=theme, cad_width=cad_width, height=cad_height, pinning=False)
         self.splash = True
 
         self.log_view = widgets.Accordion(children=[self.log_output])

@@ -28,6 +28,7 @@ from jupyter_cadquery.defaults import (
     add_shape_args,
     tessellation_args,
     show_args,
+    preset,
 )
 
 
@@ -346,7 +347,6 @@ class _PartGroup(_CADObject):
 
 
 def _tessellate_group(group, kwargs=None, progress=None, timeit=False):
-    preset = lambda key, value: get_default(key) if value is None else value
     if kwargs is None:
         kwargs = {}
 
@@ -382,7 +382,7 @@ def _combined_bb(shapes):
     return bb
 
 
-def get_accuracy(shapes):
+def get_accuracies(shapes):
     def _get_normal_len(shapes, lengths):
         if shapes.get("parts"):
             for shape in shapes["parts"]:
@@ -430,8 +430,6 @@ def insert_bbox(show_bbox, shapes, states):
 
 
 def _show(part_group, **kwargs):
-    preset = lambda key, value: get_default(key) if value is None else value
-
     for k in kwargs:
         if get_default(k, "n/a") == "n/a":
             raise KeyError(f"Paramater {k} is not a valid argument for show()")
@@ -447,6 +445,9 @@ def _show(part_group, **kwargs):
     if kwargs.get("tree_width") is not None and kwargs.get("tree_width") < 250:
         warn("tree_width has to be >= 250, setting to 250")
         kwargs["tree_width"] = 250
+
+    if kwargs.get("quality") is not None:
+        warn("Parameter quality is deprecated and ignored. Use deviation to control smoothness of edges")
 
     timeit = preset("timeit", kwargs.get("timeit"))
 

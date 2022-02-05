@@ -38,7 +38,7 @@ from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, 
 
 from .utils import Color, flatten, warn
 from .ocp_utils import get_rgb, is_compound
-from .defaults import get_default
+from .defaults import get_default, preset
 
 
 EDGE_COLOR = "Silver"
@@ -507,12 +507,9 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - render_normals:    Render normals (default=False)
     - render_mates:      Render mates (for MAssemblies)
     - mate_scale:        Scale of rendered mates (for MAssemblies)
-    - quality:           Linear deflection for tessellation (default=None)
-                         If None, uses: (xlen + ylen + zlen) / 300 * deviation)
     - deviation:         Deviation from default for linear deflection value ((default=0.1)
     - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
-    - edge_accuracy:     Precision of edge discretization (default=None)
-                         If None, uses: quality / 100
+    - edge_accuracy:     Precision of edge discretization (default=None). If None, uses: quality / 100
     - optimal_bb:        Use optimal bounding box (default=False)
     - axes:              Show axes (default=False)
     - axes0:             Show axes at (0,0,0) (default=False)
@@ -530,6 +527,7 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - show_bbox:         Show bounding box (default=False)
     - viewer:            Name of the sidecar viewer
     - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
+    - pinning:           Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
     - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
@@ -538,8 +536,8 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - mac_scrollbar      The default now
     - bb_factor:         Removed
     - display            Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
+    - quality            Use 'deviation'to control smoothness of rendered egdes
     """
-    preset = lambda key, value: get_default(key) if value is None else value
 
     render_mates = preset("render_mates", render_mates)
     mate_scale = preset("mate_scale", mate_scale)
