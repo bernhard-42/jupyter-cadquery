@@ -64,9 +64,7 @@ class _CADObject(object):
     def to_state(self):
         raise NotImplementedError("not implemented yet")
 
-    def collect_shapes(
-        self, path, loc, quality, deviation, angular_tolerance, edge_accuracy, render_edges, progress, timeit
-    ):
+    def collect_shapes(self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress, timeit):
         raise NotImplementedError("not implemented yet")
 
 
@@ -89,16 +87,7 @@ class _Part(_CADObject):
         return [self.state_faces, self.state_edges]
 
     def collect_shapes(
-        self,
-        path,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        progress=None,
-        timeit=False,
+        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
     ):
         self.id = f"{path}/{self.name}"
 
@@ -108,7 +97,7 @@ class _Part(_CADObject):
             bb = bounding_box(self.shape, loc=loc, optimal=False)
             quality = compute_quality(bb, deviation=deviation)
             t.info = str(bb)
-
+        print(deviation,)
         with Timer(timeit, self.name, "tessellate:     ", 2) as t:
             mesh = tessellate(
                 self.shape,
@@ -178,16 +167,7 @@ class _Edges(_CADObject):
         return [EMPTY, SELECTED]
 
     def collect_shapes(
-        self,
-        path,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        progress=None,
-        timeit=False,
+        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
     ):
         self.id = f"{path}/{self.name}"
 
@@ -229,16 +209,7 @@ class _Vertices(_CADObject):
         return [EMPTY, SELECTED]
 
     def collect_shapes(
-        self,
-        path,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        progress=None,
-        timeit=False,
+        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
     ):
         self.id = f"{path}/{self.name}"
 
@@ -275,16 +246,7 @@ class _PartGroup(_CADObject):
         }
 
     def collect_shapes(
-        self,
-        path,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        progress=None,
-        timeit=False,
+        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
     ):
 
         self.id = f"{path}/{self.name}"
@@ -300,15 +262,7 @@ class _PartGroup(_CADObject):
         for obj in self.objects:
             result["parts"].append(
                 obj.collect_shapes(
-                    self.id,
-                    combined_loc,
-                    quality,
-                    deviation,
-                    angular_tolerance,
-                    edge_accuracy,
-                    render_edges,
-                    progress,
-                    timeit,
+                    self.id, combined_loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress, timeit,
                 )
             )
         return result
@@ -353,7 +307,6 @@ def _tessellate_group(group, kwargs=None, progress=None, timeit=False):
     shapes = group.collect_shapes(
         "",
         None,
-        quality=preset("quality", kwargs.get("quality")),
         deviation=preset("deviation", kwargs.get("deviation")),
         angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
         edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
@@ -447,7 +400,8 @@ def _show(part_group, **kwargs):
         kwargs["tree_width"] = 250
 
     if kwargs.get("quality") is not None:
-        warn("Parameter quality is deprecated and ignored. Use deviation to control smoothness of edges")
+        warn("quality is ignored. Use deviation to control smoothness of edges")
+        del kwargs["quality"]
 
     timeit = preset("timeit", kwargs.get("timeit"))
 

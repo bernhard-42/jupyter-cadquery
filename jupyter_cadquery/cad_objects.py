@@ -507,9 +507,9 @@ def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
     - render_normals:    Render normals (default=False)
     - render_mates:      Render mates (for MAssemblies)
     - mate_scale:        Scale of rendered mates (for MAssemblies)
-    - deviation:         Deviation from default for linear deflection value ((default=0.1)
-    - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
-    - edge_accuracy:     Precision of edge discretization (default=None). If None, uses: quality / 100
+    - deviation:         Shapes: Deviation from linear deflection value (default=0.1)
+    - angular_tolerance: Shapes: Angular deflection in radians for tessellation (default=0.2)
+    - edge_accuracy:     Edges: Precision of edge discretization (default: mesh quality / 100)
     - optimal_bb:        Use optimal bounding box (default=False)
     - axes:              Show axes (default=False)
     - axes0:             Show axes at (0,0,0) (default=False)
