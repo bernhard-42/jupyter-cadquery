@@ -97,7 +97,7 @@ class _Part(_CADObject):
             bb = bounding_box(self.shape, loc=loc, optimal=False)
             quality = compute_quality(bb, deviation=deviation)
             t.info = str(bb)
-        print(deviation,)
+
         with Timer(timeit, self.name, "tessellate:     ", 2) as t:
             mesh = tessellate(
                 self.shape,
