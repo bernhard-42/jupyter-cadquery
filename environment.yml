@@ -8,4 +8,4 @@ dependencies:
   - cadquery=master
   - matplotlib=3.3
   - pip:
-      - jupyter-cadquery==3.0.0rc2
+      - jupyter-cadquery==3.0.0rc3
