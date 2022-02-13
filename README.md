@@ -137,7 +137,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
    ![Animated Hexapod in Sidecar](screenshots/hexapod-crawling.gif)
 
-3. **Debugging in VS Code with Standalone Viewer (dark theme)**
+3. **Debugging in VS Code with Standalone Viewer**
 
    ![Sidecar](screenshots/debugging.gif)
 
@@ -182,17 +182,17 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      If you use the dark theme of JuypterLab, add the following code in the first cell of your notebook:
 
      ```python
-     [1]: from jupyter_cadquery import set_defaults, set_sidecar
+     [1]: from jupyter_cadquery import set_defaults, open_viewer
           set_defaults(theme="dark")
-          set_sidecar("CadQuery", init=True)
+          open_viewer("CadQuery")
      ```
 
    - Run _Jupyter-CadQuery_ as **standalone viewer**
 
      ```bash
      conda activate jcq3
-     jcv     # light theme
-     jcv -d  # dark theme
+     jcv [-w width] [-h height]     # light theme
+     jcv [-w width] [-h height] -d  # dark theme
      ```
 
      In your code import the `show` or `show_object` function from the viewer:
@@ -247,7 +247,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
      - To simplify port forwarding, the viewer in the docker container also starts with port 8888 (and not with voila's default port 8866)
      - Port 5555 (the zmq port) needs to be forwarded. The `show` of the viewer client will send cad objects to this port
-     - Use `-d` for dark mode
+     - Use `-d` for dark mode and `-w`, `-h` to set dimensions of the CAD viewer
 
 ## Demos
 
@@ -403,15 +403,17 @@ Note, this is not supported in the standalone viewer for the time being.
 
 ### e) Export the rendered object as STL:
 
-- OCC
+For CadQuery objects use CadQuery export functions. For `PartGroup`s the following code can be used:
 
-  ```python
-  from jupyter_cadquery import exportSTL
+```python
+from jupyter_cadquery.export import exportSTL
 
-  exportSTL(a1, "a1.stl", linear_deflection=0.01, angular_deflection=0.1)
-  ```
+exportSTL(
+  part_group, "pg.stl", tolerance=quality, angular_tolerance=angular_tolerance
+)
+```
 
-  Smaller `linear_deflection` and `angular_deflection` means more details.
+Smaller `linear_deflection` and `angular_deflection` means more details.
 
 ## Jupyter-CadQuery classes
 
