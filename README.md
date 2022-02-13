@@ -263,15 +263,15 @@ _(animated gifs)_
 
 ### a) Show objects
 
-- `show(cad_objs, **kwargs)`
+**`show(cad_objs, **kwargs)`\*\*
 
-  args:
+_Positional arguments `args`:_
 
-  - `cad_objs`: Comma separated list of cadquery objects; **Note**: For OCP objects only one object is supported
+- `cad_objs`: Comma separated list of cadquery objects;
 
-  kwargs:
+_Keywork arguments `kwargs`:_
 
-  DISPLAY OPTIONS
+- Display options
 
   - `viewer`: Name of the sidecar viewer (default=None)
   - `anchor`: How to open sidecar: "right", "split-right", "split-bottom", ... (default="right")
@@ -281,7 +281,7 @@ _(animated gifs)_
   - `theme`: Theme "light" or "dark" (default="light")
   - `pinning`: Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
 
-  TESSELLATION OPTIONS
+- Tessellation options
 
   - `angular_tolerance`: Shapes: Angular deflection in radians for tessellation (default=0.2)
   - `deviation`: Shapes: Deviation from linear deflection value (default=0.1)
@@ -294,7 +294,7 @@ _(animated gifs)_
   - `render_mates`: Render mates (for MAssemblies, default=False)
   - `mate_scale`: Scale of rendered mates (for MAssemblies, default=1)
 
-  VIEWER OPTIONS
+- Viewer options
 
   - `control`: Use trackball controls ('trackball') or orbit controls ('orbit') (default='trackball')
   - `axes`: Show axes (default=False)
@@ -320,7 +320,7 @@ _(animated gifs)_
   - `timeit`: Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
   - `js_debug`: Enable debug output in browser console (default=False)
 
-  NOT SUPPORTED ANY MORE:
+- Not supported any more:
 
   - `mac_scrollbar`: The default now
   - `bb_factor`: Removed
@@ -329,23 +329,23 @@ _(animated gifs)_
 
 ### b) Manage default values
 
-- `set_defaults(**kwargs)`: allows to globally set the defaults value so they do not need to be provided with every `show` call
+- **`set_defaults(**kwargs)`:** allows to globally set the defaults value so they do not need to be provided with every `show` call
 
   kwargs:
 
   - see `show`
 
-- `get_default(value)`: Get the global default for a single `value`
-- `get_defaults()`: Get all global defaults
-- `reset_defaults()`: Reset all defaults back to its initial value
+- **`get_default(value)`:** Get the global default for a single `value`
+- **`get_defaults()`:** Get all global defaults
+- **`reset_defaults()`**: Reset all defaults back to its initial value
 
 ### c) Replay objects
 
 Note, this is not supported in the standalone viewer for the time being.
 
-- `replay(args)`
+- **`replay(args)`**
 
-  args:
+  _Argument `args`:_
 
   - `cad_obj`: cadquery object
   - `index` (`default=0`): Element in the fluent API stack to show
@@ -353,67 +353,55 @@ Note, this is not supported in the standalone viewer for the time being.
   - `cad_width` (`default=600`): Width of the CAD view
   - `height` (`default=600`): Height of the CAD view
 
-### d) Export as HTML:
+### d) Exports:
 
-1. Export full notebook
+- **Export as PNG:**
 
-   In the first cell of the notebook set output to "html"
+  Display your object via
 
-   ```python
-   set_defaults(display="html")
-   ```
+  ```python
+  cv = show(a1)
+  ```
 
-   and then use JupyterLab's _File -> Export Notebook as ... -> HTML_ menu entry
+  and adapt the cad view as wanted (camera location, axis, transparency, ...).
 
-   Notes:
+  Then call
 
-   - `display="html"` will automatically turn off tools
-   - Browsers can only a set of 8-16 WebGL contexts. So try to have a small number of renderings. If there are too much, they will be shown as black box, that renders after hovering over it.
-   - In JupyterLab the widget state needs to be saved automatically for this to work (menu _Settings -> Save Widget State Automatically_)
+  ```python
+  cv.export_png("example.png")
+  ```
 
-2. Export single rendering view
+- **Export as HTML:**
 
-   A straight forward approach is to use
+  Display your object without using a sidecar (set `viewer` to `None`) via
 
-   ```python
-   w = show(a1)
-   ```
+  ```python
+  cv = show(a1, viewer=None)
+  ```
 
-   adapt the cad view as wanted (axis, viewpoint, transparency, ...) and then call
+  and adapt the cad view as wanted (camera location, axis, transparency, ...).
 
-   ```python
-   from ipywidgets.embed import embed_minimal_html
-   embed_minimal_html('export.html', views=[w.cq_view.renderer], title='Renderer')
-   ```
+  Then call
 
-   Using `w.cq_view.renderer` this will save the exact state of the visible pythreejs view.
+  ```python
+  cv.export_html()
+  ```
 
-   Of course, you can also call `w = show(a1, *params)` where `params` is the dict of show parameters you'd like to be used and then call the `embed_minimal_html` with `views=w.cq_view.renderer`
+  Note: This does not work with viewers in sidecars!
 
-   Notes:
+- **Export as STL:**
 
-   - If you use `sidecar` then you need to close it first:
+  For CadQuery objects use CadQuery export functions. For `PartGroup`s the following code can be used:
 
-     ```python
-     from jupyter_cadquery import cad_display
-     cad_display.SIDECAR.close()
-     ```
+  ```python
+  from jupyter_cadquery.export import exportSTL
 
-   - Buttons and treeview can be exported, however the interaction logic of the UI is implemented in Python. So the treeview and the buttons won't have any effect in an exported HTML page. Best is to set `set_defaults(tools=False)` to omit all buttons and the tree
+  exportSTL(
+    part_group, "pg.stl", tolerance=quality, angular_tolerance=angular_tolerance
+  )
+  ```
 
-### e) Export the rendered object as STL:
-
-For CadQuery objects use CadQuery export functions. For `PartGroup`s the following code can be used:
-
-```python
-from jupyter_cadquery.export import exportSTL
-
-exportSTL(
-  part_group, "pg.stl", tolerance=quality, angular_tolerance=angular_tolerance
-)
-```
-
-Smaller `linear_deflection` and `angular_deflection` means more details.
+  Smaller `linear_deflection` and `angular_deflection` means more details.
 
 ## Jupyter-CadQuery classes
 
