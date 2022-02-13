@@ -126,11 +126,15 @@ class PartGroup(_PartGroup):
         self.objects += cad_objs
 
     def get_pick(self, pick):
-        objs = [o for o in self.objects if o.id == f'{pick["path"]}/{pick["name"]}']
-        if objs:
-            return objs[0].cq_shape
+        if pick == {}:
+            print("First double click on an object in the CAD viewer")
         else:
-            print(f"no object found for pick {pick}")
+            objs = [o for o in self.objects if o.id == f'{pick["path"]}/{pick["name"]}']
+            if objs:
+                return objs[0].cq_shape
+            else:
+                print(f"no object found for pick {pick}")
+        return None
 
 
 class Assembly(PartGroup):
