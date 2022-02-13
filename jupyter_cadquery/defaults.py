@@ -156,7 +156,9 @@ def get_default(key, default_value=None):
 def set_defaults(**kwargs):
     if isinstance(kwargs.get("grid"), bool):
         warn(
-            "Using bool for grid is deprecated, please use (xy-grid, xz-grid. yz-grid)", DeprecationWarning, "once",
+            "Using bool for grid is deprecated, please use (xy-grid, xz-grid. yz-grid)",
+            DeprecationWarning,
+            "once",
         )
         kwargs["grid"] = (kwargs["grid"], False, False)
 
