@@ -13,8 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from ..utils import warn
 
-from .cad_objects import (
+warn(
+    "jupyter_cadquery.cadquery is deprecated, please use jupyter_cadquery directly for import "
+    + "and jupyter_cadquery.replay for replay functions",
+    DeprecationWarning,
+    "once",
+)
+
+from ..cad_objects import (
     Assembly,
     PartGroup,
     Part,
@@ -22,17 +30,8 @@ from .cad_objects import (
     Edges,
     Vertices,
     show,
-    auto_show,
-    show_accuracy,
-    show_constraints,
+    web_color,
 )
-from .replay import replay, enable_replay, disable_replay, reset_replay
+from ..tools import auto_show, show_accuracy, show_constraints
 
-try:
-    from IPython import get_ipython
-
-    shell_name = get_ipython().__class__.__name__
-    if shell_name == "ZMQInteractiveShell":
-        auto_show()
-except:
-    ...
+from ..replay import replay, enable_replay, disable_replay, reset_replay

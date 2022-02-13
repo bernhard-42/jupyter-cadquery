@@ -1,7 +1,7 @@
 import cadquery as cq
 from cadquery_massembly import MAssembly, Mate
 from jupyter_cadquery.viewer.client import show
-
+from jupyter_cadquery import web_color
 
 # Avoid clean error
 cq.occ_impl.shapes.Shape.clean = lambda x: x
@@ -37,7 +37,7 @@ balls = ["ball_%d" % i for i in range(number_balls)]
 
 def create_bearing():
     L = lambda *args: cq.Location(cq.Vector(*args))
-    C = lambda *args: cq.Color(*args)
+    C = lambda name: web_color(name)
 
     assy = MAssembly(outer, loc=L(0, 0, ball_diam / 2), name="outer", color=C("orange"))
     assy.add(inner, loc=L(20, 0, 0), name="inner", color=C("orange"))
@@ -60,7 +60,7 @@ for i in range(number_balls):
     bearing.mate(balls[i], Mate(), name=balls[i], origin=True)  # the default Mate is sufficient
     bearing.mate("inner@faces@<Z", name="inner_%d" % i, transforms=odict(rz=i * 60, tx=r5, tz=-ball_diam / 2))
 
-check_mates = True
+check_mates = False
 if check_mates:
     # Assemble the parts
     show(bearing)

@@ -17,7 +17,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
 from jupyter_cadquery.utils import Timer
-from jupyter_cadquery.ocp_utils import get_faces, bounding_box
+from jupyter_cadquery.ocp_utils import get_faces
 from cadquery.occ_impl.shapes import Compound
 
 # class RenderCache:
@@ -97,17 +97,9 @@ class Tessellator:
         return count
 
     def compute(
-        self,
-        shape,
-        quality,
-        angular_tolerance,
-        tessellate=True,
-        compute_edges=True,
-        normals_len=0,
-        debug=False,
+        self, shape, quality, angular_tolerance, tessellate=True, compute_edges=True, debug=False,
     ):
         self.shape = shape
-        self.normals_len = normals_len
         self.edges = []
 
         count = self.number_solids(shape)
@@ -243,19 +235,13 @@ class Tessellator:
         return np.asarray(self.vertices, dtype=np.float32).reshape(-1, 3)
 
     def get_triangles(self):
-        return np.asarray(self.triangles, dtype=np.uint32)
+        return np.asarray(self.triangles, dtype=np.int32).reshape(-1, 3)
 
     def get_normals(self):
         return np.asarray(self.normals, dtype=np.float32).reshape(-1, 3)
 
     def get_edges(self):
-        normal_edges = []
-        if self.normals_len > 0:
-            vertices = self.get_vertices()
-            normals = self.get_normals()
-            normal_edges = np.column_stack((vertices, vertices + (normals * self.normals_len))).reshape((-1, 2, 3))
-
-        return (np.asarray(self.edges, dtype=np.float32), normal_edges)
+        return np.asarray(self.edges, dtype=np.float32)
 
 
 def compute_quality(bb, deviation=0.1):
@@ -263,23 +249,34 @@ def compute_quality(bb, deviation=0.1):
 
 
 def tessellate(
-    shapes,
-    quality: float,
-    angular_tolerance: float,
-    tessellate=True,
-    compute_edges=True,
-    normals_len=0,
-    debug=False,
+    shapes, quality: float, angular_tolerance: float, tessellate=True, compute_edges=True, debug=False,
 ):
     compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
     tess = Tessellator()
-    tess.compute(compound, quality, angular_tolerance, tessellate, compute_edges, normals_len, debug)
+    tess.compute(compound, quality, angular_tolerance, tessellate, compute_edges, debug)
     return {
         "vertices": tess.get_vertices(),
         "triangles": tess.get_triangles(),
         "normals": tess.get_normals(),
         "edges": tess.get_edges(),
     }
+
+
+def bbox_edges(bb):
+    return [
+        np.array([[bb["xmax"], bb["ymax"], bb["zmin"]], [bb["xmax"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmax"], bb["ymin"], bb["zmax"]], [bb["xmax"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmax"], bb["ymin"], bb["zmin"]], [bb["xmax"], bb["ymax"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmax"], bb["ymin"], bb["zmin"]], [bb["xmax"], bb["ymin"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymax"], bb["zmax"]], [bb["xmax"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymax"], bb["zmin"]], [bb["xmax"], bb["ymax"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymax"], bb["zmin"]], [bb["xmin"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmax"]], [bb["xmax"], bb["ymin"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmax"]], [bb["xmin"], bb["ymax"], bb["zmax"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmin"]], [bb["xmax"], bb["ymin"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmin"]], [bb["xmin"], bb["ymax"], bb["zmin"]]], dtype=np.float32),
+        np.array([[bb["xmin"], bb["ymin"], bb["zmin"]], [bb["xmin"], bb["ymin"], bb["zmax"]]], dtype=np.float32),
+    ]
 
 
 def discretize_edge(edge, deflection=0.1):

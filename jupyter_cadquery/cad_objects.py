@@ -14,449 +14,561 @@
 # limitations under the License.
 #
 
-from cadquery import Compound, __version__
+try:
+    from cadquery_massembly import MAssembly
 
-from jupyter_cadquery.cad_display import (
-    get_default,
-    get_or_create_display,
-    has_sidecar,
+    HAS_MASSEMBLY = True
+except ImportError:
+    HAS_MASSEMBLY = False
+
+from cadquery.occ_impl.shapes import Face, Edge, Wire
+from cadquery import (
+    Workplane,
+    Sketch,
+    Shape,
+    Compound,
+    Vector,
+    Vertex,
+    Location,
+    Assembly as CqAssembly,
+    Color as CqColor,
 )
-from jupyter_cadquery_widgets.widgets import UNSELECTED, SELECTED, EMPTY
-from jupyter_cadquery.utils import Color, flatten, Timer, warn
-from jupyter_cadquery.ocp_utils import bounding_box, get_point, BoundingBox, loc_to_tq
-from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality
-from jupyter_cadquery.defaults import get_default, split_args
 
-PART_ID = 0
+from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
-
-#
-# Simple Part and PartGroup classes
-#
+from .utils import Color, flatten, warn
+from .ocp_utils import get_rgb, is_compound
+from .defaults import get_default, preset
 
 
-class _CADObject(object):
-    def __init__(self):
-        self.color = Color(get_default("default_color"))
+EDGE_COLOR = "Silver"
+THICK_EDGE_COLOR = "MediumOrchid"
+VERTEX_COLOR = "MediumOrchid"
+FACE_COLOR = "Violet"
 
-    def next_id(self):
-        global PART_ID
-        PART_ID += 1
-        return PART_ID
 
-    def to_nav_dict(self):
-        raise NotImplementedError("not implemented yet")
+def web_color(name):
+    wc = Color(name)
+    return CqColor(*wc.percentage)
 
-    def to_state(self):
-        raise NotImplementedError("not implemented yet")
 
-    def collect_shapes(self, loc, quality, deviation, angular_tolerance, edge_accuracy):
-        raise NotImplementedError("not implemented yet")
+class Part(_Part):
+    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
+        if color is None:
+            color = get_default("default_color")
+        self.cq_shape = shape
+        super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
     def to_assembly(self):
-        raise NotImplementedError("not implemented yet")
+        return PartGroup([self])
 
-    def show(self, grid=False, axes=False):
-        raise NotImplementedError("not implemented yet")
-
-
-class _Part(_CADObject):
-    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
-        super().__init__()
-        self.name = name
-        self.id = self.next_id()
-        self.color = Color(get_default("default_color") if color is None else color)
-
-        self.shape = shape
-        self.set_states(show_faces, show_edges)
-
-    def set_states(self, show_faces, show_edges):
-        self.state_faces = SELECTED if show_faces else UNSELECTED
-        self.state_edges = SELECTED if show_edges else UNSELECTED
-
-    def to_nav_dict(self):
-        return {
-            "type": "leaf",
-            "name": self.name,
-            "id": self.id,
-            "color": self.color.web_color,
-        }
-
-    def to_state(self):
-        return [self.state_faces, self.state_edges]
-
-    def collect_shapes(
-        self,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        render_normals,
-        progress=None,
-        timeit=False,
-    ):
-
-        # A first rough estimate of the bounding box.
-        # Will be too large, but is sufficient for computing the quality
-        with Timer(timeit, self.name, "compute quality:", 2) as t:
-            bb = bounding_box(self.shape, loc=loc, optimal=False)
-            quality = compute_quality(bb, deviation=deviation)
-            t.info = str(bb)
-
-        normals_len = 0 if render_normals is False else quality / deviation * 5
-
-        with Timer(timeit, self.name, "tessellate:     ", 2) as t:
-            mesh = tessellate(
-                self.shape,
-                quality=quality,
-                angular_tolerance=angular_tolerance,
-                normals_len=normals_len,
-                debug=timeit,
-                compute_edges=render_edges,
-            )
-            t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
-
-        # After meshing the non optimal bounding box is much more exact
-        with Timer(timeit, self.name, "bounding box:   ", 2) as t:
-            bb2 = bounding_box(self.shape, loc=loc, optimal=False)
-            bb2.update(bb, minimize=True)
-            t.info = str(bb2)
-
-        if progress:
-            progress.update()
-
-        color = [c.web_color for c in self.color] if isinstance(self.color, tuple) else self.color.web_color
-
-        return {
-            "id": self.id,
-            "type": "shapes",
-            "name": self.name,
-            "shape": mesh,
-            "color": color,
-            "bb": bb2.to_dict(),
-        }
-
-    def compound(self):
-        return self.shape[0]
-
-    def compounds(self):
-        return [self.compound()]
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
+        return show(self, grid=grid, axes=axes)
 
 
-class _Faces(_Part):
+class Faces(_Faces):
     def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
-        super().__init__(faces, name, color, show_faces, show_edges)
-        self.color = Color(color or (255, 0, 255))
+        self.cq_shape = faces
+        super().__init__(_to_occ(faces.combine()), name, color, show_faces, show_edges)
+
+    def to_assembly(self):
+        return PartGroup([self])
+
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
+        return show(self, grid=grid, axes=axes)
 
 
-class _Edges(_CADObject):
-    def __init__(self, edges, name="Edges", color=None):
-        super().__init__()
-        self.shape = edges
-        self.name = name
-        self.id = self.next_id()
+class Edges(_Edges):
+    def __init__(self, edges, name="Edges", color=None, width=1):
+        self.cq_shape = edges
+        super().__init__(_to_occ(edges), name, color, width)
 
-        if color is not None:
-            if isinstance(color, (list, tuple)) and isinstance(color[0], Color):
-                self.color = color
-            elif isinstance(color, Color):
-                self.color = color
+    def to_assembly(self):
+        return PartGroup([self])
+
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
+        return show(self, grid=grid, axes=axes)
+
+
+class Vertices(_Vertices):
+    def __init__(self, vertices, name="Vertices", color=None, size=1):
+        self.cq_shape = vertices
+        super().__init__(_to_occ(vertices), name, color, size)
+
+    def to_assembly(self):
+        return PartGroup([self])
+
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
+        return show(self, grid=grid, axes=axes)
+
+
+class PartGroup(_PartGroup):
+    def to_assembly(self):
+        return self
+
+    def show(self, grid=None, axes=False):
+        if grid is None:
+            grid = [False, False, False]
+        return show(self, grid=grid, axes=axes)
+
+    def add(self, cad_obj):
+        self.objects.append(cad_obj)
+
+    def add_list(self, cad_objs):
+        self.objects += cad_objs
+
+    def get_pick(self, pick):
+        objs = [o for o in self.objects if o.id == f'{pick["path"]}/{pick["name"]}']
+        if objs:
+            return objs[0].cq_shape
+        else:
+            print(f"no object found for pick {pick}")
+
+
+class Assembly(PartGroup):
+    def __init__(self, *args, **kwargs):
+        import warnings
+
+        super().__init__(*args, **kwargs)
+        warnings.warn(
+            "Class 'Assembly' is deprecated (too many assemblies ...). Please use class 'PartGroup' instead",
+            RuntimeWarning,
+        )
+
+
+def _to_occ(cad_obj):
+    def sketch_to_occ(sketch):
+        locs = sketch.locs if sketch.locs else [Location()]
+        if sketch._faces:  # pylint:disable=protected-access
+            objs = flatten([sketch._faces.moved(loc).Faces() for loc in locs])  # pylint:disable=protected-access
+        else:
+            objs = [edge.moved(loc) for edge in sketch._edges for loc in locs]  # pylint:disable=protected-access
+
+        return [obj.wrapped for obj in objs]
+
+    # special case Wire, must be handled before Workplane
+    if _is_wirelist(cad_obj) or _is_edgelist(cad_obj):
+        all_edges = []
+        for edges in cad_obj.objects:
+            all_edges += edges.Edges()
+        return [edge.wrapped for edge in all_edges]
+
+    elif isinstance(cad_obj, Sketch):
+        return sketch_to_occ(cad_obj)
+
+    elif isinstance(cad_obj, Workplane):
+        result = []
+        for obj in cad_obj.objects:
+            if isinstance(obj, Sketch):
+                result += sketch_to_occ(obj)
             else:
-                self.color = Color(color)
+                result.append(obj.wrapped)
+        return result
 
-    def to_nav_dict(self):
-        if isinstance(self.color, (tuple, list)):
-            color = [c.web_color for c in self.color]
+    elif isinstance(cad_obj, Shape):
+        return [cad_obj.wrapped]
+
+    elif is_compound(cad_obj):
+        return [cad_obj]
+
+    else:
+        raise NotImplementedError(type(cad_obj))
+
+
+def _parent(cad_obj, obj_id):
+    if cad_obj.parent is not None:
+        if isinstance(cad_obj.parent.val(), Vector):
+            return _from_vectorlist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR), show_parent=False,)
+        elif isinstance(cad_obj.parent.val(), Vertex):
+            return _from_vertexlist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR), show_parent=False,)
+        elif isinstance(cad_obj.parent.val(), Edge):
+            return _from_edgelist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR), show_parent=False,)
+        elif isinstance(cad_obj.parent.val(), Wire):
+            return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR))]
         else:
-            color = self.color.web_color
-        return {
-            "type": "leaf",
-            "name": self.name,
-            "id": self.id,
-            "color": color,
-        }
-
-    def to_state(self):
-        return [EMPTY, SELECTED]
-
-    def collect_shapes(
-        self,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        render_normals,
-        progress=None,
-        timeit=False,
-    ):
-        with Timer(timeit, self.name, "bounding box:", 2) as t:
-            bb = bounding_box(self.shape, loc=loc)
-            quality = compute_quality(bb, deviation=deviation)
-            deflection = quality / 100 if edge_accuracy is None else edge_accuracy
-            t.info = str(bb)
-
-        with Timer(timeit, self.name, "discretize:  ", 2):
-            edges = flatten([discretize_edge(edge, deflection) for edge in self.shape])
-
-        if progress:
-            progress.update()
-
-        color = [c.web_color for c in self.color] if isinstance(self.color, tuple) else self.color.web_color
-
-        return {
-            "id": self.id,
-            "type": "edges",
-            "name": self.name,
-            "shape": edges,
-            "color": color,
-            "bb": bb,
-        }
+            return [Part(cad_obj.parent, "Parent_%d" % obj_id, show_edges=True, show_faces=False,)]
+    else:
+        return []
 
 
-class _Vertices(_CADObject):
-    def __init__(self, vertices, name="Vertices", color=None):
-        super().__init__()
-        self.shape = vertices
-        self.name = name
-        self.id = self.next_id()
-        self.color = Color(color or (255, 0, 255))
-
-    def to_nav_dict(self):
-        return {
-            "type": "leaf",
-            "name": self.name,
-            "id": self.id,
-            "color": self.color.web_color,
-        }
-
-    def to_state(self):
-        return [SELECTED, EMPTY]
-
-    def collect_shapes(
-        self,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        render_normals,
-        progress=None,
-        timeit=False,
-    ):
-        bb = bounding_box(self.shape, loc=loc)
-
-        if progress:
-            progress.update()
-
-        return {
-            "id": self.id,
-            "type": "vertices",
-            "name": self.name,
-            "shape": [get_point(vertex) for vertex in self.shape],
-            "color": self.color.web_color,
-            "bb": bb,
-        }
+def _from_facelist(cad_obj, obj_id, name="Faces", show_parent=True):
+    result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=Color(FACE_COLOR))]
+    if show_parent:
+        result = _parent(cad_obj, obj_id) + result
+    return result
 
 
-class _PartGroup(_CADObject):
-    def __init__(self, objects, name="Group", loc=None):
-        super().__init__()
-        self.objects = objects
-        self.name = name
-        self.loc = loc
-        self.id = self.next_id()
+def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
+    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)]
+    if show_parent:
+        result = _parent(cad_obj, obj_id) + result
+    return result
 
-    def to_nav_dict(self):
-        return {
-            "type": "node",
-            "name": self.name,
-            "id": self.id,
-            "children": [obj.to_nav_dict() for obj in self.objects],
-        }
 
-    def collect_shapes(
-        self,
-        loc,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        render_normals,
-        progress=None,
-        timeit=False,
-    ):
-        if loc is None and self.loc is None:
-            combined_loc = None
-        elif loc is None:
-            combined_loc = self.loc
+def _from_wirelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
+    result = Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)
+    if show_parent:
+        result = _parent(cad_obj, obj_id) + result
+    return result
+
+
+def _from_vector(vec, obj_id, name="Vector"):
+    tmp = Workplane()
+    obj = tmp.newObject([vec])
+    return _from_vectorlist(obj, obj_id, name)
+
+
+def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=True):
+    if cad_obj.vals():
+        vectors = cad_obj.vals()
+    else:
+        vectors = [cad_obj.val()]
+    obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in vectors])
+    result = [Vertices(obj, "%s_%d" % (name, obj_id), color=Color(color or VERTEX_COLOR), size=6)]
+    if show_parent:
+        result = _parent(cad_obj, obj_id) + result
+    return result
+
+
+def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=True):
+    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or VERTEX_COLOR), size=6)]
+    if show_parent:
+        result = _parent(cad_obj, obj_id) + result
+    return result
+
+
+# pylint:disable=protected-access
+def _from_sketch(cad_obj, obj_id, show_parent=True, show_selection=True):
+
+    result = []
+
+    locs = cad_obj.locs if cad_obj.locs else [Location()]
+
+    workplane = Workplane()
+    if cad_obj._faces:
+        for loc in locs:
+            workplane.objects += cad_obj._faces.moved(loc).Faces()
+        result += _from_facelist(workplane, obj_id, name="Faces", show_parent=show_parent)
+    elif cad_obj._edges:
+        workplane.objects = [edge.moved(loc) for edge in cad_obj._edges for loc in locs]
+        result += _from_edgelist(workplane, obj_id, name="Edges", show_parent=show_parent)
+
+    if show_selection and cad_obj._selection:
+        workplane = Workplane()
+        if isinstance(cad_obj._selection[0], Location):
+            workplane.objects = [
+                Vertex.makeVertex(0, 0, 0).moved(loc * obj) for obj in cad_obj._selection for loc in locs
+            ]
+            sel = _from_vertexlist(workplane, obj_id, name="Locations", show_parent=show_parent)
+
+        elif isinstance(cad_obj._selection[0], Face):
+            for loc in locs:
+                workplane.objects += flatten([obj._faces.moved(loc).Faces() for obj in cad_obj._selection])
+            sel = _from_facelist(workplane, obj_id, name="Faces", show_parent=show_parent)
+
+        elif isinstance(cad_obj._selection[0], (Edge, Wire)):
+            workplane.objects = [edge.moved(loc) for edge in cad_obj._selection for loc in locs]
+            sel = _from_edgelist(workplane, obj_id, name="Edges", show_parent=show_parent)
+
+        elif isinstance(cad_obj._selection[0], Vertex):
+            workplane.objects = [vertex.moved(loc) for vertex in cad_obj._selection for loc in locs]
+            sel = _from_vertexlist(workplane, obj_id, name="Vertices", show_parent=show_parent)
+
+        result.append(PartGroup(sel, name=f"Selection_{obj_id}"))
+
+    return result
+
+
+def to_edge(mate, loc=None, scale=1) -> Workplane:
+    w = Workplane()
+    for d in (mate.x_dir, mate.y_dir, mate.z_dir):
+        edge = Edge.makeLine(mate.origin, mate.origin + d * scale)
+        w.objects.append(edge if loc is None else edge.moved(loc))
+
+    return w
+
+
+def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, default_color=None):
+    loc = Location()
+    render_loc = cad_obj.loc
+
+    if cad_obj.color is None:
+        if default_color is None:
+            color = Color(get_default("default_color"))
         else:
-            combined_loc = loc * self.loc
+            color = Color(default_color)
+    else:
+        color = Color(get_rgb(cad_obj.color))
 
-        result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(self.loc), "name": self.name}
-        for obj in self.objects:
-            result["parts"].append(
-                obj.collect_shapes(
-                    combined_loc,
-                    quality,
-                    deviation,
-                    angular_tolerance,
-                    edge_accuracy,
-                    render_edges,
-                    render_normals,
-                    progress,
-                    timeit,
+    # Special handling for edge lists in an MAssembly
+    is_edges = [isinstance(obj, Edge) for obj in cad_obj.shapes]
+    if is_edges and all(is_edges):
+        if cad_obj.color is None:
+            if default_color is None:
+                color = Color(get_default("default_edgecolor"))
+            else:
+                color = Color(default_color)
+        else:
+            color = Color(get_rgb(cad_obj.color))
+
+        workplane = Workplane()
+        workplane.objects = cad_obj.shapes
+        parent = [Edges(workplane, name="%s_0" % cad_obj.name, color=color,)]
+    else:
+        if cad_obj.color is None:
+            if default_color is None:
+                color = Color(get_default("default_color"))
+            else:
+                color = Color(default_color)
+        else:
+            color = Color(get_rgb(cad_obj.color))
+        parent = [
+            Part(Workplane(shape), "%s_%d" % (cad_obj.name, i), color=color,) for i, shape in enumerate(cad_obj.shapes)
+        ]
+
+    if render_mates and cad_obj.mates is not None:
+        rgb = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
+        pg = PartGroup(
+            [
+                Edges(to_edge(mate_def.mate, scale=mate_scale), name=name, color=rgb)
+                for name, mate_def in top.mates.items()
+                if mate_def.assembly == cad_obj
+            ],
+            name="mates",
+            loc=Location(),  # mates inherit the parent location, so actually add a no-op
+        )
+        if pg.objects:
+            parent.append(pg)
+
+    children = [from_assembly(c, top, loc, render_mates, mate_scale) for c in cad_obj.children]
+    return PartGroup(parent + children, cad_obj.name, loc=render_loc)
+
+
+def _from_workplane(cad_obj, obj_id, name="Part", default_color=None, show_parent=False):
+    result = Part(cad_obj, "%s_%d" % (name, obj_id), color=Color(default_color))
+    # if show_parent:
+    #     result = _parent(cad_obj, obj_id) + result
+    return result
+
+
+def _is_facelist(cad_obj):
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Face) for obj in cad_obj.objects])
+    )
+
+
+def _is_vertexlist(cad_obj):
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Vertex) for obj in cad_obj.objects])
+    )
+
+
+def _is_edgelist(cad_obj):
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Edge) for obj in cad_obj.objects])
+    )
+
+
+def _is_wirelist(cad_obj):
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Wire) for obj in cad_obj.objects])
+    )
+
+
+def _debug(msg):
+    # print("DEBUG:", msg)
+    pass
+
+
+def to_assembly(*cad_objs, name="Group", render_mates=None, mate_scale=1, default_color=None, show_parent=True):
+    default_color = get_default("default_color") if default_color is None else default_color
+    assembly = PartGroup([], name)
+    obj_id = 0
+    for cad_obj in cad_objs:
+        if isinstance(cad_obj, (PartGroup, Part, Faces, Edges, Vertices)):
+            _debug(f"CAD Obj {obj_id}: PartGroup, Part, Faces, Edges, Vertices")
+            assembly.add(cad_obj)
+
+        elif HAS_MASSEMBLY and isinstance(cad_obj, MAssembly):
+            _debug(f"CAD Obj {obj_id}: MAssembly")
+            assembly.add(
+                from_assembly(
+                    cad_obj, cad_obj, render_mates=render_mates, mate_scale=mate_scale, default_color=default_color
                 )
             )
-        return result
 
-    def collect_mapped_shapes(
-        self,
-        mapping,
-        quality,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        render_normals,
-        progress=None,
-        timeit=False,
-    ):
-        def set_paths(shapes, mapping):
-            for obj in shapes["parts"]:
-                if obj.get("parts") is None:
-                    obj["ind"] = mapping[str(obj["id"])]["path"]
-                else:
-                    set_paths(obj, mapping)
+        elif isinstance(cad_obj, CqAssembly):
+            _debug(f"CAD Obj {obj_id}: cqAssembly")
+            assembly.add(from_assembly(cad_obj, cad_obj, default_color=default_color))
 
-        shapes = self.collect_shapes(
-            loc=None,
-            quality=quality,
-            deviation=deviation,
-            angular_tolerance=angular_tolerance,
-            edge_accuracy=edge_accuracy,
-            render_edges=render_edges,
-            render_normals=render_normals,
-            progress=progress,
-            timeit=timeit,
-        )
-        set_paths(shapes, mapping)
-        return shapes
+        elif isinstance(cad_obj, Edge):
+            _debug(f"CAD Obj {obj_id}: Edge")
+            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
-    def to_state(self, parents=None):
-        parents = parents or ()
-        result = {}
-        for i, obj in enumerate(self.objects):
-            if isinstance(obj, _PartGroup):
-                for k, v in obj.to_state((*parents, i)).items():
-                    result[k] = v
-            else:
-                result[str(obj.id)] = {"path": (*parents, i), "state": obj.to_state()}
-        return result
+        elif isinstance(cad_obj, Sketch):
+            _debug(f"CAD Obj {obj_id}: Sketch")
+            assembly.add_list(_from_sketch(cad_obj, obj_id, show_parent=show_parent,))
 
-    def count_shapes(self):
-        def c(pg):
-            count = 0
-            for p in pg.objects:
-                if isinstance(p, _PartGroup):
-                    count += c(p)
-                else:
-                    count += 1
-            return count
+        elif isinstance(cad_obj, Face):
+            _debug(f"CAD Obj {obj_id}: Face")
+            assembly.add_list(_from_facelist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
-        return c(self)
+        elif isinstance(cad_obj, Wire):
+            _debug(f"CAD Obj {obj_id}: Wire")
+            assembly.add(_from_wirelist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
-    @staticmethod
-    def reset_id():
-        global PART_ID
-        PART_ID = 0
+        elif isinstance(cad_obj, Vertex):
+            _debug(f"CAD Obj {obj_id}: Vertex")
+            assembly.add_list(_from_vertexlist(Workplane(cad_obj), obj_id, show_parent=show_parent))
 
-    def compounds(self):
-        result = []
-        for obj in self.objects:
-            result += obj.compounds()
-        return result
+        elif _is_facelist(cad_obj):
+            _debug(f"CAD Obj {obj_id}: facelist")
+            assembly.add_list(_from_facelist(cad_obj, obj_id, show_parent=show_parent))
 
-    def compound(self):
-        return Compound._makeCompound(self.compounds())
+        elif _is_edgelist(cad_obj):
+            _debug(f"CAD Obj {obj_id}: edgelist")
+            assembly.add_list(_from_edgelist(cad_obj, obj_id, show_parent=show_parent))
 
+        elif _is_wirelist(cad_obj):
+            _debug(f"CAD Obj {obj_id}: wirelist")
+            assembly.add(_from_wirelist(cad_obj, obj_id, show_parent=show_parent))
 
-def _combined_bb(shapes):
-    def c_bb(shapes, bb):
-        for shape in shapes["parts"]:
-            if shape.get("parts") is None:
-                if bb is None:
-                    bb = BoundingBox(shape["bb"])
-                else:
-                    bb.update(shape["bb"])
-            else:
-                bb = c_bb(shape, bb)
-        return bb
+        elif _is_vertexlist(cad_obj):
+            _debug(f"CAD Obj {obj_id}: vertexlist")
+            assembly.add_list(_from_vertexlist(cad_obj, obj_id, show_parent=show_parent))
 
-    bb = c_bb(shapes, None)
-    return bb
+        elif isinstance(cad_obj, Vector):
+            _debug(f"CAD Obj {obj_id}: Vector")
+            assembly.add_list(_from_vector(cad_obj, obj_id))
 
-
-def _show(part_group, **kwargs):
-    for k in kwargs:
-        if get_default(k, "n/a") == "n/a":
-            raise KeyError(f"Paramater {k} is not a valid argument for show()")
-
-    if kwargs.get("cad_width") is not None and kwargs.get("cad_width") < 640:
-        warn("cad_width has to be >= 640, setting to 640")
-        kwargs["cad_width"] = 640
-
-    if kwargs.get("height") is not None and kwargs.get("height") < 400:
-        warn("height has to be >= 400, setting to 400")
-        kwargs["height"] = 400
-
-    if kwargs.get("tree_width") is not None and kwargs.get("tree_width") < 250:
-        warn("tree_width has to be >= 250, setting to 250")
-        kwargs["tree_width"] = 250
-
-    # remove all tessellation and view parameters
-    create_args, add_shape_args = split_args(kwargs)
-
-    preset = lambda key, value: get_default(key) if value is None else value
-
-    timeit = preset("timeit", kwargs.get("timeit"))
-
-    with Timer(timeit, "", "overall"):
-
-        with Timer(timeit, "", "setup display", 1):
-            num_shapes = part_group.count_shapes()
-            d = get_or_create_display(**create_args)
-            d.init_progress(2 * num_shapes)
-
-        with Timer(timeit, "", "tessellate", 1):
-
-            mapping = part_group.to_state()
-            shapes = part_group.collect_mapped_shapes(
-                mapping,
-                quality=preset("quality", kwargs.get("quality")),
-                deviation=preset("deviation", kwargs.get("deviation")),
-                angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
-                edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
-                render_edges=preset("render_edges", kwargs.get("render_edges")),
-                render_normals=preset("render_normals", kwargs.get("render_normals")),
-                progress=d.progress,
-                timeit=timeit,
+        elif isinstance(cad_obj, (Shape, Compound)):
+            _debug(f"CAD Obj {obj_id}: Shape, Compound")
+            assembly.add(
+                _from_workplane(Workplane(cad_obj), obj_id, default_color=default_color, show_parent=show_parent)
             )
-            tree = part_group.to_nav_dict()
 
-        with Timer(timeit, "", "show shapes", 1):
-            d.add_shapes(shapes=shapes, mapping=mapping, tree=tree, bb=_combined_bb(shapes), **add_shape_args)
+        elif is_compound(cad_obj):
+            _debug(f"CAD Obj {obj_id}: compound")
+            assembly.add(_Part([cad_obj], color=default_color))
 
-    d.info.version_msg(__version__)
-    d.info.ready_msg(d.cq_view.grid.step)
+        elif isinstance(cad_obj.val(), Vector):
+            _debug(f"CAD Obj {obj_id}: Vector val()")
+            assembly.add_list(_from_vectorlist(cad_obj, obj_id, show_parent=show_parent))
 
-    sidecar = has_sidecar()
-    if sidecar is not None:
-        print(f"Done, using side car '{sidecar.title()}'")
+        elif isinstance(cad_obj, Workplane):
+            _debug(f"CAD Obj {obj_id}: Workplane")
+            if len(cad_obj.vals()) == 1 and not isinstance(cad_obj.val(), Sketch):
+                assembly.add(_from_workplane(cad_obj, obj_id, default_color=default_color, show_parent=show_parent))
+            else:
+                assembly2 = PartGroup([], name="Group_%s" % obj_id)
+                for j, obj in enumerate(cad_obj.vals()):
+                    if isinstance(obj, Sketch):
+                        for sketch_obj in _from_sketch(obj, j, show_parent=False):
+                            assembly2.add(sketch_obj)
+                    else:
+                        assembly2.add(
+                            _from_workplane(Workplane(obj), j, default_color=default_color, show_parent=show_parent)
+                        )
+                assembly.add(assembly2)
 
-    return d
+        else:
+            raise NotImplementedError("Type:", cad_obj)
+
+        obj_id += 1
+    return assembly
+
+
+def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
+    """Show CAD objects in Jupyter
+
+    Valid keywords:
+    - height:            Height of the CAD view (default=600)
+    - tree_width:        Width of navigation tree part of the view (default=250)
+    - cad_width:         Width of CAD view part of the view (default=800)
+    - default_color:     Default mesh color (default=(232, 176, 36))
+    - default_edgecolor: Default mesh color (default=(128, 128, 128))
+    - render_edges:      Render edges  (default=True)
+    - render_normals:    Render normals (default=False)
+    - render_mates:      Render mates (for MAssemblies)
+    - mate_scale:        Scale of rendered mates (for MAssemblies)
+    - deviation:         Shapes: Deviation from linear deflection value (default=0.1)
+    - angular_tolerance: Shapes: Angular deflection in radians for tessellation (default=0.2)
+    - edge_accuracy:     Edges: Precision of edge discretization (default: mesh quality / 100)
+    - optimal_bb:        Use optimal bounding box (default=False)
+    - axes:              Show axes (default=False)
+    - axes0:             Show axes at (0,0,0) (default=False)
+    - grid:              Show grid (default=False)
+    - ticks:             Hint for the number of ticks in both directions (default=10)
+    - ortho:             Use orthographic projections (default=True)
+    - transparent:       Show objects transparent (default=False)
+    - ambient_intensity  Intensity of ambient light (default=1.0)
+    - direct_intensity   Intensity of direct lights (default=0.12)
+    - position:          Relative camera position that will be scaled (default=(1, 1, 1))
+    - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
+    - zoom:              Zoom factor of view (default=2.5)
+    - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
+    - show_parent:       Show the parent for edges, faces and vertices objects
+    - show_bbox:         Show bounding box (default=False)
+    - viewer:            Name of the sidecar viewer
+    - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
+    - pinning:           Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
+    - theme:             Theme "light" or "dark" (default="light")
+    - tools:             Show the viewer tools like the object tree
+    - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
+
+    NOT SUPPORTED ANY MORE:
+    - mac_scrollbar      The default now
+    - bb_factor:         Removed
+    - display            Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
+    - quality            Use 'deviation'to control smoothness of rendered egdes
+    """
+
+    render_mates = preset("render_mates", render_mates)
+    mate_scale = preset("mate_scale", mate_scale)
+    default_color = preset("default_color", kwargs.get("default_color"))
+    show_parent = preset("show_parent", kwargs.get("show_parent"))
+
+    if isinstance(kwargs.get("grid"), bool):
+        warn(
+            "Using bool for grid is deprecated, please use (xy-grid, xz-grid. yz-grid)", DeprecationWarning, "once",
+        )
+        kwargs["grid"] = (kwargs["grid"], False, False)
+
+    if cad_objs:
+
+        assembly = to_assembly(
+            *cad_objs,
+            render_mates=render_mates,
+            mate_scale=mate_scale,
+            default_color=default_color,
+            show_parent=show_parent,
+        )
+
+        if assembly is None:
+            raise ValueError("%s cannot be viewed" % cad_objs)
+
+        if len(assembly.objects) == 1 and isinstance(assembly.objects[0], PartGroup):
+            # omit leading "PartGroup" group
+            return _show(assembly.objects[0], **kwargs)
+        else:
+            return _show(assembly, **kwargs)
+
+    else:
+
+        return _show(None, **kwargs)

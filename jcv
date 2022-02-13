@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 
 usage() { 
     echo "Usage: $0 [-p <zmq port>] [-w <width>] [-h <height>] [-d]" 1>&2; 
@@ -27,7 +28,7 @@ while getopts ":p:w:h:d" o; do
 done
 
 echo "[JCV] Creating a Jupyter kernel specification called 'jcv' for this conda environment"
-python -m ipykernel install --name jcv --display-name jcv
+python -m ipykernel install --user --name jcv --display-name jcv
 
 JCV_PATH=~/.jcv
 VIEWER_PATH=$(python -c "import os, jupyter_cadquery.viewer.server as c; print(os.path.dirname(c.__file__))")

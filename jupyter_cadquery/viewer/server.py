@@ -10,9 +10,9 @@ import zmq
 
 from IPython.display import display, clear_output
 import ipywidgets as widgets
-from jupyter_cadquery.cad_display import CadqueryDisplay
-from jupyter_cadquery.cad_animation import Animation
-from jupyter_cadquery.defaults import get_default, get_defaults, split_args, set_defaults
+from jupyter_cadquery import show
+from jupyter_cadquery import AnimationTrack
+from jupyter_cadquery.defaults import get_default, create_args, add_shape_args, set_defaults
 from jupyter_cadquery.logo import LOGO_DATA
 from jupyter_cadquery.utils import px
 
@@ -50,17 +50,16 @@ def debug(*msg):
 class Viewer:
     def __init__(self, zmq_port):
         self.zmq_port = zmq_port
-        self.cad_display = None
+        self.viewer = None
         self.interactive = None
         self.zmq_server = None
-        self.root_group = None
         self.log_output = widgets.Output(layout=widgets.Layout(height="400px", overflow="scroll"))
-        self.log_output.add_class("mac-scrollbar")
+        self.splash = None
+        self.log_view = None
 
     def _display(self, data, logo=False):
         mesh_data = data["data"]
         config = data["config"]
-        info(mesh_data["bb"])
 
         if logo or config.get("cad_width") is None:
             config["cad_width"] = get_default("cad_width")
@@ -92,18 +91,16 @@ class Viewer:
         self.log_view.layout.width = px(width)
 
         # Force reset of camera to not inhereit splash settings for first object
-        if self.cad_display.splash:
+        if self.splash:
             config["reset_camera"] = True
-            self.cad_display.splash = False
+            self.splash = False
 
-        self.cad_display.set_size(config.get("tree_width"), config.get("cad_width"), config.get("height"))
-        self.cad_display.init_progress(data.get("count", 1))
-        create_args, add_shape_args = split_args(config)
-        self.cad_display._update_settings(**create_args)
-        self.cad_display.add_shapes(**mesh_data, **add_shape_args)
-        info(create_args, add_shape_args)
-        self.cad_display.info.ready_msg(self.cad_display.cq_view.grid.step)
-        self.root_group = self.cad_display.root_group
+        kwargs = add_shape_args(config)
+
+        self.viewer.clear_tracks()
+        self.viewer.add_shapes(**mesh_data, **kwargs)
+        info(create_args(config))
+        info(add_shape_args(config))
 
     def start_viewer(self, cad_width, cad_height, theme):
         info(f"zmq_port:   {self.zmq_port}")
@@ -113,22 +110,16 @@ class Viewer:
 
         set_defaults(theme=theme, cad_width=cad_width, height=cad_height)
 
-        self.interactive = widgets.Output(layout=widgets.Layout(height="0px"))
-
-        self.cad_display = CadqueryDisplay()
-        cad_view = self.cad_display.create()
-
         # remove jupyter cadquery start message
         clear_output()
+
+        self.viewer = show(theme=theme, cad_width=cad_width, height=cad_height, pinning=False)
+        self.splash = True
 
         self.log_view = widgets.Accordion(children=[self.log_output])
         self.log_view.set_title(0, "Log")
         self.log_view.selected_index = None
-        display(widgets.VBox([cad_view, self.interactive, self.log_view]))
-
-        logo = pickle.loads(base64.b64decode(LOGO_DATA))
-        self._display(logo, True)
-        self.cad_display.splash = True
+        display(self.log_view)
 
         stop_viewer()
 
@@ -162,9 +153,6 @@ class Viewer:
                     return_error(str(ex))
                     continue
 
-                self.interactive.outputs = ()
-                self.interactive.layout.height = f"0px"
-
                 if data.get("type") == "data":
                     try:
                         t = time.time()
@@ -178,51 +166,32 @@ class Viewer:
                 elif data.get("type") == "animation":
                     try:
                         t = time.time()
-                        animation = Animation(self.root_group)
-                        for track in data["tracks"]:
-                            animation.add_track(*track)
-                        widget = animation.animate(data["speed"], data["autoplay"])
+                        for track in data["data"]:
+                            self.viewer.add_track(AnimationTrack(*track))
 
-                        # With INTERACTIVE: display(widget) does not work, see
-                        # https://ipywidgets.readthedocs.io/en/7.6.3/examples/Output%20Widget.html#Interacting-with-output-widgets-from-background-threads
-                        #
-                        # INTERACTIVE.addpend_display_data(widget) doesn't work either, see https://github.com/jupyter-widgets/ipywidgets/issues/1811
-                        # Should be solved, however isn't
-                        #
-                        mime_data = {
-                            "output_type": "display_data",
-                            "data": {
-                                "text/plain": "AnimationAction",
-                                "application/vnd.jupyter.widget-view+json": {
-                                    "version_major": 2,
-                                    "version_minor": 0,
-                                    "model_id": widget.model_id,
-                                },
-                            },
-                            "metadata": {},
-                        }
-                        self.interactive.outputs = (mime_data,)
-                        self.interactive.layout.height = f"40px"
+                        self.viewer.animate(data["config"]["speed"])
                         return_success(t)
 
                     except Exception as ex:
                         error_msg = f"{type(ex).__name__}: {ex}"
                         return_error(error_msg)
+
                 else:
                     return_error(f"Wrong message type {data.get('type')}")
 
         thread = threading.Thread(target=msg_handler)
         thread.setDaemon(True)
         thread.start()
-        self.cad_display.info.add_html("<b>zmq server started</b>")
+
+    #        self.viewer.info.add_html("<b>zmq server started</b>")
 
     def stop_viewer(self):
         if self.zmq_server is not None:
             try:
                 self.zmq_server.close()
                 info("zmq stopped")
-                if self.cad_display is not None and self.cad_display.info is not None:
-                    self.cad_display.info.add_html("<b>HTTP zmq stopped</b>")
+                if self.viewer is not None and self.viewer.info is not None:
+                    self.viewer.info.add_html("<b>HTTP zmq stopped</b>")
                 self.zmq_server = None
                 time.sleep(0.5)
             except Exception as ex:

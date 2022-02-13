@@ -14,11 +14,11 @@
 # limitations under the License.
 #
 
-from jupyter_cadquery.cadquery.cad_objects import to_assembly
-from jupyter_cadquery.defaults import get_defaults
-from jupyter_cadquery.cad_objects import _combined_bb
-from jupyter_cadquery.defaults import get_default, get_defaults
-from jupyter_cadquery.cadquery import PartGroup, Part
+from jupyter_cadquery import PartGroup, Part
+from jupyter_cadquery.cad_objects import to_assembly
+from jupyter_cadquery.base import _tessellate_group, get_normal_len, insert_bbox
+from jupyter_cadquery.defaults import get_default, get_defaults, preset
+
 
 import pickle
 import zmq
@@ -97,30 +97,44 @@ def _convert(*cad_objs, **kwargs):
 
     # Do not send defaults for postion, rotation and zoom unless they are set in kwargs
     config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation", "zoom")}
+
     for k, v in kwargs.items():
         if v is not None:
             config[k] = v
 
-    mapping = part_group.to_state()
-    shapes = part_group.collect_mapped_shapes(
-        mapping,
-        quality=config.get("quality"),
-        deviation=config.get("deviation"),
-        angular_tolerance=config.get("angular_tolerance"),
-        edge_accuracy=config.get("edge_accuracy"),
-        render_edges=config.get("render_edges"),
-        render_normals=config.get("render_normals"),
-        timeit=config.get("timeit"),
-        progress=Progress(),
+    shapes, states = _tessellate_group(part_group, kwargs, Progress(), config.get("timeit"))
+
+    config["normal_len"] = get_normal_len(
+        preset("render_normals", config.get("render_normals")), shapes, preset("deviation", config.get("deviation")),
     )
-    tree = part_group.to_nav_dict()
+
+    show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
+    if show_bbox:
+        insert_bbox(show_bbox, shapes, states)
+
     data = {
-        "data": dict(mapping=mapping, shapes=shapes, tree=tree, bb=_combined_bb(shapes)),
+        "data": dict(shapes=shapes, states=states),
         "type": "data",
         "config": config,
         "count": part_group.count_shapes(),
     }
     return data
+
+
+import numpy as np
+
+
+def to_array(track):
+    return [track.path, track.action, track.times, track.values]
+
+
+def animate(tracks, speed):
+    data = {
+        "data": [to_array(track) for track in tracks],
+        "type": "animation",
+        "config": {"speed": speed},
+    }
+    send(data)
 
 
 def show(*cad_objs, **kwargs):
@@ -130,19 +144,15 @@ def show(*cad_objs, **kwargs):
     - height:            Height of the CAD view (default=600)
     - tree_width:        Width of navigation tree part of the view (default=250)
     - cad_width:         Width of CAD view part of the view (default=800)
-    - bb_factor:         Scale bounding box to ensure compete rendering (default=1.5)
     - default_color:     Default mesh color (default=(232, 176, 36))
     - default_edgecolor: Default mesh color (default=(128, 128, 128))
     - render_edges:      Render edges  (default=True)
     - render_normals:    Render normals (default=False)
     - render_mates:      Render mates (for MAssemblies)
     - mate_scale:        Scale of rendered mates (for MAssemblies)
-    - quality:           Linear deflection for tessellation (default=None)
-                         If None, uses bounding box as in (xlen + ylen + zlen) / 300 * deviation)
-    - deviation:         Deviation from default for linear deflection value ((default=0.1)
-    - angular_tolerance: Angular deflection in radians for tessellation (default=0.2)
-    - edge_accuracy:     Presicion of edge discretizaion (default=None)
-                         If None, uses: quality / 100
+    - deviation:         Shapes: Deviation from linear deflection value (default=0.1)
+    - angular_tolerance: Shapes: Angular deflection in radians for tessellation (default=0.2)
+    - edge_accuracy:     Edges: Precision of edge discretization (default: mesh quality / 100)
     - optimal_bb:        Use optimal bounding box (default=False)
     - axes:              Show axes (default=False)
     - axes0:             Show axes at (0,0,0) (default=False)
@@ -156,14 +166,17 @@ def show(*cad_objs, **kwargs):
     - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
     - zoom:              Zoom factor of view (default=2.5)
     - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
-    - mac_scrollbar:     Prettify scrollbars (default=True)
-    - display:           Select display: "sidecar", "cell", "html"
+    - show_parent:       Show the parent for edges, faces and vertices objects
+    - show_bbox:         Show bounding box (default=False)    
+    - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
-
-    For example isometric projection can be achieved in two ways:
-    - position = (1, 1, 1)
-    - position = (0, 0, 1) and rotation = (45, 35.264389682, 0)
+    
+    NOT SUPPORTED ANY MORE:
+    - mac_scrollbar      The default now
+    - bb_factor:         Removed
+    - display            Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
+    - quality            Use 'deviation'to control smoothness of rendered egdes
     """
 
     data = _convert(*cad_objs, **kwargs)

@@ -8,6 +8,12 @@ while getopts "dv" o; do
         v)
             VIEWER=1
             ;;
+        w)
+            export CAD_WIDTH=${OPTARG}
+            ;;
+        h)
+            export CAD_HEIGHT=${OPTARG}
+            ;;
         d)
             export THEME=dark
             ;;

@@ -2,6 +2,7 @@ from collections import OrderedDict as odict
 import cadquery as cq
 from cadquery_massembly import MAssembly
 from jupyter_cadquery.viewer.client import show
+from jupyter_cadquery import web_color
 
 # Note: Download https://www.matronics.dk/data/longship/files/products/vslot-2020_1.dxf first
 # if you don't have it at hand
@@ -107,14 +108,14 @@ conn = make_connector()
 def make_door():
     door = (
         MAssembly(name="door")  # add a name for hierarchical addressing
-        .add(w_slot, name="bottom")
-        .add(h_slot, name="left", loc=L(0, 40, 0))
-        .add(h_slot, name="right", loc=L(0, 80, 0))
-        .add(w_slot, name="top", loc=L(0, 120, 0))
-        .add(conn, name="con_tl", color=cq.Color("black"), loc=L(0, 0, -40))
-        .add(conn, name="con_tr", color=cq.Color("black"), loc=L(0, 40, -40))
-        .add(conn, name="con_bl", color=cq.Color("black"), loc=L(0, 80, -40))
-        .add(conn, name="con_br", color=cq.Color("black"), loc=L(0, 120, -40))
+        .add(w_slot, name="bottom", color=web_color("silver"))
+        .add(h_slot, name="left", loc=L(0, 40, 0), color=web_color("silver"))
+        .add(h_slot, name="right", loc=L(0, 80, 0), color=web_color("silver"))
+        .add(w_slot, name="top", loc=L(0, 120, 0), color=web_color("silver"))
+        .add(conn, name="con_tl", color=web_color("black"), loc=L(0, 0, -40))
+        .add(conn, name="con_tr", color=web_color("black"), loc=L(0, 40, -40))
+        .add(conn, name="con_bl", color=web_color("black"), loc=L(0, 80, -40))
+        .add(conn, name="con_br", color=web_color("black"), loc=L(0, 120, -40))
         .add(
             make_panel(W + 2 * SLOT_D, H + 2 * SLOT_D, PANEL_T, SLOT_D),
             name="panel",
@@ -124,7 +125,7 @@ def make_door():
         .add(
             make_handle(HANDLE_D, HANDLE_L, HANDLE_W),
             name="handle",
-            color=cq.Color("yellow"),
+            color=web_color("yellow"),
             loc=L(0, -150, 0),
         )
     )
@@ -155,7 +156,7 @@ door.mate("handle?mate1", name="handle_0", transforms=odict(rx=180))
 door.mate("panel?hole1", name="handle_1")
 
 
-check_mates = True
+check_mates = False
 if check_mates:
     show(door)
 else:

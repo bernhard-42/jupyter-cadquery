@@ -2,33 +2,115 @@
 
 View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or in a standalone viewer for any IDE
 
-![Overview](screenshots/0_intro.png)
+![Overview](screenshots/jupyter-cadquery.png)
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/v2.2.1?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/release3?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Release v2.2.1 (07.10.2021)
+## Release v3.0.0rc3 (12.02.2022)
 
-- **New features**
+Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[pythreejs](https://github.com/jupyter-widgets/pythreejs)_ and JupyterLab's _[sidecar](https://github.com/jupyter-widgets/jupyterlab-sidecar)_ looked reasonable in 2019, it turned out they had too many limitations. _pythreejs_ is stuck with an outdated version of _[threejs](https://github.com/mrdoob/three.js/)_ and the _sidecar_ project did not improve usability to a level I would have liked to have.
 
-  - The docker container now supports Viewer mode (added new flags `-v` and `-d`)
+_Jupyter-CadQuery_ is now a 3 layer project:
 
-- **Fixes**
+1. **[three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)**
+   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html). This layer could also serve as the viewer for a CadQuery integration into VS Code (anybody willing to give it a try?)
 
-  - Fix [#47](https://github.com/bernhard-42/jupyter-cadquery/issues/47) Unable to see cadquery.Assembly when top level object of an Assembly is empty
-  - Fix [#52](https://github.com/bernhard-42/jupyter-cadquery/issues/52) add `zoom` to ignored attributes for `reset_camera=False`
-  - Fix [#53](https://github.com/bernhard-42/jupyter-cadquery/issues/53) Replaced `scipy` with `pyquaternion` for less heavyweight dependencies (and since CadQuery dropped `scipy`)
+2. **[cad-view-widget](https://github.com/bernhard-42/cad-viewer-widget)**
+   A thin layer on top of _cad-viewer-widget_ that wraps the CAD viewer into an [ipywidget](https://github.com/jupyter-widgets/ipywidgets). The API documentation can be found [here](https://bernhard-42.github.io/cad-viewer-widget/cad_viewer_widget/index.html)
+
+3. **jupyter-cadquery** (this repository)
+   The actual CadQuery viewer, collecting and tessellating CadQuery objects, using _cad-view-widget_ to visualize the objects. It was written with the intent to be as compatible with Jupyter-CadQuery 2.x as reasonable. For changes se the migration section below.
+
+**New features**
+
+- Performance
+
+  - By removing the back and forth communication from pythreejs (Python) to Javascript (threejs), the new version is significantly faster in showing multi object assemblies.
+
+- CadQuery feature support
+
+  - Supports the latest **CadQuery Sketch class**.
+
+- New CAD View Controller
+
+  - Besides the _orbit_ controller (with z-axis being restricted to show up) it now also supports a **_trackball_ controller** with full freedom of moving the CAD objects. The trackball controller uses the holroyd algorithm (see e.g. [here](https://www.mattkeeter.com/projects/rotation/)) to have better control of movements and avoid the usual trackball tumbling.
+
+- A full re-implementation of Sidecar:
+
+  - Sidecars will be **reused based on name** of the sidecar
+  - **Supports different anchors** (_right_, _split-right_, _split-left_, _split-top_, _split-bottom_).
+  - Sidecars open "right" will adapt the size to the the size of the CAD view
+
+- WebGL contexts
+
+  - In a browser only a limited number of WebGL context can be shown at the same time (e.g. 16 in Chrome on my Mac). Hence, _Jupyter-CadQuery_ now thoroughly tracks WebGL contexts, i.e. **releases WebGL context** when sidecar gets closed.
+
+- Replay mode
+
+  - Supports **CadQuery Sketch class**.
+  - Replay mode now can **show bounding box** instead of result to compare step with result.
+
+- New features
+
+  - _Jupyter-CadQuery_ now allows to **show all three grids (xy, xz, yz)**.
+  - `show_bbox` additionally shows the bounding box.
+  - CAD viewer icons are scalable svg icons.
+  - Clipping supports an **intersection mode**.
+  - The animation controller is now part of the Javascript component.
+  - export_html exports the whole view (with tools) as a HTML page
+  - export_png export the CAD view (without tools) as a PNG
+
+**Fixes**
+
+- more than I can remember (or am willing to read out of git log) ...
+
+## Migration from 2.x
+
+**Deprecations:**
+
+- Import structure changed:
+  - `from jupyter_cadquery.cadquery import show, ...` will raise a deprecation error:
+    Use `from jupyter_cadquery import show, ...` instead.
+  - `from jupyter_cadquery.occ import show, ...` will raise a deprecation error:
+    Use `from jupyter_cadquery import show, ...` instead.
+  - `from jupyter_cadquery.animation import Animation` will raise a deprecation error:
+    Use `from jupyter_cadquery.cad_animation import Animation` instead.
+- Sidecar handling changed
+  - `set_sidecar(title, init=True)` will raise a deprecation error:
+    Use `open_viewer(title)` instead.
+  - `close_sidecar()` will raise a deprecation error:
+    Use `close_viewer(title)` instead.
+  - `close_sidecars()` will raise a deprecation error:
+    Use `close_viewers(title)` instead.
+- Change parameters:
+  - Parameter `grid` is now a tuple `(xy-grid, xz-grid, yz-grid)` instead of a boolean. A deprecation warning will be shown and the tuple `(grid, False, False)` used to invoke the old behavior.
+
+**Changed behavior:**
+
+- The replay mode now shows the result's bounding box as top level step by default instead of the result. Use `show_result=True` for the old behavior.
+- New parameters `viewer` and `anchor` of function `show` set a sidecar (with title <viewer>) and `anchor` to determine location of the sidecar (`right`, `split-right`, `split-left`, `split-top`, `split-bottom`).
+- The parameter `rotation` of function `show` has been replaced by `quaternion`, since the new viewer uses quaternions instead of Euler angles.
+- The parameter `quality` is ignored. Use `deviation` to control smoothness of rendered edges.
+- In 7.5 of opencascade something changed with color handling, so some colors might be different.
+- The default view does not render the back material, making transparent views brighter. When switching to clipping view, the back material will set to the edge color to give the impression of cut planes. This means that transparent object look darker.
+
+**Parameters of function `show` and `set_defaults` not supported any more:**
+
+- `mac_scrollbar`: This is used as default now.
+- `bb_factor`: Not necessary any more.
+- `display`: For sidecar display use `viewer="<viewer title>"` and for cell display use `viewer=None`.
 
 ## Key Features
 
-- Support for _CadQuery 2.1_ and _OCP_
+- Support for _CadQuery >= 2.1_ (including master at least as of 2021-01-18)
 - Viewing options:
   - Directly in the JupyterLab output cell
   - In a central Jupyterlab sidecar for any JupyterLab cell (see example 1 below)
   - As a standalone viewer for use from any IDE (see example 2 below)
 - Viewer features
-  - Toggle visibilty of shapes and edges
+  - Toggle visibility of shapes and edges
   - Orthographic and perspective view
   - Clipping with max 3 clipping planes (of free orientation)
   - Transparency mode
@@ -36,6 +118,8 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 - Assemblies
   - Supports [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
   - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of models
+- Sketches
+  - Support Sketch class for both `show` and `replay`
 - Auto display of _CadQuery_ shapes
 - Visual debugging by
   - displaying selected _CadQuery_ faces and edges
@@ -59,8 +143,8 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
    Note:
 
-   - the top half is the standalone viewer in a browser window
-   - the bottom half is the CadQuery code being debugged in VS Code
+   - The top half is the CadQuery code being debugged in VS Code
+   - The bottom half is the standalone viewer in a browser window
    - The `show` command in the code will tessellate the objects and send them via [zmq](https://pyzmq.readthedocs.io/en/latest/) to the standalone viewer
 
 ## Installation and Usage
@@ -69,17 +153,17 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
    - Create a conda environment with Jupyterlab:
 
-     - If you don't have it already, create a new conda environment with CadQuery 2.1
+     - If you don't have it already, create a new conda environment with the latest CadQuery (e.g. master)
 
        ```bash
-       conda create -n jcq22 -c conda-forge -c cadquery python=3.8 cadquery
-       conda activate jcq22
+       conda create -n jcq3 -c conda-forge -c cadquery python=3.8 cadquery=master
+       conda activate jcq3
        ```
 
      - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
        ```bash
-       pip install jupyter-cadquery==2.2.1 matplotlib
+       pip install jupyter-cadquery==3.0.0rc3 matplotlib
        ```
 
        Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -91,7 +175,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
    - Run _Jupyter-CadQuery_ in **JupyterLab**
 
      ```bash
-     conda activate jcq22
+     conda activate jcq3
      jupyter lab
      ```
 
@@ -106,7 +190,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
    - Run _Jupyter-CadQuery_ as **standalone viewer**
 
      ```bash
-     conda activate jcq22
+     conda activate jcq3
      jcv     # light theme
      jcv -d  # dark theme
      ```
@@ -114,7 +198,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
      In your code import the `show` or `show_object` function from the viewer:
 
      ```python
-     import cadqueray as cq
+     import cadquery as cq
      from jupyter_cadquery.viewer.client import show, show_object
 
      obj = cq. ...
@@ -130,27 +214,27 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:2.2.1
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.0.0rc3
      ```
 
      Notes:
 
      - Jupyter in the container will start in directory `/home/cq`
      - To start with examples, you can
-       - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:2.2.1` or
+       - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.0.0rc3` or
        - copy the example notebooks to your `$WORKDIR`. They will be available for JupyterLab in the container.
      - If you want to change the Dockerfile, `make docker` will create a new docker image
 
    - Run _Jupyter-CadQuery_ as **standalone viewer**
 
      ```bash
-     docker run -it --rm -p 8888:8888 -p 5555:5555 bwalter42/jupyter_cadquery:2.2.1 -v [-d]
+     docker run -it --rm -p 8888:8888 -p 5555:5555 bwalter42/jupyter_cadquery:3.0.0rc3 -v [-d]
      ```
 
      In your code import the `show` or `show_object` function from the viewer:
 
      ```python
-     import cadqueray as cq
+     import cadquery as cq
      from jupyter_cadquery.viewer.client import show, show_object
 
      obj = cq. ...
@@ -190,19 +274,16 @@ _(animated gifs)_
   - `height`: Height of the CAD view (default=600)
   - `tree_width`: Width of navigation tree part of the view (default=250)
   - `cad_width`: Width of CAD view part of the view (default=800)
-  - `bb_factor`: Scale bounding box to ensure compete rendering (default=1.5)
   - `default_color`: Default mesh color (default=(232, 176, 36))
   - `default_edgecolor`: Default mesh color (default=(128, 128, 128))
   - `render_edges`: Render edges (default=True)
   - `render_normals`: Render normals (default=False)
   - `render_mates`: Render mates (for MAssemblies)
   - `mate_scale`: Scale of rendered mates (for MAssemblies)
-  - `quality`: Linear deflection for tessellation (default=None)
-    If None, uses bounding box as in (xlen + ylen + zlen) / 300 \* deviation)
+  - `quality`: Linear deflection for tessellation (default=None). If None, uses: (xlen + ylen + zlen) / 300 \* deviation)
   - `deviation`: Deviation from default for linear deflection value ((default=0.1)
   - `angular_tolerance`: Angular deflection in radians for tessellation (default=0.2)
-  - `edge_accuracy`: Presicion of edge discretizaion (default=None)
-    If None, uses: quality / 100
+  - `edge_accuracy`: Precision of edge discretizaion (default=None). If None, uses: quality / 100
   - `optimal_bb`: Use optimal bounding box (default=False)
   - `axes`: Show axes (default=False)
   - `axes0`: Show axes at (0,0,0) (default=False)
@@ -210,21 +291,19 @@ _(animated gifs)_
   - `ticks`: Hint for the number of ticks in both directions (default=10)
   - `ortho`: Use orthographic projections (default=True)
   - `transparent`: Show objects transparent (default=False)
-  - `ambient_intensity` Intensity of ambient ligth (default=1.0)
+  - `ambient_intensity` Intensity of ambient light (default=1.0)
   - `direct_intensity` Intensity of direct lights (default=0.12)
   - `position`: Relative camera position that will be scaled (default=(1, 1, 1))
   - `rotation`: z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
   - `zoom`: Zoom factor of view (default=2.5)
   - `reset_camera`: Reset camera position, rotation and zoom to default (default=True)
-  - `mac_scrollbar`: Prettify scrollbars (default=True)
-  - `display`: Select display: "sidecar", "cell", "html"
+  - `show_parent`: Show the parent for edges, faces and vertices objects
+  - `show_bbox`: Show bounding box (default=False)
+  - `viewer`: Name of the sidecar viewer
+  - `anchor`: How to open sidecar: "right", "split-right", "split-bottom", ...
+  - `theme`: Theme "light" or "dark" (default="light")
   - `tools`: Show the viewer tools like the object tree
   - `timeit`: Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
-
-  For example isometric projection can be achieved in two ways:
-
-  - `position = (1, 1, 1)`
-  - `position = (0, 0, 1)` and `rotation = (45, 35.264389682, 0)`
 
 ### b) Manage default values
 
@@ -350,8 +429,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
 ```python
 import cadquery as cq
-from jupyter_cadquery.cadquery import (PartGroup, Part, Edges, Faces, Vertices, show)
-from jupyter_cadquery import set_sidecar, set_defaults
+from jupyter_cadquery import (PartGroup, Part, Edges, Faces, Vertices, show, set_viewer, set_defaults)
 
 set_defaults(axes=False, grid=True, axes0=True, ortho=True, transparent=True)
 set_sidecar("CadQuery", init=True)

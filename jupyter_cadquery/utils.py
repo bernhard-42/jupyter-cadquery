@@ -1,3 +1,4 @@
+import json
 import math
 import numpy as np
 import time
@@ -50,6 +51,11 @@ class Color:
         return rgb_to_hex((self.r, self.g, self.b))
 
 
+#
+# Helpers
+#
+
+
 def explode(edge_list):
     return [[edge_list[i], edge_list[i + 1]] for i in range(len(edge_list) - 1)]
 
@@ -58,76 +64,23 @@ def flatten(nested_list):
     return [y for x in nested_list for y in x]
 
 
-# CAD helpers
+def numpy_to_json(obj, indent=None):
+    class NumpyArrayEncoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, np.integer):
+                return int(o)
+            if isinstance(o, np.floating):
+                return float(o)
+            if isinstance(o, np.ndarray):
+                return o.tolist()
+
+            return super(NumpyArrayEncoder, self).default(o)
+
+    return json.dumps(obj, cls=NumpyArrayEncoder, indent=indent)
 
 
 def distance(v1, v2):
     return np.linalg.norm([x - y for x, y in zip(v1, v2)])
-
-
-def rad(deg):
-    return deg / 180.0 * math.pi
-
-
-def rotate_x(vector, angle):
-    angle = rad(angle)
-    mat = np.array(
-        [
-            [1, 0, 0],
-            [0, math.cos(angle), -math.sin(angle)],
-            [0, math.sin(angle), math.cos(angle)],
-        ]
-    )
-    return tuple(np.matmul(mat, vector))
-
-
-def rotate_y(vector, angle):
-    angle = rad(angle)
-    mat = np.array(
-        [
-            [math.cos(angle), 0, math.sin(angle)],
-            [0, 1, 0],
-            [-math.sin(angle), 0, math.cos(angle)],
-        ]
-    )
-    return tuple(np.matmul(mat, vector))
-
-
-def rotate_z(vector, angle):
-    angle = rad(angle)
-    mat = np.array(
-        [
-            [math.cos(angle), -math.sin(angle), 0],
-            [math.sin(angle), math.cos(angle), 0],
-            [0, 0, 1],
-        ]
-    )
-    return tuple(np.matmul(mat, vector))
-
-
-def rotate(vector, angle_x=0, angle_y=0, angle_z=0):
-    v = tuple(vector)
-    if angle_z != 0:
-        v = rotate_z(v, angle_z)
-    if angle_y != 0:
-        v = rotate_y(v, angle_y)
-    if angle_x != 0:
-        v = rotate_x(v, angle_x)
-    return v
-
-
-def pp_vec(v):
-    return "(" + ", ".join([f"{o:10.5f}" for o in v]) + ")"
-
-
-def pp_loc(loc, format=True):
-    T = loc.wrapped.Transformation()
-    t = T.Transforms()
-    q = T.GetRotation()
-    if format:
-        return pp_vec(t) + ", " + pp_vec((q.X(), q.Y(), q.Z(), q.W()))
-    else:
-        return (t, (q.X(), q.Y(), q.Z(), q.W()))
 
 
 #
@@ -173,39 +126,20 @@ class Timer:
             print("%8.3f sec: %s%s %s %s" % (time.time() - self.start, prefix, self.activity, self.name, self.info))
 
 
-class Progress:
-    def __init__(self, max_, width):
-        self.max = max_
-        self.progress = widgets.IntProgress(
-            0,
-            0,
-            max_,
-            layout=widgets.Layout(
-                width=f"{width}px", height="10px", padding="0px 4px 0px 0px !important", margin="-3px 0px -3px 2px"
-            ),
-        )
-        self.progress.add_class("jc-progress")
-
-    def reset(self, max_):
-        self.max = max_
-        self.progress.value = 0
-        self.progress.max = max_
-
-    def update(self):
-        if self.progress.value < self.max:
-            self.progress.value += 1
-
-
 def px(w):
     return f"{w}px"
 
 
-def warn(msg):
-    def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+def warn(message, warning=RuntimeWarning, when="always"):
+    def warning_on_one_line(
+        message, category, filename, lineno, file=None, line=None
+    ):  # pylint: disable=unused-argument
         return "%s: %s" % (category.__name__, message)
 
     warn_format = warnings.formatwarning
     warnings.formatwarning = warning_on_one_line
-    warnings.simplefilter("always", RuntimeWarning)
-    warnings.warn(msg + "\n", RuntimeWarning)
+    warnings.simplefilter(when, warning)
+    warnings.warn(message + "\n", warning)
     warnings.formatwarning = warn_format
+    warnings.simplefilter("ignore", warning)
+
