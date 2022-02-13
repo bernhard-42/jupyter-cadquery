@@ -8,7 +8,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/release3?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Release v3.0.0rc3 (23.01.2022)
+## Release v3.0.0rc3 (12.02.2022)
 
 Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[pythreejs](https://github.com/jupyter-widgets/pythreejs)_ and JupyterLab's _[sidecar](https://github.com/jupyter-widgets/jupyterlab-sidecar)_ looked reasonable in 2019, it turned out they had too many limitations. _pythreejs_ is stuck with an outdated version of _[threejs](https://github.com/mrdoob/three.js/)_ and the _sidecar_ project did not improve usability to a level I would have liked to have.
 
