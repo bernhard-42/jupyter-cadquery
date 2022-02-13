@@ -498,53 +498,66 @@ def to_assembly(*cad_objs, name="Group", render_mates=None, mate_scale=1, defaul
     return assembly
 
 
-def show(*cad_objs, render_mates=None, mate_scale=None, **kwargs):
+def show(*cad_objs, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:
-    - height:            Height of the CAD view (default=600)
-    - tree_width:        Width of navigation tree part of the view (default=250)
-    - cad_width:         Width of CAD view part of the view (default=800)
-    - default_color:     Default mesh color (default=(232, 176, 36))
-    - default_edgecolor: Default mesh color (default=(128, 128, 128))
-    - render_edges:      Render edges  (default=True)
-    - render_normals:    Render normals (default=False)
-    - render_mates:      Render mates (for MAssemblies)
-    - mate_scale:        Scale of rendered mates (for MAssemblies)
-    - deviation:         Shapes: Deviation from linear deflection value (default=0.1)
-    - angular_tolerance: Shapes: Angular deflection in radians for tessellation (default=0.2)
-    - edge_accuracy:     Edges: Precision of edge discretization (default: mesh quality / 100)
-    - optimal_bb:        Use optimal bounding box (default=False)
-    - axes:              Show axes (default=False)
-    - axes0:             Show axes at (0,0,0) (default=False)
-    - grid:              Show grid (default=False)
-    - ticks:             Hint for the number of ticks in both directions (default=10)
-    - ortho:             Use orthographic projections (default=True)
-    - transparent:       Show objects transparent (default=False)
-    - ambient_intensity  Intensity of ambient light (default=1.0)
-    - direct_intensity   Intensity of direct lights (default=0.12)
-    - position:          Relative camera position that will be scaled (default=(1, 1, 1))
-    - rotation:          z, y and y rotation angles to apply to position vector (default=(0, 0, 0))
-    - zoom:              Zoom factor of view (default=2.5)
-    - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
-    - show_parent:       Show the parent for edges, faces and vertices objects
-    - show_bbox:         Show bounding box (default=False)
-    - viewer:            Name of the sidecar viewer
-    - anchor:            How to open sidecar: "right", "split-right", "split-bottom", ...
-    - pinning:           Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
-    - theme:             Theme "light" or "dark" (default="light")
-    - tools:             Show the viewer tools like the object tree
-    - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
+
+    DISPLAY OPTIONS
+    - viewer:             Name of the sidecar viewer (default=None)
+    - anchor:             How to open sidecar: "right", "split-right", "split-bottom", ... (default="right")
+    - cad_width:          Width of CAD view part of the view (default=800)
+    - tree_width:         Width of navigation tree part of the view (default=250)
+    - height:             Height of the CAD view (default=600)
+    - theme:              Theme "light" or "dark" (default="light")
+    - pinning:            Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
+
+    TESSELLATION OPTIONS
+    - angular_tolerance:  Shapes: Angular deflection in radians for tessellation (default=0.2)
+    - deviation:          Shapes: Deviation from linear deflection value (default=0.1)
+    - edge_accuracy:      Edges: Precision of edge discretization (default=None, i.e. mesh quality / 100)
+    - default_color:      Default face color (default=(232, 176, 36))
+    - default_edge_color: Default edge color (default="#707070")
+    - optimal_bb:         Use optimal bounding box (default=False)
+    - render_normals:     Render vertex normals(default=False)
+    - render_edges:       Render edges  (default=True)
+    - render_mates:       Render mates (for MAssemblies, default=False)
+    - mate_scale:         Scale of rendered mates (for MAssemblies, default=1)
+
+    VIEWER OPTIONS
+    - control:            Use trackball controls ('trackball') or orbit controls ('orbit') (default='trackball')
+    - axes:               Show axes (default=False)
+    - axes0:              Show axes at (0,0,0) (default=False)
+    - grid:               Show grid (default=[False, False, False])
+    - ticks:              Hint for the number of ticks in both directions (default=10)
+    - ortho:              Use orthographic projections (default=True)
+    - transparent:        Show objects transparent (default=False)
+    - black_edges:        Show edges in black (default=False)
+    - position:           Absolute camera position that will be scaled (default=None)
+    - quaternion:         Camera rotation as quaternion (x, y, z, w) (default=None)
+    - target:             Camera target to look at (default=None)
+    - zoom:               Zoom factor of view (default=2.5)
+    - reset_camera:       Reset camera position, rotation and zoom to default (default=True)
+    - zoom_speed:         Mouse zoom speed (default=1.0)
+    - pan_speed:          Mouse pan speed (default=1.0)
+    - rotate_speed:       Mouse rotate speed (default=1.0)
+    - ambient_intensity   Intensity of ambient light (default=0.75)
+    - direct_intensity    Intensity of direct lights (default=0.15)
+    - show_parent:        Show the parent for edges, faces and vertices objects
+    - show_bbox:          Show bounding box (default=False)
+    - tools:              Show the viewer tools like the object tree (default=True)
+    - timeit:             Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
+    - js_debug:           Enable debug output in browser console (default=False)
 
     NOT SUPPORTED ANY MORE:
-    - mac_scrollbar      The default now
-    - bb_factor:         Removed
-    - display            Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
-    - quality            Use 'deviation'to control smoothness of rendered egdes
+    - mac_scrollbar       The default now
+    - bb_factor:          Removed
+    - display             Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
+    - quality             Use 'deviation'to control smoothness of rendered edges
     """
 
-    render_mates = preset("render_mates", render_mates)
-    mate_scale = preset("mate_scale", mate_scale)
+    render_mates = preset("render_mates", kwargs.get("render_mates"))
+    mate_scale = preset("mate_scale", kwargs.get("mate_scale"))
     default_color = preset("default_color", kwargs.get("default_color"))
     show_parent = preset("show_parent", kwargs.get("show_parent"))
 
