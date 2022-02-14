@@ -117,7 +117,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    - The bottom half is the standalone viewer in a browser window
    - The `show` command in the code will tessellate the objects and send them via [zmq](https://pyzmq.readthedocs.io/en/latest/) to the standalone viewer
 
-## Installation and Usage
+## Installation
 
 ### Using conda
 
