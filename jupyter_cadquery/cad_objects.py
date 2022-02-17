@@ -243,7 +243,7 @@ def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
 
 
 def _from_wirelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
-    result = Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)
+    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
@@ -493,7 +493,7 @@ def to_assembly(*cad_objs, name="Group", render_mates=None, mate_scale=1, defaul
 
         elif _is_wirelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: wirelist")
-            assembly.add(_from_wirelist(cad_obj, obj_id, show_parent=show_parent))
+            assembly.add_list(_from_wirelist(cad_obj, obj_id, show_parent=show_parent))
 
         elif _is_vertexlist(cad_obj):
             _debug(f"CAD Obj {obj_id}: vertexlist")
