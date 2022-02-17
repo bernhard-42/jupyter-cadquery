@@ -87,7 +87,15 @@ class _Part(_CADObject):
         return [self.state_faces, self.state_edges]
 
     def collect_shapes(
-        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
+        self,
+        path,
+        loc,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        render_edges,
+        progress=None,
+        timeit=False,
     ):
         self.id = f"{path}/{self.name}"
 
@@ -167,7 +175,15 @@ class _Edges(_CADObject):
         return [EMPTY, SELECTED]
 
     def collect_shapes(
-        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
+        self,
+        path,
+        loc,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        render_edges,
+        progress=None,
+        timeit=False,
     ):
         self.id = f"{path}/{self.name}"
 
@@ -209,7 +225,15 @@ class _Vertices(_CADObject):
         return [EMPTY, SELECTED]
 
     def collect_shapes(
-        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
+        self,
+        path,
+        loc,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        render_edges,
+        progress=None,
+        timeit=False,
     ):
         self.id = f"{path}/{self.name}"
 
@@ -246,7 +270,15 @@ class _PartGroup(_CADObject):
         }
 
     def collect_shapes(
-        self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress=None, timeit=False,
+        self,
+        path,
+        loc,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        render_edges,
+        progress=None,
+        timeit=False,
     ):
 
         self.id = f"{path}/{self.name}"
@@ -262,7 +294,14 @@ class _PartGroup(_CADObject):
         for obj in self.objects:
             result["parts"].append(
                 obj.collect_shapes(
-                    self.id, combined_loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress, timeit,
+                    self.id,
+                    combined_loc,
+                    deviation,
+                    angular_tolerance,
+                    edge_accuracy,
+                    render_edges,
+                    progress,
+                    timeit,
                 )
             )
         return result
