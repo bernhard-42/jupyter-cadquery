@@ -147,16 +147,14 @@ class Tessellator:
 
                 # add vertices
                 # [node.Transformed(Trsf).Coord() for node in poly.Nodes()] is 5-8 times slower!
-                items = poly.Nodes()
-                coords = [items.Value(i).Transformed(Trsf).Coord() for i in range(items.Lower(), items.Upper() + 1)]
+                coords = [poly.Node(i).Transformed(Trsf).Coord() for i in range(1, poly.NbNodes() + 1)]
                 flat = []
                 for coord in coords:
                     flat += coord
                 self.vertices.extend(flat)
 
                 # add triangles
-                items = poly.Triangles()
-                coords = [items.Value(i).Get() for i in range(items.Lower(), items.Upper() + 1)]
+                coords = [poly.Triangle(i).Get() for i in range(1, poly.NbTriangles() + 1)]
                 flat = []
                 for coord in coords:
                     flat += (coord[0] + offset, coord[i1] + offset, coord[i2] + offset)
@@ -172,9 +170,7 @@ class Tessellator:
                         return n_buf.Reverse().Coord() if internal else n_buf.Coord()
 
                     prop = BRepGProp_Face(face)
-                    items = poly.UVNodes()
-
-                    uvs = [items.Value(i).Coord() for i in range(items.Lower(), items.Upper() + 1)]
+                    uvs = [poly.UVNode(i).Coord() for i in range(1, poly.NbNodes() + 1)]
                     flat = []
                     for uv1, uv2 in uvs:
                         flat += extract(uv1, uv2)
@@ -198,38 +194,44 @@ class Tessellator:
                 continue
 
             loc = TopLoc_Location()
-            poly = BRep_Tool.Polygon3D_s(edge, loc)
 
-            if poly is not None:
-                # print("Polygon3D successful")
-                nodes = poly.Nodes()
-                transf = loc.Transformation()
-                v1 = None
-                for j in range(1, poly.NbNodes() + 1):
-                    v2 = nodes.Value(j)
-                    v2.Transform(transf)
-                    v2 = v2.Coord()
-                    if v1 is not None:
-                        self.edges.append((v1, v2))
-                    v1 = v2
+            # poly = BRep_Tool.Polygon3D_s(edge, loc)
+            # if poly is not None:
+            #     print("Polygon3D successful")
+            #     nodes = poly.Nodes()
+            #     transf = loc.Transformation()
+            #     v1 = None
+            #     for j in range(1, poly.NbNodes() + 1):
+            #         v2 = nodes.Value(j)
+            #         v2.Transform(transf)
+            #         v2 = v2.Coord()
+            #         if v1 is not None:
+            #             self.edges.append((v1, v2))
+            #         v1 = v2
+            # else:
+            face = TopoDS.Face_s(face_list.First())
+            triangle = BRep_Tool.Triangulation_s(face, loc)
+            poly = BRep_Tool.PolygonOnTriangulation_s(edge, triangle, loc)
+
+            if poly is None:
+                continue
+
+            nodes = [triangle.Node(i) for i in range(1, triangle.NbNodes() + 1)]
+            nodes = [None] + nodes
+
+            if hasattr(poly, "Node"):
+                # much faster in OCCT 7.6, but doesn't exist in 7.5
+                indices = [poly.Node(i) for i in range(1, poly.NbNodes() + 1)]
             else:
-                face = TopoDS.Face_s(face_list.First())
-                triang = BRep_Tool.Triangulation_s(face, loc)
-                poly = BRep_Tool.PolygonOnTriangulation_s(edge, triang, loc)
-                if poly is None:
-                    continue
+                indices = [index for index in poly.Nodes()]
 
-                indices = poly.Nodes()
-                nodes = triang.Nodes()
-                transf = loc.Transformation()
-                v1 = None
-                for j in range(indices.Lower(), indices.Upper() + 1):
-                    v2 = nodes.Value(indices.Value(j))
-                    v2.Transform(transf)
-                    v2 = v2.Coord()
-                    if v1 is not None:
-                        self.edges.append((v1, v2))
-                    v1 = v2
+            transf = loc.Transformation()
+            v1 = None
+            for j in indices:
+                v2 = nodes[j].Transformed(transf).Coord()
+                if v1 is not None:
+                    self.edges.append((v1, v2))
+                v1 = v2
 
     def get_vertices(self):
         return np.asarray(self.vertices, dtype=np.float32).reshape(-1, 3)
