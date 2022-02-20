@@ -97,7 +97,13 @@ class Tessellator:
         return count
 
     def compute(
-        self, shape, quality, angular_tolerance, tessellate=True, compute_edges=True, debug=False,
+        self,
+        shape,
+        quality,
+        angular_tolerance,
+        tessellate=True,
+        compute_edges=True,
+        debug=False,
     ):
         self.shape = shape
         self.edges = []
@@ -251,7 +257,12 @@ def compute_quality(bb, deviation=0.1):
 
 
 def tessellate(
-    shapes, quality: float, angular_tolerance: float, tessellate=True, compute_edges=True, debug=False,
+    shapes,
+    quality: float,
+    angular_tolerance: float,
+    tessellate=True,
+    compute_edges=True,
+    debug=False,
 ):
     compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
     tess = Tessellator()
