@@ -6,9 +6,9 @@ View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or i
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/release3?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Release v3.0.0rc3 (12.02.2022)
+## Release v3.0.0rc4 (20.02.2022)
 
 ### Overview
 
@@ -130,7 +130,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      ```
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
      ```bash
-     pip install jupyter-cadquery==3.0.0rc3 matplotlib
+     pip install jupyter-cadquery==3.0.0rc4 matplotlib
      ```
      Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
      ```bash
@@ -182,14 +182,14 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.0.0rc3
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.0.0rc4
      ```
 
      Jupyter in the container will start in directory `/home/cq`
 
    - To start with examples, you can
 
-     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.0.0rc3` or
+     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.0.0rc4` or
      - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
 
    - If you want to change the Dockerfile, `make docker` will create a new docker image
@@ -199,7 +199,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    - Start the browser based viewer:
 
      ```bash
-     docker run -it --rm -p 8888:8888 -p 5555:5555 bwalter42/jupyter_cadquery:3.0.0rc3 -v [-d]
+     docker run -it --rm -p 8888:8888 -p 5555:5555 bwalter42/jupyter_cadquery:3.0.0rc4 -v [-d]
      ```
 
    - In your code import the `show` or `show_object` function from the viewer:
