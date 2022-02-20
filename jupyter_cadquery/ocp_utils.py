@@ -206,14 +206,14 @@ def get_rgb(color):
 
 def loc_to_tq(loc):
     T = loc.wrapped.Transformation()
-    t = T.Transforms()
+    t = T.TranslationPart()
     q = T.GetRotation()
-    return (t, (q.X(), q.Y(), q.Z(), q.W()))
+    return ((t.X(), t.Y(), t.Z()), (q.X(), q.Y(), q.Z(), q.W()))
 
 
 def __location__repr__(self):
     t, r = loc_to_tq(self)
-    return f"(t={t}, q=({r[0]}, {r[1]}, {r[2]}, {r[3]}))"
+    return f"Location: t=({t[0]}, {t[1]}, {t[2]}), q=({r[0]}, {r[1]}, {r[2]}, {r[3]})"
 
 
 Location.__repr__ = __location__repr__  # type: ignore
