@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+import numpy as np
+
 from cadquery import Compound, __version__
 
 from cad_viewer_widget import show as viewer_show
@@ -194,7 +196,10 @@ class _Edges(_CADObject):
             t.info = str(bb)
 
         with Timer(timeit, self.name, "discretize:  ", 2):
-            edges = flatten([discretize_edge(edge, deflection) for edge in self.shape])
+            edges = []
+            for edge in self.shape:
+                edges.extend(discretize_edge(edge, deflection))
+            edges = np.asarray(edges)
 
         if progress:
             progress.update()
