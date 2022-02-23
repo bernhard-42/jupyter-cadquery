@@ -27,7 +27,7 @@ setup_args = {
         "voila~=0.3",
         "cadquery_massembly~=0.9",
         "pyquaternion~=0.9.9",
-        "cad-viewer-widget~=1.0.0",
+        "cad-viewer-widget~=1.1.0",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},
