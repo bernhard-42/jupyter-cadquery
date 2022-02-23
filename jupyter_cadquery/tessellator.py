@@ -87,6 +87,7 @@ class Tessellator:
         self.normals = np.empty((0, 3), dtype="float32")
         self.normals = np.empty((0, 2, 3), dtype="float32")
         self.shape = None
+        self.edges = []
 
     def number_solids(self, shape):
         count = 0
@@ -101,12 +102,11 @@ class Tessellator:
         shape,
         quality,
         angular_tolerance,
-        tessellate=True,
+        compute_faces=True,
         compute_edges=True,
         debug=False,
     ):
         self.shape = shape
-        self.edges = []
 
         count = self.number_solids(shape)
         with Timer(debug, "", f"mesh incrementally {'(parallel)' if count > 1 else ''}", 3):
@@ -114,7 +114,7 @@ class Tessellator:
             BRepTools.Clean_s(shape)
             BRepMesh_IncrementalMesh(shape, quality, False, angular_tolerance, count > 1)
 
-        if tessellate:
+        if compute_faces:
             with Timer(debug, "", "get nodes, triangles and normals", 3):
                 self.tessellate()
 
@@ -152,18 +152,16 @@ class Tessellator:
                 Trsf = loc_buf.Transformation()
 
                 # add vertices
-                # [node.Transformed(Trsf).Coord() for node in poly.Nodes()] is 5-8 times slower!
-                coords = [poly.Node(i).Transformed(Trsf).Coord() for i in range(1, poly.NbNodes() + 1)]
                 flat = []
-                for coord in coords:
-                    flat += coord
+                for i in range(1, poly.NbNodes() + 1):
+                    flat.extend(poly.Node(i).Transformed(Trsf).Coord())
                 self.vertices.extend(flat)
 
                 # add triangles
-                coords = [poly.Triangle(i).Get() for i in range(1, poly.NbTriangles() + 1)]
                 flat = []
-                for coord in coords:
-                    flat += (coord[0] + offset, coord[i1] + offset, coord[i2] + offset)
+                for i in range(1, poly.NbTriangles() + 1):
+                    coord = poly.Triangle(i).Get()
+                    flat.extend((coord[0] + offset, coord[i1] + offset, coord[i2] + offset))
                 self.triangles.extend(flat)
 
                 # add normals
@@ -179,7 +177,7 @@ class Tessellator:
                     uvs = [poly.UVNode(i).Coord() for i in range(1, poly.NbNodes() + 1)]
                     flat = []
                     for uv1, uv2 in uvs:
-                        flat += extract(uv1, uv2)
+                        flat.extend(extract(uv1, uv2))
                     self.normals.extend(flat)
 
                 offset += poly.NbNodes()
@@ -201,20 +199,6 @@ class Tessellator:
 
             loc = TopLoc_Location()
 
-            # poly = BRep_Tool.Polygon3D_s(edge, loc)
-            # if poly is not None:
-            #     print("Polygon3D successful")
-            #     nodes = poly.Nodes()
-            #     transf = loc.Transformation()
-            #     v1 = None
-            #     for j in range(1, poly.NbNodes() + 1):
-            #         v2 = nodes.Value(j)
-            #         v2.Transform(transf)
-            #         v2 = v2.Coord()
-            #         if v1 is not None:
-            #             self.edges.append((v1, v2))
-            #         v1 = v2
-            # else:
             face = TopoDS.Face_s(face_list.First())
             triangle = BRep_Tool.Triangulation_s(face, loc)
             poly = BRep_Tool.PolygonOnTriangulation_s(edge, triangle, loc)
@@ -222,31 +206,30 @@ class Tessellator:
             if poly is None:
                 continue
 
-            nodes = [triangle.Node(i) for i in range(1, triangle.NbNodes() + 1)]
-            nodes = [None] + nodes
-
-            if hasattr(poly, "Node"):
-                # much faster in OCCT 7.6, but doesn't exist in 7.5
-                indices = [poly.Node(i) for i in range(1, poly.NbNodes() + 1)]
-            else:
-                indices = [index for index in poly.Nodes()]
+            if hasattr(poly, "Node"):  # OCCT > 7.5
+                nrange = range(1, poly.NbNodes() + 1)
+                index = poly.Node
+            else:  # OCCT == 7.5
+                indices = poly.Nodes()
+                nrange = range(indices.Lower(), indices.Upper() + 1)
+                index = indices.Value
 
             transf = loc.Transformation()
             v1 = None
-            for j in indices:
-                v2 = nodes[j].Transformed(transf).Coord()
+            for j in nrange:
+                v2 = triangle.Node(index(j)).Transformed(transf).Coord()
                 if v1 is not None:
                     self.edges.append((v1, v2))
                 v1 = v2
 
     def get_vertices(self):
-        return np.asarray(self.vertices, dtype=np.float32).reshape(-1, 3)
+        return np.asarray(self.vertices, dtype=np.float32)
 
     def get_triangles(self):
-        return np.asarray(self.triangles, dtype=np.int32).reshape(-1, 3)
+        return np.asarray(self.triangles, dtype=np.int32)
 
     def get_normals(self):
-        return np.asarray(self.normals, dtype=np.float32).reshape(-1, 3)
+        return np.asarray(self.normals, dtype=np.float32)
 
     def get_edges(self):
         return np.asarray(self.edges, dtype=np.float32)
@@ -260,13 +243,13 @@ def tessellate(
     shapes,
     quality: float,
     angular_tolerance: float,
-    tessellate=True,
+    compute_faces=True,
     compute_edges=True,
     debug=False,
 ):
     compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
     tess = Tessellator()
-    tess.compute(compound, quality, angular_tolerance, tessellate, compute_edges, debug)
+    tess.compute(compound, quality, angular_tolerance, compute_faces, compute_edges, debug)
     return {
         "vertices": tess.get_vertices(),
         "triangles": tess.get_triangles(),
