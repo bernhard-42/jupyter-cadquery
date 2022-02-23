@@ -8,7 +8,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Release v3.0.0rc5 (20.02.2022)
+## Release v3.0.0rc5 (23.02.2022)
 
 ### Overview
 
