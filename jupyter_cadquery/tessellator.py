@@ -1,4 +1,6 @@
-from array import array
+import sys
+
+from cachetools import LRUCache, cached
 
 import numpy as np
 
@@ -16,70 +18,35 @@ from OCP.TopoDS import TopoDS
 from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
-from jupyter_cadquery.utils import Timer
+from jupyter_cadquery.utils import Timer, round_sig
 from jupyter_cadquery.ocp_utils import get_faces
 from cadquery.occ_impl.shapes import Compound
 
-# class RenderCache:
-#     def __init__(self):
-#         self.objects = {}
-#         self.use_cache = True
 
-#     def reset_cache(self):
-#         self.objects = {}
-
-#     def toggle_cache(self):
-#         self.use_cache = not self.use_cache
-#         print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
-
-#     def tessellate(
-#         self,
-#         compound,
-#         quality=None,
-#         angular_tolerance=None,
-#         render_edges=True,
-#         normals_len=0,
-#         debug=False,
-#     ):
-
-#         hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
-#         if self.objects.get(hash) is None:
-#             tess = Tessellator()
-#             tess.compute(
-#                 compound,
-#                 quality=quality,
-#                 angular_tolerance=angular_tolerance,
-#                 compute_edges=render_edges,
-#                 normals_len=normals_len,
-#                 debug=debug,
-#             )
-#             np_vertices = tess.get_vertices()
-#             np_triangles = tess.get_triangles()
-#             np_normals = tess.get_normals()
-#             np_edges = tess.get_edges()
-
-#             if np_normals.shape != np_vertices.shape:
-#                 raise AssertionError("Wrong number of normals/shapes")
-
-#             shape_geometry = BufferGeometry(
-#                 attributes={
-#                     "position": BufferAttribute(np_vertices),
-#                     "index": BufferAttribute(np_triangles),
-#                     "normal": BufferAttribute(np_normals),
-#                 }
-#             )
-#             if debug:
-#                 print(f"| | | (Caching {hash})")
-#             self.objects[hash] = (shape_geometry, np_edges)
-#         else:
-#             if debug:
-#                 print(f"| | | (Taking {hash} from cache)")
-#         return self.objects[hash]
+def make_key(shape, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False, progress=True):
+    return (
+        shape[0].HashCode(2147483647),
+        quality,
+        angular_tolerance,
+        compute_edges,
+        compute_faces,
+    )
 
 
-# RENDER_CACHE = RenderCache()
-# reset_cache = RENDER_CACHE.reset_cache
-# toggle_cache = RENDER_CACHE.toggle_cache
+def get_size(obj):
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict):
+        size += sum([get_size(v) + len(k) for k, v in obj.items()])
+    elif isinstance(obj, np.ndarray):
+        size += obj.size * obj.dtype.itemsize
+    elif isinstance(obj, (tuple, list)):
+        size += sum([get_size(i) for i in obj])
+    return size
+
+
+cache = LRUCache(maxsize=128 * 1024 * 1024, getsizeof=get_size)
+
+
 class Tessellator:
     def __init__(self):
         self.vertices = np.empty((0, 3), dtype="float32")
@@ -105,7 +72,11 @@ class Tessellator:
         compute_faces=True,
         compute_edges=True,
         debug=False,
+        progress=True,
     ):
+        if progress:
+            print("t", end="")
+
         self.shape = shape
 
         count = self.number_solids(shape)
@@ -236,9 +207,14 @@ class Tessellator:
 
 
 def compute_quality(bb, deviation=0.1):
-    return (bb.xsize + bb.ysize + bb.zsize) / 300 * deviation
+    # Since tessellation caching depends on quality, try to come up with stable a quality value
+    quality = round_sig(
+        (round_sig(bb.xsize, 2) + round_sig(bb.ysize, 2) + round_sig(bb.zsize, 2)) / 300 * deviation, 2
+    )
+    return quality
 
 
+@cached(cache, key=make_key)
 def tessellate(
     shapes,
     quality: float,
@@ -246,10 +222,11 @@ def tessellate(
     compute_faces=True,
     compute_edges=True,
     debug=False,
+    progress=True,
 ):
     compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
     tess = Tessellator()
-    tess.compute(compound, quality, angular_tolerance, compute_faces, compute_edges, debug)
+    tess.compute(compound, quality, angular_tolerance, compute_faces, compute_edges, debug, progress)
     return {
         "vertices": tess.get_vertices(),
         "triangles": tess.get_triangles(),

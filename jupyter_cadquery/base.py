@@ -115,6 +115,7 @@ class _Part(_CADObject):
                 angular_tolerance=angular_tolerance,
                 debug=timeit,
                 compute_edges=render_edges,
+                progress=progress,
             )
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
 
