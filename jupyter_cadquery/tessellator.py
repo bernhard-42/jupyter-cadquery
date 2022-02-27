@@ -97,9 +97,9 @@ class Tessellator:
         # BRepTools.Clean_s(shape)
 
     def tessellate(self):
-        self.vertices = array("f")
-        self.triangles = array("f")
-        self.normals = array("f")
+        self.vertices = []
+        self.triangles = []
+        self.normals = []
 
         # global buffers
         p_buf = gp_Pnt()
@@ -137,18 +137,14 @@ class Tessellator:
 
                 # add normals
                 if poly.HasUVNodes():
-
-                    def extract(uv0, uv1):
-                        prop.Normal(uv0, uv1, p_buf, n_buf)
+                    prop = BRepGProp_Face(face)
+                    flat = []
+                    for i in range(1, poly.NbNodes() + 1):
+                        u, v = poly.UVNode(i).Coord()
+                        prop.Normal(u, v, p_buf, n_buf)
                         if n_buf.SquareMagnitude() > 0:
                             n_buf.Normalize()
-                        return n_buf.Reverse().Coord() if internal else n_buf.Coord()
-
-                    prop = BRepGProp_Face(face)
-                    uvs = [poly.UVNode(i).Coord() for i in range(1, poly.NbNodes() + 1)]
-                    flat = []
-                    for uv1, uv2 in uvs:
-                        flat.extend(extract(uv1, uv2))
+                        flat.extend(n_buf.Reverse().Coord() if internal else n_buf.Coord())
                     self.normals.extend(flat)
 
                 offset += poly.NbNodes()
