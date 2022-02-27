@@ -51,12 +51,12 @@ class Progress:
         self.num = num
         self.counter = 0
 
-    def update(self):
+    def update(self, tick="."):
         """Update progress and delete when 100% is reached"""
-        print(".", end="", flush=True)
+        print(tick, end="", flush=True)
         self.counter += 1
         if self.counter == self.num:
-            print("%s%s" % ("\r" * self.num * 2, " " * self.num * 2), sep="")
+            print("%s%s" % ("\r" * self.num, " " * self.num), sep="")
 
 
 class _CADObject(object):
@@ -111,6 +111,7 @@ class _Part(_CADObject):
         with Timer(timeit, self.name, "tessellate:     ", 2) as t:
             mesh = tessellate(
                 self.shape,
+                deviation=deviation,
                 quality=quality,
                 angular_tolerance=angular_tolerance,
                 debug=timeit,
@@ -124,9 +125,6 @@ class _Part(_CADObject):
             bb2 = bounding_box(self.shape, loc=loc, optimal=False)
             bb2.update(bb, minimize=True)
             t.info = str(bb2)
-
-        if progress:
-            progress.update()
 
         if isinstance(self.color, tuple):
             color = [c.web_color for c in self.color]  # pylint: disable=not-an-iterable
