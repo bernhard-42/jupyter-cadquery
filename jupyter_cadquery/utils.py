@@ -4,7 +4,10 @@ import numpy as np
 import time
 import warnings
 from webcolors import name_to_rgb, hex_to_rgb, rgb_to_hex
-import ipywidgets as widgets
+
+
+def round_sig(x, sig):
+    return round(x, sig - int(math.floor(math.log10(abs(x)))) - 1)
 
 
 class Color:
@@ -142,4 +145,3 @@ def warn(message, warning=RuntimeWarning, when="always"):
     warnings.warn(message + "\n", warning)
     warnings.formatwarning = warn_format
     warnings.simplefilter("ignore", warning)
-
