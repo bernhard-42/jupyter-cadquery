@@ -145,7 +145,7 @@ class _Part(_CADObject):
         }
 
     def compound(self):
-        return self.shape[0]
+        return Compound._makeCompound(self.shape)
 
     def compounds(self):
         return [self.compound()]
