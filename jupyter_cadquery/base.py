@@ -56,7 +56,7 @@ class Progress:
         print(".", end="", flush=True)
         self.counter += 1
         if self.counter == self.num:
-            print("%s%s" % ("\r" * self.num, " " * self.num), sep="")
+            print("%s%s" % ("\r" * self.num * 2, " " * self.num * 2), sep="")
 
 
 class _CADObject(object):
