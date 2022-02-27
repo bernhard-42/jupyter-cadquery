@@ -12,7 +12,7 @@ from OCP.TopAbs import (
     TopAbs_EDGE,
     TopAbs_FACE,
 )
-from OCP.TopoDS import TopoDS_Compound
+from OCP.TopoDS import TopoDS_Compound, TopoDS_Shape
 from OCP.TopExp import TopExp_Explorer
 
 from OCP.StlAPI import StlAPI_Writer
@@ -170,6 +170,10 @@ def write_stl_file(compound, filename, tolerance=None, angular_tolerance=None):
 
 def is_compound(topods_shape):
     return isinstance(topods_shape, TopoDS_Compound)
+
+
+def is_shape(topods_shape):
+    return isinstance(topods_shape, TopoDS_Shape)
 
 
 def _get_topo(shape, topo):

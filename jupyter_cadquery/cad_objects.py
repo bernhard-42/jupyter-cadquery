@@ -37,7 +37,7 @@ from cadquery import (
 from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
 from .utils import Color, flatten, warn
-from .ocp_utils import get_rgb, is_compound
+from .ocp_utils import get_rgb, is_compound, is_shape
 from .defaults import get_default, preset
 
 
@@ -181,6 +181,9 @@ def _to_occ(cad_obj):
         return [cad_obj.wrapped]
 
     elif is_compound(cad_obj):
+        return [cad_obj]
+
+    elif is_shape(cad_obj):
         return [cad_obj]
 
     else:
@@ -510,7 +513,11 @@ def to_assembly(*cad_objs, name="Group", render_mates=None, mate_scale=1, defaul
             )
 
         elif is_compound(cad_obj):
-            _debug(f"CAD Obj {obj_id}: compound")
+            _debug(f"CAD Obj {obj_id}: TopoDS Compound")
+            assembly.add(_Part([cad_obj], color=default_color))
+
+        elif is_shape(cad_obj):
+            _debug(f"CAD Obj {obj_id}: TopoDS Shape")
             assembly.add(_Part([cad_obj], color=default_color))
 
         elif isinstance(cad_obj.val(), Vector):
