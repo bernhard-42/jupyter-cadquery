@@ -23,14 +23,22 @@ from jupyter_cadquery.ocp_utils import get_faces
 from cadquery.occ_impl.shapes import Compound
 
 
-def make_key(shape, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False, progress=True):
-    return (
-        shape[0].HashCode(2147483647),
-        quality,
+def make_key(
+    shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False, progress=True
+):
+    # quality is a measure of bounding box and deviation, hence can be ignored (and should due to accuracy issues
+    # of non optimal bounding boxes. debug and progress are also irrelevant for tessellation results)
+    if not isinstance(shape, (tuple, list)):
+        shape = [shape]
+
+    key = (
+        tuple((s.HashCode(2147483647) for s in shape)),
+        deviation,
         angular_tolerance,
         compute_edges,
         compute_faces,
     )
+    return key
 
 
 def get_size(obj):
@@ -72,10 +80,10 @@ class Tessellator:
         compute_faces=True,
         compute_edges=True,
         debug=False,
-        progress=True,
+        progress=None,
     ):
         if progress:
-            print("t", end="")
+            progress.update(".")
 
         self.shape = shape
 
@@ -205,20 +213,22 @@ class Tessellator:
 def compute_quality(bb, deviation=0.1):
     # Since tessellation caching depends on quality, try to come up with stable a quality value
     quality = round_sig(
-        (round_sig(bb.xsize, 2) + round_sig(bb.ysize, 2) + round_sig(bb.zsize, 2)) / 300 * deviation, 2
+        (round_sig(bb.xsize, 3) + round_sig(bb.ysize, 3) + round_sig(bb.zsize, 3)) / 300 * deviation, 3
     )
     return quality
 
 
+# cache key: (shape.hash, deviaton, angular_tolerance, compute_edges, compute_faces)
 @cached(cache, key=make_key)
 def tessellate(
     shapes,
+    deviation: float,  # only provided for managing cache
     quality: float,
     angular_tolerance: float,
     compute_faces=True,
     compute_edges=True,
     debug=False,
-    progress=True,
+    progress=None,
 ):
     compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
     tess = Tessellator()
