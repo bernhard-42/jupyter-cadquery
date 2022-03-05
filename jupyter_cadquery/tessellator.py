@@ -21,9 +21,17 @@ from OCP.TopoDS import TopoDS
 from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
+
 from cadquery.occ_impl.shapes import Compound
 from jupyter_cadquery.utils import Timer, round_sig
 from jupyter_cadquery.ocp_utils import get_faces
+
+MAX_HASH_KEY = 2147483647
+
+
+#
+# Caching helpers
+#
 
 
 def make_key(
@@ -35,7 +43,7 @@ def make_key(
         shape = [shape]
 
     key = (
-        tuple((s.HashCode(2147483647) for s in shape)),
+        tuple((s.HashCode(MAX_HASH_KEY) for s in shape)),
         deviation,
         angular_tolerance,
         compute_edges,

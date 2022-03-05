@@ -1,6 +1,9 @@
+import io
 import itertools
 import numpy as np
 
+from OCP.TopoDS import TopoDS_Shape
+from OCP.BinTools import BinTools
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
 from OCP.BRepBndLib import BRepBndLib
@@ -163,6 +166,23 @@ def write_stl_file(compound, filename, tolerance=None, angular_tolerance=None):
     # Remove the mesh data again
     BRepTools.Clean_s(compound)
     return result
+
+
+# OCP serialisation
+
+
+def serialize(shape):
+    bio = io.BytesIO()
+    BinTools.Write_s(shape, bio)
+    buffer = bio.getvalue()
+    return buffer
+
+
+def deserialize(buffer):
+    bio = io.BytesIO(buffer)
+    shape = TopoDS_Shape()
+    BinTools.Read_s(shape, bio)
+    return shape
 
 
 # OCP types and accessors
