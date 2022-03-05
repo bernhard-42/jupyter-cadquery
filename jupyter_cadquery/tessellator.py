@@ -1,9 +1,12 @@
+"""Tessellator class"""
+
 import sys
 
 from cachetools import LRUCache, cached
 
 import numpy as np
 
+# pylint: disable=no-name-in-module,import-error
 from OCP.gp import gp_Vec, gp_Pnt
 from OCP.BRep import BRep_Tool
 from OCP.BRepTools import BRepTools
@@ -18,14 +21,14 @@ from OCP.TopoDS import TopoDS
 from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
+from cadquery.occ_impl.shapes import Compound
 from jupyter_cadquery.utils import Timer, round_sig
 from jupyter_cadquery.ocp_utils import get_faces
-from cadquery.occ_impl.shapes import Compound
 
 
 def make_key(
-    shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False, progress=True
-):
+    shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False
+):  # pylint: disable=unused-argument
     # quality is a measure of bounding box and deviation, hence can be ignored (and should due to accuracy issues
     # of non optimal bounding boxes. debug and progress are also irrelevant for tessellation results)
     if not isinstance(shape, (tuple, list)):
@@ -80,10 +83,7 @@ class Tessellator:
         compute_faces=True,
         compute_edges=True,
         debug=False,
-        progress=None,
     ):
-        if progress:
-            progress.update(".")
 
         self.shape = shape
 
@@ -222,23 +222,44 @@ def compute_quality(bb, deviation=0.1):
 @cached(cache, key=make_key)
 def tessellate(
     shapes,
-    deviation: float,  # only provided for managing cache
+    # only provided for managing cache:
+    deviation: float,  # pylint: disable=unused-argument
     quality: float,
     angular_tolerance: float,
     compute_faces=True,
     compute_edges=True,
     debug=False,
-    progress=None,
 ):
-    compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
+    compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]  # pylint: disable=protected-access
     tess = Tessellator()
-    tess.compute(compound, quality, angular_tolerance, compute_faces, compute_edges, debug, progress)
+    tess.compute(compound, quality, angular_tolerance, compute_faces, compute_edges, debug)
     return {
         "vertices": tess.get_vertices(),
         "triangles": tess.get_triangles(),
         "normals": tess.get_normals(),
         "edges": tess.get_edges(),
     }
+
+
+def discretize_edge(edge, deflection=0.1):
+    curve_adaptator = BRepAdaptor_Curve(edge)
+
+    discretizer = GCPnts_QuasiUniformDeflection()
+    discretizer.Initialize(
+        curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
+    )
+
+    if not discretizer.IsDone():
+        raise AssertionError("Discretizer not done.")
+
+    points = [curve_adaptator.Value(discretizer.Parameter(i)).Coord() for i in range(1, discretizer.NbPoints() + 1)]
+
+    # return tuples representing the single lines of the egde
+    edges = []
+    for i in range(len(points) - 1):
+        edges.append((points[i], points[i + 1]))
+
+    return np.asarray(edges, dtype=np.float32)
 
 
 def bbox_edges(bb):
@@ -319,24 +340,3 @@ def bbox_edges(bb):
         ],
         dtype="float32",
     )
-
-
-def discretize_edge(edge, deflection=0.1):
-    curve_adaptator = BRepAdaptor_Curve(edge)
-
-    discretizer = GCPnts_QuasiUniformDeflection()
-    discretizer.Initialize(
-        curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
-    )
-
-    if not discretizer.IsDone():
-        raise AssertionError("Discretizer not done.")
-
-    points = [curve_adaptator.Value(discretizer.Parameter(i)).Coord() for i in range(1, discretizer.NbPoints() + 1)]
-
-    # return tuples representing the single lines of the egde
-    edges = []
-    for i in range(len(points) - 1):
-        edges.append((points[i], points[i + 1]))
-
-    return np.asarray(edges, dtype=np.float32)

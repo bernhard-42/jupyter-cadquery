@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import time
 import numpy as np
 
 from cadquery import Compound, __version__
@@ -46,17 +47,38 @@ EMPTY = 3
 class Progress:
     """Simple, self deleting progress bar"""
 
-    def __init__(self, num):
+    def __init__(self, max_value, tick="o", length=60):
         """Init the progress bar with the max length"""
-        self.num = num
-        self.counter = 0
+        self.max = max_value
+        self.tick = tick
+        self.length = length
+        self.step = length / max_value
+        self.value = 0
+        self.start = time.time()
+        self.reset()
 
-    def update(self, tick="."):
+    def update(self, step=1):
         """Update progress and delete when 100% is reached"""
-        print(tick, end="", flush=True)
-        self.counter += 1
-        if self.counter == self.num:
-            print("%s%s" % ("\r" * self.num, " " * self.num), sep="")
+        self.value = min(self.value + step, self.max)
+        s = int(round(self.step * self.value, 0))
+        r = int(self.value / self.max * 100)
+        t = time.time() - self.start
+        print(f"\r{r:3d}% |{self.tick * s}{' ' * (self.length - s)}| ({self.value}/{self.max}) {t:5.2f}s", end="")
+
+    def done(self):
+        """Finalize the progress bar"""
+        self.value = self.max
+        self.update()
+        print()
+
+    def reset(self):
+        """Reset the progress bar"""
+        self.value = 0
+        self.update(0)
+
+    def clear(self):
+        """Remove the progress bar"""
+        print("\r" + " " * (self.length + 30))
 
 
 class _CADObject(object):
@@ -116,9 +138,11 @@ class _Part(_CADObject):
                 angular_tolerance=angular_tolerance,
                 debug=timeit,
                 compute_edges=render_edges,
-                progress=progress,
             )
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
+
+        if progress is not None:
+            progress.update()
 
         # After meshing the non optimal bounding box is much more exact
         with Timer(timeit, self.name, "bounding box:   ", 2) as t:
@@ -243,7 +267,7 @@ class _Vertices(_CADObject):
 
         bb = bounding_box(self.shape, loc=loc)
 
-        if progress:
+        if progress is not None:
             progress.update()
 
         return {
@@ -477,8 +501,12 @@ def _show(part_group, **kwargs):
                     del config["quaternion"]
 
             with Timer(timeit, "", "tessellate", 1):
-                progress = Progress(part_group.count_shapes())
+                num_shapes = part_group.count_shapes()
+                progress = None if num_shapes < 2 else Progress(num_shapes)
                 shapes, states = _tessellate_group(part_group, tessellation_args(config), progress, timeit)
+
+                if progress is not None:
+                    progress.clear()
 
             # Calculate normal length
 
