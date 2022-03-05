@@ -20,6 +20,7 @@ import numpy as np
 from cadquery import Compound, __version__
 
 from cad_viewer_widget import show as viewer_show
+from jupyter_cadquery.progress import Progress
 
 from jupyter_cadquery.utils import Color, flatten, Timer, warn
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox
