@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import platform
 import numpy as np
 
 from cadquery import Compound, __version__
@@ -29,7 +30,14 @@ from jupyter_cadquery.tessellator import (
     compute_quality,
     bbox_edges,
 )
-from jupyter_cadquery.mp_tessellator import is_apply_result, mp_tessellate, get_mp_result
+from jupyter_cadquery.mp_tessellator import (
+    is_apply_result,
+    mp_tessellate,
+    get_mp_result,
+    keymap,
+    init_pool,
+    close_pool,
+)
 from jupyter_cadquery.defaults import (
     get_default,
     apply_defaults,
@@ -389,7 +397,7 @@ def _combined_bb(shapes):
     return bb
 
 
-def mp_get_results(shapes):
+def mp_get_results(shapes, progress):
     def walk(shapes):
         for shape in shapes["parts"]:
             if shape.get("parts") is None:
@@ -398,6 +406,7 @@ def mp_get_results(shapes):
                         shape["shape"] = get_mp_result(shape["shape"])
             else:
                 walk(shape)
+            progress.update()
 
     walk(shapes)
     return shapes
@@ -471,6 +480,11 @@ def _show(part_group, **kwargs):
         warn("quality is ignored. Use deviation to control smoothness of edges")
         del kwargs["quality"]
 
+    if kwargs.get("parallel") is not None:
+        if kwargs["parallel"] and platform.system() != "Linux":
+            warn("parallel=True only works on Linux. Setting parallel=False")
+            kwargs["parallel"] = False
+
     timeit = preset("timeit", kwargs.get("timeit"))
 
     with Timer(timeit, "", "overall"):
@@ -493,7 +507,7 @@ def _show(part_group, **kwargs):
         else:
 
             config = apply_defaults(**kwargs)
-            if config.get("reset_camera") == False:  #  could be None
+            if config.get("reset_camera") is False:  #  could be None
                 if config.get("zoom") is not None:
                     del config["zoom"]
                 if config.get("position") is not None:
@@ -501,16 +515,23 @@ def _show(part_group, **kwargs):
                 if config.get("quaternion") is not None:
                     del config["quaternion"]
 
+            parallel = preset("parallel", config.get("parallel"))
             with Timer(timeit, "", "tessellate", 1):
                 num_shapes = part_group.count_shapes()
-                progress = None if num_shapes < 2 else Progress(num_shapes)
+                progress = None if num_shapes < 2 else Progress(num_shapes * (2 if parallel else 1))
+
+                if parallel:
+                    init_pool()
+                    keymap.reset()
+
                 shapes, states = _tessellate_group(part_group, tessellation_args(config), progress, timeit)
 
-                if preset("parallel", config.get("parallel")):
-                    mp_get_results(shapes)
+                if parallel:
+                    mp_get_results(shapes, progress)
+                    close_pool()
 
                 if progress is not None:
-                    progress.clear()
+                    progress.done()
 
             # Calculate normal length
 

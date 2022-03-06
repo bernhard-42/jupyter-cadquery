@@ -596,6 +596,7 @@ def show(*cad_objs, **kwargs):
     - show_bbox:          Show bounding box (default=False)
     - tools:              Show the viewer tools like the object tree (default=True)
     - timeit:             Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
+    - parallel:           (Linux only) Whether to use multiprocessing for parallel tessellation
     - js_debug:           Enable debug output in browser console (default=False)
 
     NOT SUPPORTED ANY MORE:

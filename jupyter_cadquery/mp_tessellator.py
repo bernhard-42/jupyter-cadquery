@@ -7,8 +7,29 @@ from cachetools import cached
 from jupyter_cadquery.mp_tess import mp_tess
 from jupyter_cadquery.ocp_utils import serialize
 
-# use 80% of available CPUs
-pool = multiprocessing.Pool(int(multiprocessing.cpu_count() * 0.8))
+pool = None
+
+
+class KeyMapper:
+    def __init__(self):
+        self.counter = 0
+        self.map = {}
+
+    def reset(self):
+        self.counter = 0
+        self.map = {}
+
+    def add(self, key):
+        path = f"obj{self.counter}"
+        self.counter += 1
+        self.map[path] = key
+        return path
+
+    def get_key(self, path):
+        return self.map.get(path)
+
+
+keymap = KeyMapper()
 
 
 def clear_shared_mem(path):
@@ -20,21 +41,24 @@ def clear_shared_mem(path):
         ...
 
 
-def serialize_key(key):
-    return json.dumps(key)
+def init_pool():
+    global pool  # pylint: disable=global-statement
+    if pool is None:
+        pool = multiprocessing.Pool(int(multiprocessing.cpu_count() * 0.8))
 
 
-def deserialize_key(path):
-    key = json.loads(path)
-    key[0] = tuple(key[0])
-    return tuple(key)
+def close_pool():
+    global pool  # pylint: disable=global-statement
+    pool.close()
+    pool.join()
+    pool = None
 
 
 def get_mp_result(apply_result):
     path, result = apply_result.get()
 
     # update cache to hold full result instead of ApplyResult object
-    key = deserialize_key(path)
+    key = keymap.get_key(path)
     cache.__setitem__(key, result)
 
     clear_shared_mem(path)
@@ -59,14 +83,15 @@ def mp_tessellate(
 ):
 
     shape = shapes[0]
-    path = serialize_key(
-        make_key(shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True),
-    )
+
+    key = make_key(shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True)
+    path = keymap.add(key)
+
     clear_shared_mem(path)
 
     s = serialize(shape)
     sm = shared_memory.SharedMemory(path, True, len(s))
-    sm.buf[:] = bytearray(s)
+    sm.buf[: len(s)] = s
 
     result = pool.apply_async(
         mp_tess, (path, deviation, quality, angular_tolerance, compute_faces, compute_edges, debug)
