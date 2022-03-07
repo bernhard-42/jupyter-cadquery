@@ -1,5 +1,7 @@
 import io
 import itertools
+import platform
+import tempfile
 import numpy as np
 
 from OCP.TopoDS import TopoDS_Shape
@@ -172,16 +174,28 @@ def write_stl_file(compound, filename, tolerance=None, angular_tolerance=None):
 
 
 def serialize(shape):
-    bio = io.BytesIO()
-    BinTools.Write_s(shape, bio)
-    buffer = bio.getvalue()
+    if platform.system() == "Darwin":
+        with tempfile.NamedTemporaryFile() as tf:
+            BinTools.Write_s(shape, tf.name)
+            with open(tf.name, "rb") as fd:
+                buffer = fd.read()
+    else:
+        bio = io.BytesIO()
+        BinTools.Write_s(shape, bio)
+        buffer = bio.getvalue()
     return buffer
 
 
 def deserialize(buffer):
-    bio = io.BytesIO(buffer)
     shape = TopoDS_Shape()
-    BinTools.Read_s(shape, bio)
+    if platform.system() == "Darwin":
+        with tempfile.NamedTemporaryFile() as tf:
+            with open(tf.name, "wb") as fd:
+                fd.write(buffer)
+            BinTools.Read_s(shape, tf.name)
+    else:
+        bio = io.BytesIO(buffer)
+        BinTools.Read_s(shape, bio)
     return shape
 
 

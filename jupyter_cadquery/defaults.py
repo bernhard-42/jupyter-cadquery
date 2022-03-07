@@ -91,9 +91,9 @@ class Defaults:
             if self.get_default(k, "") == "":
                 print(f"Paramater {k} is not a valid argument for show()")
 
-            elif k == "parallel" and v and platform.system() != "Linux":
-                warn("parallel=True only works on Linux. Setting parallel=False")
-                self.defaults[k] = False
+            # elif k == "parallel" and v and platform.system() != "Linux":
+            #     warn("parallel=True only works on Linux. Setting parallel=False")
+            #     self.defaults[k] = False
 
             else:
                 self.defaults[k] = v

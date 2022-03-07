@@ -480,10 +480,10 @@ def _show(part_group, **kwargs):
         warn("quality is ignored. Use deviation to control smoothness of edges")
         del kwargs["quality"]
 
-    if kwargs.get("parallel") is not None:
-        if kwargs["parallel"] and platform.system() != "Linux":
-            warn("parallel=True only works on Linux. Setting parallel=False")
-            kwargs["parallel"] = False
+    # if kwargs.get("parallel") is not None:
+    #     if kwargs["parallel"] and platform.system() != "Linux":
+    #         warn("parallel=True only works on Linux. Setting parallel=False")
+    #         kwargs["parallel"] = False
 
     timeit = preset("timeit", kwargs.get("timeit"))
 
