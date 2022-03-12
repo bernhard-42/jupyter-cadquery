@@ -1,4 +1,4 @@
-.PHONY: clean_notebooks wheel install tests check_version dist check_dist upload_test upload bump release docker docker_upload
+.PHONY: clean_notebooks wheel install tests check_version dist check_dist upload_test upload bump release create-release docker docker_upload
 
 PYCACHE := $(shell find . -name '__pycache__')
 EGGS := $(wildcard *.egg-info)
@@ -56,6 +56,11 @@ release:
 	git status
 	git diff-index --quiet HEAD || git commit -m "Latest release: $(CURRENT_VERSION)"
 	git tag -a v$(CURRENT_VERSION) -m "Latest release: $(CURRENT_VERSION)"
+	
+create-release:
+	@github-release release -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter-cadquery-$(CURRENT_VERSION)
+	@sleep 2
+	@github-release upload  -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter_cadquery-$(CURRENT_VERSION).tar.gz -f dist/jupyter_cadquery-$(CURRENT_VERSION).tar.gz
 
 install: dist
 	@echo "=> Installing jupyter_cadquery"
@@ -66,6 +71,7 @@ check_dist:
 
 upload:
 	@twine upload dist/*
+
 
 docker:
 	@rm -fr docker/examples
