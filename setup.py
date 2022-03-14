@@ -23,11 +23,11 @@ setup_args = {
     "python_requires": ">=3.6",
     "install_requires": [
         "webcolors~=1.11",
-        "jupyterlab~=3.2",
+        "jupyterlab~=3.3",
         "voila~=0.3",
         "cadquery_massembly~=0.9",
         "pyquaternion~=0.9.9",
-        "cad-viewer-widget~=1.1.0",
+        "cad-viewer-widget~=1.1.1",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},
