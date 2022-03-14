@@ -1,4 +1,7 @@
+from glob import glob
 import itertools
+import os
+
 import numpy as np
 
 from OCP.Bnd import Bnd_Box
@@ -143,6 +146,19 @@ def bounding_box(objs, loc=None, optimal=False):
         compound = objs
 
     return BoundingBox(compound if loc is None else compound.Moved(loc.wrapped), optimal=optimal)
+
+
+# Version
+
+# ugly way of retrieving the OCP version
+
+
+def ocp_version():
+    lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.so.*.*.*")
+    version = "none"
+    if len(lib) == 1:
+        version = lib[0].split(".so.")
+    return version[1]
 
 
 # Export STL
