@@ -406,7 +406,9 @@ def mp_get_results(shapes, progress):
                         shape["shape"] = get_mp_result(shape["shape"])
             else:
                 walk(shape)
-            progress.update()
+            
+            if progress is not None:
+                progress.update()
 
     walk(shapes)
     return shapes
