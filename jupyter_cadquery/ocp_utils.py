@@ -1,9 +1,11 @@
-from glob import glob
+import io
 import itertools
-import os
-
+import platform
+import tempfile
 import numpy as np
 
+from OCP.TopoDS import TopoDS_Shape
+from OCP.BinTools import BinTools
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
 from OCP.BRepBndLib import BRepBndLib
@@ -15,7 +17,7 @@ from OCP.TopAbs import (
     TopAbs_EDGE,
     TopAbs_FACE,
 )
-from OCP.TopoDS import TopoDS_Compound
+from OCP.TopoDS import TopoDS_Compound, TopoDS_Shape
 from OCP.TopExp import TopExp_Explorer
 
 from OCP.StlAPI import StlAPI_Writer
@@ -181,11 +183,44 @@ def write_stl_file(compound, filename, tolerance=None, angular_tolerance=None):
     return result
 
 
+# OCP serialisation
+
+
+def serialize(shape):
+    if platform.system() == "Darwin":
+        with tempfile.NamedTemporaryFile() as tf:
+            BinTools.Write_s(shape, tf.name)
+            with open(tf.name, "rb") as fd:
+                buffer = fd.read()
+    else:
+        bio = io.BytesIO()
+        BinTools.Write_s(shape, bio)
+        buffer = bio.getvalue()
+    return buffer
+
+
+def deserialize(buffer):
+    shape = TopoDS_Shape()
+    if platform.system() == "Darwin":
+        with tempfile.NamedTemporaryFile() as tf:
+            with open(tf.name, "wb") as fd:
+                fd.write(buffer)
+            BinTools.Read_s(shape, tf.name)
+    else:
+        bio = io.BytesIO(buffer)
+        BinTools.Read_s(shape, bio)
+    return shape
+
+
 # OCP types and accessors
 
 
 def is_compound(topods_shape):
     return isinstance(topods_shape, TopoDS_Compound)
+
+
+def is_shape(topods_shape):
+    return isinstance(topods_shape, TopoDS_Shape)
 
 
 def _get_topo(shape, topo):

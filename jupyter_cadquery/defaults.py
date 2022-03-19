@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import platform
 from .utils import warn
 
 
@@ -76,6 +77,7 @@ class Defaults:
         - show_bbox:          Show bounding box (default=False)
         - tools:              Show the viewer tools like the object tree (default=True)
         - timeit:             Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
+        - parallel:           (Linux only) Whether to use multiprocessing for parallel tessellation
         - js_debug:           Enable debug output in browser console (default=False)
 
         NOT SUPPORTED ANY MORE:
@@ -88,6 +90,11 @@ class Defaults:
         for k, v in kwargs.items():
             if self.get_default(k, "") == "":
                 print(f"Paramater {k} is not a valid argument for show()")
+
+            # elif k == "parallel" and v and platform.system() != "Linux":
+            #     warn("parallel=True only works on Linux. Setting parallel=False")
+            #     self.defaults[k] = False
+
             else:
                 self.defaults[k] = v
 
@@ -115,6 +122,7 @@ class Defaults:
             "render_normals": False,
             "render_edges": True,
             "render_mates": False,
+            "parallel": False,
             "mate_scale": 1,
             #
             # viewer options
@@ -243,6 +251,7 @@ def tessellation_args(config):
             "render_mates",
             "mate_scale",
             "quality",
+            "parallel",
         ]
     }
 

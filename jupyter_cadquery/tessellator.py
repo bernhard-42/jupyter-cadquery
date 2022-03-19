@@ -1,7 +1,12 @@
-from array import array
+"""Tessellator class"""
+
+import sys
+
+from cachetools import LRUCache, cached
 
 import numpy as np
 
+# pylint: disable=no-name-in-module,import-error
 from OCP.gp import gp_Vec, gp_Pnt
 from OCP.BRep import BRep_Tool
 from OCP.BRepTools import BRepTools
@@ -16,70 +21,51 @@ from OCP.TopoDS import TopoDS
 from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
-from jupyter_cadquery.utils import Timer
-from jupyter_cadquery.ocp_utils import get_faces
+
 from cadquery.occ_impl.shapes import Compound
+from jupyter_cadquery.utils import Timer, round_sig
+from jupyter_cadquery.ocp_utils import get_faces
 
-# class RenderCache:
-#     def __init__(self):
-#         self.objects = {}
-#         self.use_cache = True
-
-#     def reset_cache(self):
-#         self.objects = {}
-
-#     def toggle_cache(self):
-#         self.use_cache = not self.use_cache
-#         print(f"Render cache turned {'ON' if self.use_cache else 'OFF'}")
-
-#     def tessellate(
-#         self,
-#         compound,
-#         quality=None,
-#         angular_tolerance=None,
-#         render_edges=True,
-#         normals_len=0,
-#         debug=False,
-#     ):
-
-#         hash = id(compound)  # use python id instead of compound.HashCode(HASH_CODE_MAX)
-#         if self.objects.get(hash) is None:
-#             tess = Tessellator()
-#             tess.compute(
-#                 compound,
-#                 quality=quality,
-#                 angular_tolerance=angular_tolerance,
-#                 compute_edges=render_edges,
-#                 normals_len=normals_len,
-#                 debug=debug,
-#             )
-#             np_vertices = tess.get_vertices()
-#             np_triangles = tess.get_triangles()
-#             np_normals = tess.get_normals()
-#             np_edges = tess.get_edges()
-
-#             if np_normals.shape != np_vertices.shape:
-#                 raise AssertionError("Wrong number of normals/shapes")
-
-#             shape_geometry = BufferGeometry(
-#                 attributes={
-#                     "position": BufferAttribute(np_vertices),
-#                     "index": BufferAttribute(np_triangles),
-#                     "normal": BufferAttribute(np_normals),
-#                 }
-#             )
-#             if debug:
-#                 print(f"| | | (Caching {hash})")
-#             self.objects[hash] = (shape_geometry, np_edges)
-#         else:
-#             if debug:
-#                 print(f"| | | (Taking {hash} from cache)")
-#         return self.objects[hash]
+MAX_HASH_KEY = 2147483647
 
 
-# RENDER_CACHE = RenderCache()
-# reset_cache = RENDER_CACHE.reset_cache
-# toggle_cache = RENDER_CACHE.toggle_cache
+#
+# Caching helpers
+#
+
+
+def make_key(
+    shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False
+):  # pylint: disable=unused-argument
+    # quality is a measure of bounding box and deviation, hence can be ignored (and should due to accuracy issues
+    # of non optimal bounding boxes. debug and progress are also irrelevant for tessellation results)
+    if not isinstance(shape, (tuple, list)):
+        shape = [shape]
+
+    key = (
+        tuple((s.HashCode(MAX_HASH_KEY) for s in shape)),
+        deviation,
+        angular_tolerance,
+        compute_edges,
+        compute_faces,
+    )
+    return key
+
+
+def get_size(obj):
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict):
+        size += sum([get_size(v) + len(k) for k, v in obj.items()])
+    elif isinstance(obj, np.ndarray):
+        size += obj.size * obj.dtype.itemsize
+    elif isinstance(obj, (tuple, list)):
+        size += sum([get_size(i) for i in obj])
+    return size
+
+
+cache = LRUCache(maxsize=128 * 1024 * 1024, getsizeof=get_size)
+
+
 class Tessellator:
     def __init__(self):
         self.vertices = np.empty((0, 3), dtype="float32")
@@ -106,6 +92,7 @@ class Tessellator:
         compute_edges=True,
         debug=False,
     ):
+
         self.shape = shape
 
         count = self.number_solids(shape)
@@ -126,9 +113,9 @@ class Tessellator:
         # BRepTools.Clean_s(shape)
 
     def tessellate(self):
-        self.vertices = array("f")
-        self.triangles = array("f")
-        self.normals = array("f")
+        self.vertices = []
+        self.triangles = []
+        self.normals = []
 
         # global buffers
         p_buf = gp_Pnt()
@@ -166,18 +153,14 @@ class Tessellator:
 
                 # add normals
                 if poly.HasUVNodes():
-
-                    def extract(uv0, uv1):
-                        prop.Normal(uv0, uv1, p_buf, n_buf)
+                    prop = BRepGProp_Face(face)
+                    flat = []
+                    for i in range(1, poly.NbNodes() + 1):
+                        u, v = poly.UVNode(i).Coord()
+                        prop.Normal(u, v, p_buf, n_buf)
                         if n_buf.SquareMagnitude() > 0:
                             n_buf.Normalize()
-                        return n_buf.Reverse().Coord() if internal else n_buf.Coord()
-
-                    prop = BRepGProp_Face(face)
-                    uvs = [poly.UVNode(i).Coord() for i in range(1, poly.NbNodes() + 1)]
-                    flat = []
-                    for uv1, uv2 in uvs:
-                        flat.extend(extract(uv1, uv2))
+                        flat.extend(n_buf.Reverse().Coord() if internal else n_buf.Coord())
                     self.normals.extend(flat)
 
                 offset += poly.NbNodes()
@@ -236,18 +219,26 @@ class Tessellator:
 
 
 def compute_quality(bb, deviation=0.1):
-    return (bb.xsize + bb.ysize + bb.zsize) / 300 * deviation
+    # Since tessellation caching depends on quality, try to come up with stable a quality value
+    quality = round_sig(
+        (round_sig(bb.xsize, 3) + round_sig(bb.ysize, 3) + round_sig(bb.zsize, 3)) / 300 * deviation, 3
+    )
+    return quality
 
 
+# cache key: (shape.hash, deviaton, angular_tolerance, compute_edges, compute_faces)
+@cached(cache, key=make_key)
 def tessellate(
     shapes,
+    # only provided for managing cache:
+    deviation: float,  # pylint: disable=unused-argument
     quality: float,
     angular_tolerance: float,
     compute_faces=True,
     compute_edges=True,
     debug=False,
 ):
-    compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]
+    compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]  # pylint: disable=protected-access
     tess = Tessellator()
     tess.compute(compound, quality, angular_tolerance, compute_faces, compute_edges, debug)
     return {
@@ -256,6 +247,27 @@ def tessellate(
         "normals": tess.get_normals(),
         "edges": tess.get_edges(),
     }
+
+
+def discretize_edge(edge, deflection=0.1):
+    curve_adaptator = BRepAdaptor_Curve(edge)
+
+    discretizer = GCPnts_QuasiUniformDeflection()
+    discretizer.Initialize(
+        curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
+    )
+
+    if not discretizer.IsDone():
+        raise AssertionError("Discretizer not done.")
+
+    points = [curve_adaptator.Value(discretizer.Parameter(i)).Coord() for i in range(1, discretizer.NbPoints() + 1)]
+
+    # return tuples representing the single lines of the egde
+    edges = []
+    for i in range(len(points) - 1):
+        edges.append((points[i], points[i + 1]))
+
+    return np.asarray(edges, dtype=np.float32)
 
 
 def bbox_edges(bb):
@@ -336,24 +348,3 @@ def bbox_edges(bb):
         ],
         dtype="float32",
     )
-
-
-def discretize_edge(edge, deflection=0.1):
-    curve_adaptator = BRepAdaptor_Curve(edge)
-
-    discretizer = GCPnts_QuasiUniformDeflection()
-    discretizer.Initialize(
-        curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
-    )
-
-    if not discretizer.IsDone():
-        raise AssertionError("Discretizer not done.")
-
-    points = [curve_adaptator.Value(discretizer.Parameter(i)).Coord() for i in range(1, discretizer.NbPoints() + 1)]
-
-    # return tuples representing the single lines of the egde
-    edges = []
-    for i in range(len(points) - 1):
-        edges.append((points[i], points[i + 1]))
-
-    return np.asarray(edges, dtype=np.float32)

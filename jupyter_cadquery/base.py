@@ -14,15 +14,30 @@
 # limitations under the License.
 #
 
+import platform
 import numpy as np
 
 from cadquery import Compound, __version__
 
 from cad_viewer_widget import show as viewer_show
 
-from jupyter_cadquery.utils import Color, flatten, Timer, warn
+from jupyter_cadquery.progress import Progress
+from jupyter_cadquery.utils import Color, Timer, warn
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox
-from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality, bbox_edges
+from jupyter_cadquery.tessellator import (
+    discretize_edge,
+    tessellate,
+    compute_quality,
+    bbox_edges,
+)
+from jupyter_cadquery.mp_tessellator import (
+    is_apply_result,
+    mp_tessellate,
+    get_mp_result,
+    keymap,
+    init_pool,
+    close_pool,
+)
 from jupyter_cadquery.defaults import (
     get_default,
     apply_defaults,
@@ -43,22 +58,6 @@ EMPTY = 3
 #
 
 
-class Progress:
-    """Simple, self deleting progress bar"""
-
-    def __init__(self, num):
-        """Init the progress bar with the max length"""
-        self.num = num
-        self.counter = 0
-
-    def update(self):
-        """Update progress and delete when 100% is reached"""
-        print(".", end="", flush=True)
-        self.counter += 1
-        if self.counter == self.num:
-            print("%s%s" % ("\r" * self.num, " " * self.num), sep="")
-
-
 class _CADObject(object):
     def __init__(self):
         self.color = Color(get_default("default_color"))
@@ -66,7 +65,18 @@ class _CADObject(object):
     def to_state(self):
         raise NotImplementedError("not implemented yet")
 
-    def collect_shapes(self, path, loc, deviation, angular_tolerance, edge_accuracy, render_edges, progress, timeit):
+    def collect_shapes(
+        self,
+        path,
+        loc,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        render_edges,
+        parallel,
+        progress,
+        timeit,
+    ):
         raise NotImplementedError("not implemented yet")
 
 
@@ -96,6 +106,7 @@ class _Part(_CADObject):
         angular_tolerance,
         edge_accuracy,
         render_edges,
+        parallel=False,
         progress=None,
         timeit=False,
     ):
@@ -109,8 +120,10 @@ class _Part(_CADObject):
             t.info = str(bb)
 
         with Timer(timeit, self.name, "tessellate:     ", 2) as t:
-            mesh = tessellate(
+            func = mp_tessellate if parallel else tessellate
+            mesh = func(
                 self.shape,
+                deviation=deviation,
                 quality=quality,
                 angular_tolerance=angular_tolerance,
                 debug=timeit,
@@ -118,14 +131,14 @@ class _Part(_CADObject):
             )
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
 
+        if progress is not None:
+            progress.update()
+
         # After meshing the non optimal bounding box is much more exact
         with Timer(timeit, self.name, "bounding box:   ", 2) as t:
             bb2 = bounding_box(self.shape, loc=loc, optimal=False)
             bb2.update(bb, minimize=True)
             t.info = str(bb2)
-
-        if progress:
-            progress.update()
 
         if isinstance(self.color, tuple):
             color = [c.web_color for c in self.color]  # pylint: disable=not-an-iterable
@@ -144,7 +157,7 @@ class _Part(_CADObject):
         }
 
     def compound(self):
-        return self.shape[0]
+        return Compound._makeCompound(self.shape)
 
     def compounds(self):
         return [self.compound()]
@@ -184,6 +197,7 @@ class _Edges(_CADObject):
         angular_tolerance,
         edge_accuracy,
         render_edges,
+        parallel=False,
         progress=None,
         timeit=False,
     ):
@@ -237,6 +251,7 @@ class _Vertices(_CADObject):
         angular_tolerance,
         edge_accuracy,
         render_edges,
+        parallel=False,
         progress=None,
         timeit=False,
     ):
@@ -244,7 +259,7 @@ class _Vertices(_CADObject):
 
         bb = bounding_box(self.shape, loc=loc)
 
-        if progress:
+        if progress is not None:
             progress.update()
 
         return {
@@ -282,6 +297,7 @@ class _PartGroup(_CADObject):
         angular_tolerance,
         edge_accuracy,
         render_edges,
+        parallel=False,
         progress=None,
         timeit=False,
     ):
@@ -305,6 +321,7 @@ class _PartGroup(_CADObject):
                     angular_tolerance,
                     edge_accuracy,
                     render_edges,
+                    parallel,
                     progress,
                     timeit,
                 )
@@ -355,6 +372,7 @@ def _tessellate_group(group, kwargs=None, progress=None, timeit=False):
         angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
         edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
         render_edges=preset("render_edges", kwargs.get("render_edges")),
+        parallel=kwargs.get("parallel"),
         progress=progress,
         timeit=timeit,
     )
@@ -377,6 +395,23 @@ def _combined_bb(shapes):
 
     bb = c_bb(shapes, None)
     return bb
+
+
+def mp_get_results(shapes, progress):
+    def walk(shapes):
+        for shape in shapes["parts"]:
+            if shape.get("parts") is None:
+                if shape.get("type") == "shapes":
+                    if is_apply_result(shape["shape"]):
+                        shape["shape"] = get_mp_result(shape["shape"])
+            else:
+                walk(shape)
+            
+            if progress is not None:
+                progress.update()
+
+    walk(shapes)
+    return shapes
 
 
 def get_accuracies(shapes):
@@ -447,6 +482,11 @@ def _show(part_group, **kwargs):
         warn("quality is ignored. Use deviation to control smoothness of edges")
         del kwargs["quality"]
 
+    # if kwargs.get("parallel") is not None:
+    #     if kwargs["parallel"] and platform.system() != "Linux":
+    #         warn("parallel=True only works on Linux. Setting parallel=False")
+    #         kwargs["parallel"] = False
+
     timeit = preset("timeit", kwargs.get("timeit"))
 
     with Timer(timeit, "", "overall"):
@@ -469,7 +509,7 @@ def _show(part_group, **kwargs):
         else:
 
             config = apply_defaults(**kwargs)
-            if config.get("reset_camera") == False:  #  could be None
+            if config.get("reset_camera") is False:  #  could be None
                 if config.get("zoom") is not None:
                     del config["zoom"]
                 if config.get("position") is not None:
@@ -477,9 +517,23 @@ def _show(part_group, **kwargs):
                 if config.get("quaternion") is not None:
                     del config["quaternion"]
 
+            parallel = preset("parallel", config.get("parallel"))
             with Timer(timeit, "", "tessellate", 1):
-                progress = Progress(part_group.count_shapes())
+                num_shapes = part_group.count_shapes()
+                progress = None if num_shapes < 2 else Progress(num_shapes * (2 if parallel else 1))
+
+                if parallel:
+                    init_pool()
+                    keymap.reset()
+
                 shapes, states = _tessellate_group(part_group, tessellation_args(config), progress, timeit)
+
+                if parallel:
+                    mp_get_results(shapes, progress)
+                    close_pool()
+
+                if progress is not None:
+                    progress.done()
 
             # Calculate normal length
 
