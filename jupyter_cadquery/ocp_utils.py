@@ -1,17 +1,13 @@
+from glob import glob
 import io
 import itertools
+import os
 import platform
 import tempfile
+import time
 import numpy as np
 
-from OCP.TopoDS import TopoDS_Shape
-from OCP.BinTools import BinTools
-from OCP.Bnd import Bnd_Box
-from OCP.BRep import BRep_Tool
-from OCP.BRepBndLib import BRepBndLib
-from OCP.BRepMesh import BRepMesh_IncrementalMesh
-from OCP.BRepTools import BRepTools
-
+import cadquery as cq
 
 from OCP.TopAbs import (
     TopAbs_EDGE,
@@ -26,7 +22,38 @@ from cadquery import Compound, Location
 from cadquery.occ_impl.shapes import downcast
 from .utils import distance
 
+# Bounding Box
+from OCP.TopoDS import TopoDS_Shape
+from OCP.BinTools import BinTools
+from OCP.Bnd import Bnd_Box
+from OCP.BRep import BRep_Tool
+from OCP.BRepBndLib import BRepBndLib
+from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.BRepTools import BRepTools
+
+# Step reader
+from OCP.STEPCAFControl import STEPCAFControl_Reader
+from OCP.Interface import Interface_Static
+from OCP.TDF import TDF_LabelSequence, TDF_Label
+from OCP.XCAFApp import XCAFApp_Application
+from OCP.TCollection import TCollection_ExtendedString
+from OCP.TDocStd import TDocStd_Document
+from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorSurf
+from OCP.TDataStd import TDataStd_Name
+from OCP.TCollection import TCollection_AsciiString
+from OCP.Quantity import Quantity_ColorRGBA
+from OCP.IFSelect import IFSelect_RetDone
+from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound
+from OCP.TopLoc import TopLoc_Location
+from OCP.TopAbs import TopAbs_ShapeEnum
+
+
 HASH_CODE_MAX = 2147483647
+
+
+def ocp_version():
+    lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.*.*.*")[0]
+    return lib.split(".so.")[-1]
 
 
 class BoundingBox(object):
@@ -141,6 +168,149 @@ class BoundingBox(object):
         )
 
 
+class StepReader:
+    def __init__(self):
+        self.shape_tool = None
+        self.color_tool = None
+        self.assembly = None
+
+    def get_name(self, label):
+        t = TDataStd_Name()
+        if label.FindAttribute(TDataStd_Name.GetID_s(), t):
+            return TCollection_AsciiString(t.Get()).ToCString()
+        else:
+            return "Component"
+
+    def get_color(self, label):
+        col = Quantity_ColorRGBA()
+        if self.color_tool.GetColor(label, XCAFDoc_ColorSurf, col):
+            return (col.GetRGB().Red(), col.GetRGB().Green(), col.GetRGB().Blue(), col.Alpha())
+        else:
+            return (0.5, 0.5, 0.5, 1.0)
+
+    def get_shape(self, label):
+        return self.shape_tool.GetShape_s(label)
+
+    def get_location(self, label):
+        return self.shape_tool.GetLocation_s(label)
+
+    def load(self, filename):
+        print("Reading STEP file ...", flush=True, end="")
+        time.sleep(0.01)  # ensure output is shown
+
+        fmt = TCollection_ExtendedString("CadQuery-XCAF")
+        doc = TDocStd_Document(fmt)
+
+        self.shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+        self.color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
+
+        reader = STEPCAFControl_Reader()
+        reader.SetNameMode(True)
+        reader.SetColorMode(True)
+        reader.SetLayerMode(True)
+
+        reader.ReadFile(filename)
+        reader.Transfer(doc)
+        print(" done")
+        time.sleep(0.01)  # ensure output is shown
+
+        root_labels = TDF_LabelSequence()
+        self.shape_tool.GetFreeShapes(root_labels)
+
+        result = []
+        for i in range(root_labels.Length()):
+            label = root_labels.Value(i + 1)
+            if self.shape_tool.IsAssembly_s(label):
+                result.append(
+                    {
+                        "name": self.get_name(label),
+                        "shape": self.get_shape(label),
+                        "shapes": self.get_subshapes(label),
+                        "color": self.get_color(label),
+                        "loc": self.get_location(label),
+                    }
+                )
+            else:
+                raise RuntimeError("ERROR: Shapes are not supported")
+
+        self.assembly = result
+
+    def get_subshapes(self, label, loc=None):
+        label_comps = TDF_LabelSequence()
+        is_assembly = self.shape_tool.GetComponents_s(label, label_comps)
+
+        if not is_assembly and self.get_shape(label).ShapeType() == TopAbs_ShapeEnum.TopAbs_COMPOUND:
+            is_assembly = self.shape_tool.GetSubShapes_s(label, label_comps)
+
+        result = []
+
+        for i in range(label_comps.Length()):
+            label_comp = label_comps.Value(i + 1)
+
+            if self.shape_tool.IsReference_s(label_comp):
+                label_ref = TDF_Label()
+                self.shape_tool.GetReferredShape_s(label_comp, label_ref)
+                sub_shape = {
+                    "name": self.get_name(label_ref),
+                    "color": self.get_color(label_ref),
+                    "shape": self.get_shape(label_ref),
+                    "shapes": self.get_subshapes(label_ref),
+                    # one has to use the location of the component, not of the reference
+                    "loc": self.get_location(label_comp),
+                }
+            else:
+                sub_shape = {
+                    # self.get_name(label_comp) crashes
+                    "name": f"{self.get_name(label)}_{i+1}",
+                    "color": self.get_color(label_comp),
+                    "shape": self.get_shape(label_comp),
+                    "shapes": [],
+                    "loc": self.get_location(label_comp),
+                }
+
+            result.append(sub_shape)
+
+        return result
+
+    def to_cadquery(self):
+        def to_workplane(obj):
+            return cq.Workplane(obj=cq.Shape(obj))
+
+        def to_location(obj):
+            return cq.Location(obj)
+
+        def to_color(rgba):
+            return cq.Color(*rgba)
+
+        def walk(objs):
+            a = cq.Assembly()
+            names = {}
+            for i, obj in enumerate(objs):
+                name = obj["name"]
+
+                # Create a unique name by postfixing the enumerator index if needed
+                if names.get(name) == None:
+                    names[name] = 1
+                else:
+                    names[name] += 1
+                    name = f"{obj['name']}_{names[name]}"
+
+                a.add(
+                    walk(obj["shapes"]) if len(obj["shapes"]) > 0 else to_workplane(obj["shape"]),
+                    name=name,
+                    color=to_color(obj["color"]),
+                    loc=to_location(obj.get("loc")),
+                )
+            return a
+
+        result = walk(self.assembly)
+
+        if len(result.children) == 1:
+            return result.children[0]
+        else:
+            return result
+
+
 def bounding_box(objs, loc=None, optimal=False):
     if isinstance(objs, (list, tuple)):
         compound = Compound._makeCompound(objs)  # pylint: disable=protected-access
@@ -148,19 +318,6 @@ def bounding_box(objs, loc=None, optimal=False):
         compound = objs
 
     return BoundingBox(compound if loc is None else compound.Moved(loc.wrapped), optimal=optimal)
-
-
-# Version
-
-# ugly way of retrieving the OCP version
-
-
-def ocp_version():
-    lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.so.*.*.*")
-    version = "none"
-    if len(lib) == 1:
-        version = lib[0].split(".so.")
-    return version[1]
 
 
 # Export STL
