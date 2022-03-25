@@ -213,7 +213,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
      `show` works as in JupyterLab, while `show_object` views objects incrementally as in CQ-Editor
 
-    - Execute your code using the Python interpreter located in the container:
+   - Execute your code using the Python interpreter located in the container:
 
      ```bash
      docker exec -i jcq bash -c ". /opt/conda/bin/activate cq; python" < my_project.py
