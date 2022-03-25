@@ -196,10 +196,10 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
 2. For running _Jupyter-CadQuery_ as **standalone viewer**
 
-   - Start the browser based viewer:
+   - Start the browser based viewer (eventually add cli options, see notes below):
 
      ```bash
-     docker run -it --rm -p 8888:8888 -p 5555:5555 bwalter42/jupyter_cadquery:3.0.0 -v [-d]
+     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.0.0 -v
      ```
 
    - In your code import the `show` or `show_object` function from the viewer:
@@ -212,6 +212,12 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      ```
 
      `show` works as in JupyterLab, while `show_object` views objects incrementally as in CQ-Editor
+
+   - Execute your code using the Python interpreter located in the container:
+
+     ```bash
+     docker exec -i jcq bash -c ". /opt/conda/bin/activate cq; python" < my_project.py
+     ```
 
 Notes:
 
