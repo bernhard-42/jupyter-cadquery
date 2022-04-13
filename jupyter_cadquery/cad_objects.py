@@ -34,9 +34,9 @@ from cadquery import (
     Color as CqColor,
 )
 
-from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
+from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group
 
-from .utils import Color, flatten, warn
+from .utils import Color, flatten, warn, numpy_to_json
 from .ocp_utils import get_rgb, is_compound, is_shape
 from .defaults import get_default, preset
 
@@ -642,3 +642,10 @@ def show(*cad_objs, **kwargs):
     else:
 
         return _show(None, **kwargs)
+
+
+def exportJson(cad_obj, filename):
+    g = _tessellate_group(to_assembly(cad_obj))
+
+    with open(filename, "w", encoding="utf-8") as fd:
+        fd.write(numpy_to_json(g))
