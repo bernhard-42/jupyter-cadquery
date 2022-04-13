@@ -2,6 +2,7 @@ from glob import glob
 import io
 import itertools
 import os
+import pickle
 import platform
 import tempfile
 import time
@@ -30,22 +31,21 @@ from OCP.BRep import BRep_Tool
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.BRepTools import BRepTools
+from OCP.BRepGProp import BRepGProp
+from OCP.GProp import GProp_GProps
 
 # Step reader
 from OCP.STEPCAFControl import STEPCAFControl_Reader
-from OCP.Interface import Interface_Static
 from OCP.TDF import TDF_LabelSequence, TDF_Label
-from OCP.XCAFApp import XCAFApp_Application
 from OCP.TCollection import TCollection_ExtendedString
 from OCP.TDocStd import TDocStd_Document
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorSurf
 from OCP.TDataStd import TDataStd_Name
 from OCP.TCollection import TCollection_AsciiString
 from OCP.Quantity import Quantity_ColorRGBA
-from OCP.IFSelect import IFSelect_RetDone
 from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound
 from OCP.TopLoc import TopLoc_Location
-from OCP.TopAbs import TopAbs_ShapeEnum
+from OCP.TopAbs import TopAbs_SOLID, TopAbs_COMPOUND
 
 
 HASH_CODE_MAX = 2147483647
@@ -177,7 +177,8 @@ class StepReader:
     def get_name(self, label):
         t = TDataStd_Name()
         if label.FindAttribute(TDataStd_Name.GetID_s(), t):
-            return TCollection_AsciiString(t.Get()).ToCString()
+            name = TCollection_AsciiString(t.Get()).ToCString()
+            return clean_string(name)
         else:
             return "Component"
 
@@ -239,7 +240,7 @@ class StepReader:
         label_comps = TDF_LabelSequence()
         is_assembly = self.shape_tool.GetComponents_s(label, label_comps)
 
-        if not is_assembly and self.get_shape(label).ShapeType() == TopAbs_ShapeEnum.TopAbs_COMPOUND:
+        if not is_assembly and self.get_shape(label).ShapeType() == TopAbs_COMPOUND:
             is_assembly = self.shape_tool.GetSubShapes_s(label, label_comps)
 
         result = []
@@ -247,6 +248,7 @@ class StepReader:
         for i in range(label_comps.Length()):
             label_comp = label_comps.Value(i + 1)
 
+            sub_shape = None
             if self.shape_tool.IsReference_s(label_comp):
                 label_ref = TDF_Label()
                 self.shape_tool.GetReferredShape_s(label_comp, label_ref)
@@ -259,16 +261,21 @@ class StepReader:
                     "loc": self.get_location(label_comp),
                 }
             else:
-                sub_shape = {
-                    # self.get_name(label_comp) crashes
-                    "name": f"{self.get_name(label)}_{i+1}",
-                    "color": self.get_color(label_comp),
-                    "shape": self.get_shape(label_comp),
-                    "shapes": [],
-                    "loc": self.get_location(label_comp),
-                }
+                shape = self.get_shape(label_comp)
+                if shape.ShapeType() in (TopAbs_SOLID, TopAbs_COMPOUND):
+                    if shape.ShapeType() == TopAbs_COMPOUND:
+                        print(f"{self.get_name(label)}_{i+1}", "yet another compound")
+                    sub_shape = {
+                        # self.get_name(label_comp) crashes
+                        "name": f"{self.get_name(label)}_{i+1}",
+                        "color": self.get_color(label_comp),
+                        "shape": shape,
+                        "shapes": [],
+                        "loc": self.get_location(label_comp),
+                    }
 
-            result.append(sub_shape)
+            if sub_shape is not None:
+                result.append(sub_shape)
 
         return result
 
@@ -285,11 +292,11 @@ class StepReader:
         def walk(objs):
             a = cq.Assembly()
             names = {}
-            for i, obj in enumerate(objs):
+            for obj in objs:
                 name = obj["name"]
 
                 # Create a unique name by postfixing the enumerator index if needed
-                if names.get(name) == None:
+                if names.get(name) is None:
                     names[name] = 1
                 else:
                     names[name] += 1
@@ -311,14 +318,44 @@ class StepReader:
             return result
 
 
-def bounding_box(objs, loc=None, optimal=False):
-    if isinstance(objs, (list, tuple)):
-        compound = Compound._makeCompound(objs)  # pylint: disable=protected-access
-    else:
-        compound = objs
+    def persist(self, filename):
+        def _persist(assembly):
+            result = []
+            for assembly in assembly:
+                obj = {
+                    'name': assembly['name'], 
+                    'shape': serialize(assembly['shape']),
+                    'shapes': [],
+                    'color': assembly['color'], 
+                    'loc': loc_to_tq(assembly['loc']),
+                }
+                if assembly['shapes']:
+                    obj['shapes'] = _persist(assembly['shapes'])
+                result.append(obj)
+            return result
+        
+        objs =  _persist(self.assembly)
+        with open(filename, "wb") as fd:
+            pickle.dump(objs, fd)
 
-    return BoundingBox(compound if loc is None else compound.Moved(loc.wrapped), optimal=optimal)
+    def unpersist(self, filename):
+        def _unpersist(objs):
+            result = []
+            for obj in objs:
+                assembly = {
+                    'name': obj['name'], 
+                    'shape': deserialize(obj['shape']),
+                    'shapes': [],
+                    'color': obj['color'], 
+                    'loc': tq_to_loc(*obj['loc']),
+                }
+                if obj['shapes']:
+                    assembly['shapes'] = _unpersist(obj['shapes'])
+                result.append(assembly)
+            return result
 
+        with open(filename, "rb") as fd:
+            self.assembly = _unpersist(pickle.load(fd))
 
 # Export STL
 
