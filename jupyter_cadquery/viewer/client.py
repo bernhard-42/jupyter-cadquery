@@ -108,10 +108,6 @@ def _convert(*cad_objs, **kwargs):
         preset("render_normals", config.get("render_normals")), shapes, preset("deviation", config.get("deviation")),
     )
 
-    show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
-    if show_bbox:
-        insert_bbox(show_bbox, shapes, states)
-
     data = {
         "data": dict(shapes=shapes, states=states),
         "type": "data",
@@ -167,7 +163,6 @@ def show(*cad_objs, **kwargs):
     - zoom:              Zoom factor of view (default=2.5)
     - reset_camera:      Reset camera position, rotation and zoom to default (default=True)
     - show_parent:       Show the parent for edges, faces and vertices objects
-    - show_bbox:         Show bounding box (default=False)    
     - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
