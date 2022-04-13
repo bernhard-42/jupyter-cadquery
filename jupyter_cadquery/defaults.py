@@ -145,7 +145,9 @@ class Defaults:
             "zoom_speed": 1.0,
             "pan_speed": 1.0,
             "rotate_speed": 1.0,
+            "collapse": 1,
             "tools": True,
+            "glass": False,
             "timeit": False,
             "js_debug": False,
         }
@@ -223,7 +225,9 @@ def add_shape_args(config):
             "clipIntersection",
             "clipPlaneHelpers",
             "clipNormal",
+            "collpase",
             "tools",
+            "glass",
             "timeit",
             "js_debug",
         ]
