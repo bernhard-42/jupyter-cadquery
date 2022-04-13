@@ -516,7 +516,8 @@ def _show(part_group, **kwargs):
             parallel = preset("parallel", config.get("parallel"))
             with Timer(timeit, "", "tessellate", 1):
                 num_shapes = part_group.count_shapes()
-                progress = None if num_shapes < 2 else Progress(num_shapes * (2 if parallel else 1))
+                progress_len = 2*num_shapes if parallel else num_shapes
+                progress = None if num_shapes < 2 else Progress(progress_len)
 
                 if parallel:
                     init_pool()
