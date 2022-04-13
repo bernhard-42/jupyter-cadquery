@@ -6,10 +6,16 @@ import pickle
 import platform
 import tempfile
 import time
+import unicodedata
+
 import numpy as np
 from quaternion import rotate_vectors
 
 import cadquery as cq
+
+from cadquery import Compound, Location
+from cadquery.occ_impl.shapes import downcast
+from .utils import distance
 
 from OCP.TopAbs import (
     TopAbs_EDGE,
