@@ -1,5 +1,6 @@
 """Tessellator class"""
 
+import os
 import sys
 
 from cachetools import LRUCache, cached
@@ -63,7 +64,12 @@ def get_size(obj):
     return size
 
 
-cache = LRUCache(maxsize=128 * 1024 * 1024, getsizeof=get_size)
+cache_size = os.environ.get("JCQ_CACHE_SIZE_MB")
+if cache_size is None:
+    cache_size = 1024 * 1024 * 1024
+else:
+    cache_size = int(cache_size) * 1024 * 1024
+cache = LRUCache(maxsize=cache_size, getsizeof=get_size)
 
 
 class Tessellator:
