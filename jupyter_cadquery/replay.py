@@ -459,10 +459,8 @@ class Replay(object):
         ):
             # result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
             objs = PartGroup([self.result] + cad_objs, name="Replay")
-            show_bbox = False
         else:
             objs = PartGroup(cad_objs, name="Replay")
-            show_bbox = self.bbox
 
         with self.debug_output:
             try:
@@ -473,7 +471,6 @@ class Replay(object):
                     edge_accuracy=self.edge_accuracy,
                     reset_camera=self.reset_camera,
                     show_parent=False,
-                    show_bbox=show_bbox,
                 )
                 self.reset_camera = False
             except Exception:  # pylint:disable=broad-except

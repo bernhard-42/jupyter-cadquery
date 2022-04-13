@@ -437,30 +437,6 @@ def get_normal_len(render_normals, shapes, deviation):
     return normal_len
 
 
-def insert_bbox(show_bbox, shapes, states):
-    if isinstance(show_bbox, dict):
-        bb = show_bbox
-    else:
-        bb = _combined_bb(shapes).to_dict()
-
-    # derive the top level states path part
-    prefix = list(states)[0].split("/")[1]
-
-    bbox = {
-        "id": f"/{prefix}/BoundingBox",
-        "type": "edges",
-        "name": "BoundingBox",
-        "shape": bbox_edges(bb),
-        "color": "#808080",
-        "width": 1,
-        "bb": bb,
-    }
-    # inject bounding box into shapes
-    shapes["parts"].insert(0, bbox)
-    # and states
-    states[f"/{prefix}/BoundingBox"] = [3, 1]
-
-
 def _show(part_group, **kwargs):
     for k in kwargs:
         if get_default(k, "n/a") == "n/a":
@@ -542,10 +518,6 @@ def _show(part_group, **kwargs):
                 shapes,
                 preset("deviation", config.get("deviation")),
             )
-
-            show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
-            if show_bbox:
-                insert_bbox(show_bbox, shapes, states)
 
         with Timer(timeit, "", "show shapes", 1):
             cv = viewer_show(shapes, states, **show_args(config))
