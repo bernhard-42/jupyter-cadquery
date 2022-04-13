@@ -16,7 +16,7 @@
 
 from jupyter_cadquery import PartGroup, Part
 from jupyter_cadquery.cad_objects import to_assembly
-from jupyter_cadquery.base import _tessellate_group, get_normal_len, insert_bbox
+from jupyter_cadquery.base import _tessellate_group, get_normal_len
 from jupyter_cadquery.defaults import get_default, get_defaults, preset
 
 
