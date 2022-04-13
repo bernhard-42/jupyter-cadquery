@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-import platform
 import numpy as np
 
 from cadquery import Compound, __version__
@@ -23,12 +22,11 @@ from cad_viewer_widget import show as viewer_show
 
 from jupyter_cadquery.progress import Progress
 from jupyter_cadquery.utils import Color, Timer, warn
-from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox
+from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, np_bbox, BoundingBox
 from jupyter_cadquery.tessellator import (
     discretize_edge,
     tessellate,
     compute_quality,
-    bbox_edges,
 )
 from jupyter_cadquery.mp_tessellator import (
     is_apply_result,
@@ -136,9 +134,18 @@ class _Part(_CADObject):
 
         # After meshing the non optimal bounding box is much more exact
         with Timer(timeit, self.name, "bounding box:   ", 2) as t:
-            bb2 = bounding_box(self.shape, loc=loc, optimal=False)
-            bb2.update(bb, minimize=True)
-            t.info = str(bb2)
+#            bb = bounding_box(self.shape, loc=loc, optimal=False)
+#            bb.update(bb, minimize=True)
+            if parallel:
+                # cache location for later use in mp_get_results
+                bb = loc_to_tq(loc.wrapped)
+            else:
+                if loc is None:
+                    bb = np_bbox(mesh["vertices"], None, None)
+                else:
+                    bb = np_bbox(mesh["vertices"], *loc_to_tq(loc.wrapped))
+                t.info = str(bb)
+                bb = bb.to_dict()
 
         if isinstance(self.color, tuple):
             color = [c.web_color for c in self.color]  # pylint: disable=not-an-iterable
@@ -153,7 +160,7 @@ class _Part(_CADObject):
             "color": color,
             "renderback": self.renderback,
             "accuracy": quality,
-            "bb": bb2.to_dict(),
+            "bb": bb,
         }
 
     def compound(self):
@@ -311,7 +318,7 @@ class _PartGroup(_CADObject):
         else:
             combined_loc = loc * self.loc
 
-        result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(self.loc), "name": self.name}
+        result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(self.loc.wrapped), "name": self.name}
         for obj in self.objects:
             result["parts"].append(
                 obj.collect_shapes(
@@ -386,9 +393,16 @@ def _combined_bb(shapes):
         for shape in shapes["parts"]:
             if shape.get("parts") is None:
                 if bb is None:
-                    bb = BoundingBox(shape["bb"])
+                    if shape["bb"] is None:
+                        bb = BoundingBox()
+                    else:
+                        bb = BoundingBox(shape["bb"])
                 else:
-                    bb.update(shape["bb"])
+                    if shape["bb"] is not None:
+                        bb.update(shape["bb"])
+                        
+                # after updating the global bounding box, remove the local
+                del shape["bb"]
             else:
                 bb = c_bb(shape, bb)
         return bb
@@ -404,11 +418,14 @@ def mp_get_results(shapes, progress):
                 if shape.get("type") == "shapes":
                     if is_apply_result(shape["shape"]):
                         shape["shape"] = get_mp_result(shape["shape"])
+                        # calculate bounding box with the location stored in bb
+                        t, q = shape["bb"]
+                        shape["bb"] = np_bbox(shape["shape"]["vertices"], t, q)
+        
+                    if progress is not None:
+                        progress.update()
             else:
                 walk(shape)
-            
-            if progress is not None:
-                progress.update()
 
     walk(shapes)
     return shapes
@@ -481,6 +498,9 @@ def _show(part_group, **kwargs):
 
             shapes = logo["data"]["shapes"]
             states = logo["data"]["states"]
+            bb = _combined_bb(shapes).to_dict()
+            # add global bounding box
+            shapes["bb"] = bb
 
         else:
 
@@ -508,6 +528,10 @@ def _show(part_group, **kwargs):
                     mp_get_results(shapes, progress)
                     close_pool()
 
+                bb = _combined_bb(shapes).to_dict()
+                # add global bounding box
+                shapes["bb"] = bb
+                
                 if progress is not None:
                     progress.done()
 

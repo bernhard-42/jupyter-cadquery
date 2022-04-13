@@ -7,6 +7,7 @@ import platform
 import tempfile
 import time
 import numpy as np
+from quaternion import rotate_vectors
 
 import cadquery as cq
 
@@ -19,9 +20,9 @@ from OCP.TopExp import TopExp_Explorer
 
 from OCP.StlAPI import StlAPI_Writer
 
-from cadquery import Compound, Location
-from cadquery.occ_impl.shapes import downcast
-from .utils import distance
+from OCP.gp import gp_Trsf, gp_Quaternion, gp_Vec
+from OCP.TopLoc import TopLoc_Location
+
 
 # Bounding Box
 from OCP.TopoDS import TopoDS_Shape
@@ -81,15 +82,27 @@ class BoundingBox(object):
 
         self._calc()
 
-    def _bounding_box(self, obj):
+    def _center_of_mass(self, obj):
+        Properties = GProp_GProps()
+        BRepGProp.VolumeProperties_s(obj, Properties)
+        com = Properties.CentreOfMass()
+        return (com.X(), com.Y(), com.Z())
+
+    def _bounding_box(self, obj, tol=1e-6):
         bbox = Bnd_Box()
         if self.optimal:
             BRepTools.Clean_s(obj)
             BRepBndLib.AddOptimal_s(obj, bbox)
         else:
             BRepBndLib.Add_s(obj, bbox)
-        values = bbox.Get()
-        return (values[0], values[3], values[1], values[4], values[2], values[5])
+        if not bbox.IsVoid():
+            values = bbox.Get()
+            return (values[0], values[3], values[1], values[4], values[2], values[5])
+        else:
+            c = self._center_of_mass(obj)
+            bb = (c[0] - tol, c[0] + tol, c[1] - tol, c[1] + tol, c[2] - tol, c[2] + tol)
+            print("\nVoid Bounding Box", bb)
+            return bb
 
     def _calc(self):
         self.xsize = self.xmax - self.xmin
@@ -166,6 +179,36 @@ class BoundingBox(object):
             self.zmin,
             self.zmax,
         )
+
+
+def bounding_box(objs, loc=None, optimal=False):
+    if isinstance(objs, (list, tuple)):
+        compound = Compound._makeCompound(objs)  # pylint: disable=protected-access
+    else:
+        compound = objs
+
+    return BoundingBox(compound if loc is None else compound.Moved(loc.wrapped), optimal=optimal)
+
+
+def np_bbox(p, t, q):
+    if p.size == 0:
+        return None
+
+    n_p = p.reshape(-1, 3)
+    if t is None and q is None:
+        v = n_p
+    else:
+        n_t = np.asarray(t)
+        n_q = np.quaternion(q[-1], *q[:-1])
+        v = rotate_vectors([n_q], n_p)[0] + n_t
+    
+    bbmin = np.min(v, axis=0)
+    bbmax = np.max(v, axis=0)
+    return BoundingBox({"xmin":bbmin[0], "xmax":bbmax[0], "ymin":bbmin[1], "ymax":bbmax[1], "zmin":bbmin[2], "zmax":bbmax[2]})
+
+
+def clean_string(s):
+    return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C").replace(" ", "_")
 
 
 class StepReader:
@@ -449,15 +492,22 @@ def get_rgb(color):
     return (int(255 * rgb.Red()), int(255 * rgb.Green()), int(255 * rgb.Blue()))
 
 
+def tq_to_loc(t, q):
+    T = gp_Trsf()
+    Q = gp_Quaternion(*q)
+    V = gp_Vec(*t)
+    T.SetTransformation(Q, V)
+    return TopLoc_Location(T)
+
 def loc_to_tq(loc):
-    T = loc.wrapped.Transformation()
+    T = loc.Transformation()
     t = T.TranslationPart()
     q = T.GetRotation()
     return ((t.X(), t.Y(), t.Z()), (q.X(), q.Y(), q.Z(), q.W()))
 
 
 def __location__repr__(self):
-    t, r = loc_to_tq(self)
+    t, r = loc_to_tq(self.wrapped)
     return f"Location: t=({t[0]}, {t[1]}, {t[2]}), q=({r[0]}, {r[1]}, {r[2]}, {r[3]})"
 
 
