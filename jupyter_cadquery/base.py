@@ -136,7 +136,7 @@ class _Part(_CADObject):
         with Timer(timeit, self.name, "bounding box:   ", 2) as t:
 #            bb = bounding_box(self.shape, loc=loc, optimal=False)
 #            bb.update(bb, minimize=True)
-            if is_apply_result(mesh):
+            if parallel and is_apply_result(mesh):
                 # cache location for later use in mp_get_results
                 bb = loc_to_tq(loc.wrapped)
             else:
@@ -145,7 +145,8 @@ class _Part(_CADObject):
                 else:
                     bb = np_bbox(mesh["vertices"], *loc_to_tq(loc.wrapped))
                 t.info = str(bb)
-                bb = bb.to_dict()
+                if bb is not None:
+                    bb = bb.to_dict()
 
         if isinstance(self.color, tuple):
             color = [c.web_color for c in self.color]  # pylint: disable=not-an-iterable
