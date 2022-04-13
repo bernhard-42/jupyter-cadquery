@@ -136,7 +136,7 @@ class _Part(_CADObject):
         with Timer(timeit, self.name, "bounding box:   ", 2) as t:
 #            bb = bounding_box(self.shape, loc=loc, optimal=False)
 #            bb.update(bb, minimize=True)
-            if parallel:
+            if is_apply_result(mesh):
                 # cache location for later use in mp_get_results
                 bb = loc_to_tq(loc.wrapped)
             else:
