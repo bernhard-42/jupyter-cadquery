@@ -4,7 +4,7 @@ import time
 class Progress:
     """Simple, self deleting progress bar"""
 
-    def __init__(self, max_value, tick="o", length=60):
+    def __init__(self, max_value, tick="\u2014", length=60):
         """Init the progress bar with the max length"""
         self.max = max_value
         self.tick = tick
@@ -20,7 +20,7 @@ class Progress:
         s = int(round(self.step * self.value, 0))
         r = int(self.value / self.max * 100)
         t = time.time() - self.start
-        print(f"\r{r:3d}% |{self.tick * s}{' ' * (self.length - s)}| ({self.value}/{self.max}) {t:5.2f}s", end="")
+        print(f"\r{r:3d}% \u22ee{self.tick * s}{' ' * (self.length - s)}\u22ee ({self.value}/{self.max}) {t:5.2f}s", end="")
 
     def done(self):
         """Finalize the progress bar"""
