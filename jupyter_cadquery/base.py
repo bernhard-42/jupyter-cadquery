@@ -119,34 +119,26 @@ class _Part(_CADObject):
 
         with Timer(timeit, self.name, "tessellate:     ", 2) as t:
             func = mp_tessellate if parallel else tessellate
-            mesh = func(
+            result = func(
                 self.shape,
+                loc_to_tq(loc.wrapped),
                 deviation=deviation,
                 quality=quality,
                 angular_tolerance=angular_tolerance,
                 debug=timeit,
                 compute_edges=render_edges,
             )
+
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
+
+            if is_apply_result(result):
+                mesh = result  
+                bb = {}
+            else:
+                mesh, bb = result
 
         if progress is not None:
             progress.update()
-
-        # After meshing the non optimal bounding box is much more exact
-        with Timer(timeit, self.name, "bounding box:   ", 2) as t:
-#            bb = bounding_box(self.shape, loc=loc, optimal=False)
-#            bb.update(bb, minimize=True)
-            if parallel and is_apply_result(mesh):
-                # cache location for later use in mp_get_results
-                bb = loc_to_tq(loc.wrapped)
-            else:
-                if loc is None:
-                    bb = np_bbox(mesh["vertices"], None, None)
-                else:
-                    bb = np_bbox(mesh["vertices"], *loc_to_tq(loc.wrapped))
-                t.info = str(bb)
-                if bb is not None:
-                    bb = bb.to_dict()
 
         if isinstance(self.color, tuple):
             color = [c.web_color for c in self.color]  # pylint: disable=not-an-iterable
@@ -418,10 +410,9 @@ def mp_get_results(shapes, progress):
             if shape.get("parts") is None:
                 if shape.get("type") == "shapes":
                     if is_apply_result(shape["shape"]):
-                        shape["shape"] = get_mp_result(shape["shape"])
-                        # calculate bounding box with the location stored in bb
-                        t, q = shape["bb"]
-                        shape["bb"] = np_bbox(shape["shape"]["vertices"], t, q)
+                        mesh, bb = get_mp_result(shape["shape"])
+                        shape["shape"] = mesh
+                        shape["bb"] = bb
         
                     if progress is not None:
                         progress.update()

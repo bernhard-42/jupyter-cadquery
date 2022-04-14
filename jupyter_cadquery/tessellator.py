@@ -25,7 +25,7 @@ from OCP.GCPnts import GCPnts_QuasiUniformDeflection
 
 from cadquery.occ_impl.shapes import Compound
 from jupyter_cadquery.utils import Timer, round_sig
-from jupyter_cadquery.ocp_utils import get_faces
+from jupyter_cadquery.ocp_utils import get_faces, np_bbox, loc_to_tq
 
 MAX_HASH_KEY = 2147483647
 
@@ -36,7 +36,7 @@ MAX_HASH_KEY = 2147483647
 
 
 def make_key(
-    shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False
+    shape, loc, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True, debug=False
 ):  # pylint: disable=unused-argument
     # quality is a measure of bounding box and deviation, hence can be ignored (and should due to accuracy issues
     # of non optimal bounding boxes. debug and progress are also irrelevant for tessellation results)
@@ -45,6 +45,7 @@ def make_key(
 
     key = (
         tuple((s.HashCode(MAX_HASH_KEY) for s in shape)),
+        loc,
         deviation,
         angular_tolerance,
         compute_edges,
@@ -236,6 +237,7 @@ def compute_quality(bb, deviation=0.1):
 @cached(cache, key=make_key)
 def tessellate(
     shapes,
+    loc,
     # only provided for managing cache:
     deviation: float,  # pylint: disable=unused-argument
     quality: float,
@@ -247,12 +249,16 @@ def tessellate(
     compound = Compound._makeCompound(shapes) if len(shapes) > 1 else shapes[0]  # pylint: disable=protected-access
     tess = Tessellator()
     tess.compute(compound, quality, angular_tolerance, compute_faces, compute_edges, debug)
-    return {
-        "vertices": tess.get_vertices(),
-        "triangles": tess.get_triangles(),
-        "normals": tess.get_normals(),
-        "edges": tess.get_edges(),
-    }
+    vertices = tess.get_vertices()
+    return (
+        {
+            "vertices": vertices,
+            "triangles": tess.get_triangles(),
+            "normals": tess.get_normals(),
+            "edges": tess.get_edges(),
+        },
+        np_bbox(vertices, *loc),
+    )
 
 
 def discretize_edge(edge, deflection=0.1):

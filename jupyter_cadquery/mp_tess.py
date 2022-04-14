@@ -6,11 +6,11 @@ from jupyter_cadquery.ocp_utils import deserialize
 from jupyter_cadquery.tessellator import tessellate
 
 
-def mp_tess(name, deviation, quality, angular_tolerance, compute_faces, compute_edges, debug):
+def mp_tess(name, loc, deviation, quality, angular_tolerance, compute_faces, compute_edges, debug):
     """This function will be pickled by multiprocessing"""
     sm = shared_memory.SharedMemory(name)
     shape = deserialize(bytes(sm.buf[0 : sm.size]))
-    t = tessellate([shape], deviation, quality, angular_tolerance, compute_faces, compute_edges, debug)
+    t = tessellate([shape], loc, deviation, quality, angular_tolerance, compute_faces, compute_edges, debug)
     sm.close()
     sm.unlink()
     return (name, t)
