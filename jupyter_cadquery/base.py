@@ -113,7 +113,7 @@ class _Part(_CADObject):
         # A first rough estimate of the bounding box.
         # Will be too large, but is sufficient for computing the quality
         with Timer(timeit, self.name, "compute quality:", 2) as t:
-            bb = bounding_box(self.shape, loc=loc, optimal=False)
+            bb = bounding_box(self.shape, loc=loc.wrapped, optimal=False)
             quality = compute_quality(bb, deviation=deviation)
             t.info = str(bb)
 
@@ -131,7 +131,7 @@ class _Part(_CADObject):
 
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
 
-            if is_apply_result(result):
+            if parallel and is_apply_result(result):
                 mesh = result  
                 bb = {}
             else:
@@ -204,7 +204,7 @@ class _Edges(_CADObject):
         self.id = f"{path}/{self.name}"
 
         with Timer(timeit, self.name, "bounding box:", 2) as t:
-            bb = bounding_box(self.shape, loc=loc)
+            bb = bounding_box(self.shape, loc=loc.wrapped)
             quality = compute_quality(bb, deviation=deviation)
             deflection = quality / 100 if edge_accuracy is None else edge_accuracy
             t.info = str(bb)
@@ -257,7 +257,7 @@ class _Vertices(_CADObject):
     ):
         self.id = f"{path}/{self.name}"
 
-        bb = bounding_box(self.shape, loc=loc)
+        bb = bounding_box(self.shape, loc=loc.wrapped)
 
         if progress is not None:
             progress.update()

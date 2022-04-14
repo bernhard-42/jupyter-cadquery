@@ -4,9 +4,12 @@ import itertools
 import os
 import pickle
 import platform
+import sys
 import tempfile
 import time
 import unicodedata
+
+from cachetools import LRUCache, cached
 
 import numpy as np
 from quaternion import rotate_vectors
@@ -55,13 +58,43 @@ from OCP.TopLoc import TopLoc_Location
 from OCP.TopAbs import TopAbs_SOLID, TopAbs_COMPOUND
 
 
-HASH_CODE_MAX = 2147483647
+MAX_HASH_KEY = 2147483647
 
+#
+# Caching helpers
+#
+
+def make_key(objs, loc=None, optimal=False):  # pylint: disable=unused-argument
+    # optimal is not used and as such ignored
+    if not isinstance(objs, (tuple, list)):
+        objs = [objs]
+
+    key = (tuple((s.HashCode(MAX_HASH_KEY) for s in objs)), loc_to_tq(loc))
+    return key
+
+
+def get_size(obj):
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict):
+        size += sum([get_size(v) + len(k) for k, v in obj.items()])
+    elif isinstance(obj, (tuple, list)):
+        size += sum([get_size(i) for i in obj])
+    return size
+
+
+cache = LRUCache(maxsize=16 * 1024 * 1024, getsizeof=get_size)
+
+#
+# Version
+#
 
 def ocp_version():
     lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.*.*.*")[0]
     return lib.split(".so.")[-1]
 
+#
+# Bounding Box
+#
 
 class BoundingBox(object):
     def __init__(self, obj=None, optimal=False):
@@ -187,13 +220,14 @@ class BoundingBox(object):
         )
 
 
+@cached(cache, key=make_key)
 def bounding_box(objs, loc=None, optimal=False):
     if isinstance(objs, (list, tuple)):
         compound = Compound._makeCompound(objs)  # pylint: disable=protected-access
     else:
         compound = objs
 
-    return BoundingBox(compound if loc is None else compound.Moved(loc.wrapped), optimal=optimal)
+    return BoundingBox(compound if loc is None else compound.Moved(loc), optimal=optimal)
 
 
 def np_bbox(p, t, q):
@@ -207,11 +241,16 @@ def np_bbox(p, t, q):
         n_t = np.asarray(t)
         n_q = np.quaternion(q[-1], *q[:-1])
         v = rotate_vectors([n_q], n_p)[0] + n_t
-    
+
     bbmin = np.min(v, axis=0)
     bbmax = np.max(v, axis=0)
-    return BoundingBox({"xmin":bbmin[0], "xmax":bbmax[0], "ymin":bbmin[1], "ymax":bbmax[1], "zmin":bbmin[2], "zmax":bbmax[2]})
+    return BoundingBox(
+        {"xmin": bbmin[0], "xmax": bbmax[0], "ymin": bbmin[1], "ymax": bbmax[1], "zmin": bbmin[2], "zmax": bbmax[2]}
+    )
 
+#
+# StepReader
+#
 
 def clean_string(s):
     return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C").replace(" ", "_")
@@ -366,24 +405,23 @@ class StepReader:
         else:
             return result
 
-
     def persist(self, filename):
         def _persist(assembly):
             result = []
             for assembly in assembly:
                 obj = {
-                    'name': assembly['name'], 
-                    'shape': serialize(assembly['shape']),
-                    'shapes': [],
-                    'color': assembly['color'], 
-                    'loc': loc_to_tq(assembly['loc']),
+                    "name": assembly["name"],
+                    "shape": serialize(assembly["shape"]),
+                    "shapes": [],
+                    "color": assembly["color"],
+                    "loc": loc_to_tq(assembly["loc"]),
                 }
-                if assembly['shapes']:
-                    obj['shapes'] = _persist(assembly['shapes'])
+                if assembly["shapes"]:
+                    obj["shapes"] = _persist(assembly["shapes"])
                 result.append(obj)
             return result
-        
-        objs =  _persist(self.assembly)
+
+        objs = _persist(self.assembly)
         with open(filename, "wb") as fd:
             pickle.dump(objs, fd)
 
@@ -392,19 +430,20 @@ class StepReader:
             result = []
             for obj in objs:
                 assembly = {
-                    'name': obj['name'], 
-                    'shape': deserialize(obj['shape']),
-                    'shapes': [],
-                    'color': obj['color'], 
-                    'loc': tq_to_loc(*obj['loc']),
+                    "name": obj["name"],
+                    "shape": deserialize(obj["shape"]),
+                    "shapes": [],
+                    "color": obj["color"],
+                    "loc": tq_to_loc(*obj["loc"]),
                 }
-                if obj['shapes']:
-                    assembly['shapes'] = _unpersist(obj['shapes'])
+                if obj["shapes"]:
+                    assembly["shapes"] = _unpersist(obj["shapes"])
                 result.append(assembly)
             return result
 
         with open(filename, "rb") as fd:
             self.assembly = _unpersist(pickle.load(fd))
+
 
 # Export STL
 
@@ -471,7 +510,7 @@ def _get_topo(shape, topo):
     hashes = {}
     while explorer.More():
         item = explorer.Current()
-        hash_value = item.HashCode(HASH_CODE_MAX)
+        hash_value = item.HashCode(MAX_HASH_KEY)
         if hashes.get(hash_value) is None:
             hashes[hash_value] = True
             yield downcast(item)
@@ -504,6 +543,7 @@ def tq_to_loc(t, q):
     V = gp_Vec(*t)
     T.SetTransformation(Q, V)
     return TopLoc_Location(T)
+
 
 def loc_to_tq(loc):
     T = loc.Transformation()
