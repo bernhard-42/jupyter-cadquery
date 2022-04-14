@@ -433,15 +433,15 @@ def mp_get_results(shapes, progress):
 
 
 def get_accuracies(shapes):
-    def _get_normal_len(shapes, lengths):
+    def _get_accuracies(shapes, lengths):
         if shapes.get("parts"):
             for shape in shapes["parts"]:
-                _get_normal_len(shape, lengths)
+                _get_accuracies(shape, lengths)
         elif shapes.get("type") == "shapes":
             accuracies[shapes["id"]] = shapes["accuracy"]
 
     accuracies = {}
-    _get_normal_len(shapes, accuracies)
+    _get_accuracies(shapes, accuracies)
     return accuracies
 
 
