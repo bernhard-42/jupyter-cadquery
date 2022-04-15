@@ -244,9 +244,7 @@ def np_bbox(p, t, q):
 
     bbmin = np.min(v, axis=0)
     bbmax = np.max(v, axis=0)
-    return BoundingBox(
-        {"xmin": bbmin[0], "xmax": bbmax[0], "ymin": bbmin[1], "ymax": bbmax[1], "zmin": bbmin[2], "zmax": bbmax[2]}
-    )
+    return {"xmin": bbmin[0], "xmax": bbmax[0], "ymin": bbmin[1], "ymax": bbmax[1], "zmin": bbmin[2], "zmax": bbmax[2]}
 
 #
 # StepReader
