@@ -74,6 +74,7 @@ class Defaults:
         - ambient_intensity   Intensity of ambient light (default=0.75)
         - direct_intensity    Intensity of direct lights (default=0.15)
         - show_parent:        Show the parent for edges, faces and vertices objects
+        - show_bbox:          Show bounding box (default=False)
         - tools:              Show the viewer tools like the object tree (default=True)
         - timeit:             Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
         - parallel:           (Linux only) Whether to use multiprocessing for parallel tessellation
@@ -138,6 +139,7 @@ class Defaults:
             "direct_intensity": 0.15,
             "reset_camera": True,
             "show_parent": True,
+            "show_bbox": False,
             "position": None,
             "quaternion": None,
             "target": None,

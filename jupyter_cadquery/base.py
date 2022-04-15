@@ -27,6 +27,7 @@ from jupyter_cadquery.tessellator import (
     discretize_edge,
     tessellate,
     compute_quality,
+    bbox_edges
 )
 from jupyter_cadquery.mp_tessellator import (
     is_apply_result,
@@ -445,6 +446,23 @@ def get_normal_len(render_normals, shapes, deviation):
 
     return normal_len
 
+def insert_bbox(bbox, shapes, states):
+    # derive the top level states path part
+    prefix = list(states)[0].split("/")[1]
+
+    bbox = {
+        "id": f"/{prefix}/BoundingBox",
+        "type": "edges",
+        "name": "BoundingBox",
+        "shape": bbox_edges(bbox),
+        "color": "#FF00FF",
+        "width": 1,
+        "bb": bbox,
+    }
+    # inject bounding box into shapes
+    shapes["parts"].insert(0, bbox)
+    # and states
+    states[f"/{prefix}/BoundingBox"] = [3, 1]
 
 def _show(part_group, **kwargs):
     for k in kwargs:
@@ -535,6 +553,10 @@ def _show(part_group, **kwargs):
                 shapes,
                 preset("deviation", config.get("deviation")),
             )
+            
+            show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
+            if show_bbox:
+                insert_bbox(show_bbox, shapes, states)
 
         with Timer(timeit, "", "show shapes", 1):
             cv = viewer_show(shapes, states, **show_args(config))

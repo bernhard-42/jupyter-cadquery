@@ -593,6 +593,7 @@ def show(*cad_objs, **kwargs):
     - ambient_intensity   Intensity of ambient light (default=0.75)
     - direct_intensity    Intensity of direct lights (default=0.15)
     - show_parent:        Show the parent for edges, faces and vertices objects
+    - show_bbox:          Show bounding box (default=False)
     - collapse:           Collapse CAD tree (1: collapse nodes with single leaf, 2: collapse all nodes)
     - tools:              Show the viewer tools like the object tree (default=True)
     - glass:              Show the viewer in glass mode, i.e (CAD navigation as transparent overlay (default=False)
