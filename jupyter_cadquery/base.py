@@ -22,7 +22,7 @@ from cad_viewer_widget import show as viewer_show
 
 from jupyter_cadquery.progress import Progress
 from jupyter_cadquery.utils import Color, Timer, warn
-from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, np_bbox, BoundingBox
+from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox, wrapped_or_None
 from jupyter_cadquery.tessellator import (
     discretize_edge,
     tessellate,
@@ -113,7 +113,7 @@ class _Part(_CADObject):
         # A first rough estimate of the bounding box.
         # Will be too large, but is sufficient for computing the quality
         with Timer(timeit, self.name, "compute quality:", 2) as t:
-            bb = bounding_box(self.shape, loc=loc.wrapped, optimal=False)
+            bb = bounding_box(self.shape, loc=wrapped_or_None(loc), optimal=False)
             quality = compute_quality(bb, deviation=deviation)
             t.info = str(bb)
 
@@ -121,7 +121,7 @@ class _Part(_CADObject):
             func = mp_tessellate if parallel else tessellate
             result = func(
                 self.shape,
-                loc_to_tq(loc.wrapped),
+                loc_to_tq(wrapped_or_None(loc)),
                 deviation=deviation,
                 quality=quality,
                 angular_tolerance=angular_tolerance,
@@ -204,7 +204,7 @@ class _Edges(_CADObject):
         self.id = f"{path}/{self.name}"
 
         with Timer(timeit, self.name, "bounding box:", 2) as t:
-            bb = bounding_box(self.shape, loc=loc.wrapped)
+            bb = bounding_box(self.shape, loc=wrapped_or_None(loc))
             quality = compute_quality(bb, deviation=deviation)
             deflection = quality / 100 if edge_accuracy is None else edge_accuracy
             t.info = str(bb)
@@ -257,7 +257,7 @@ class _Vertices(_CADObject):
     ):
         self.id = f"{path}/{self.name}"
 
-        bb = bounding_box(self.shape, loc=loc.wrapped)
+        bb = bounding_box(self.shape, loc=wrapped_or_None(loc))
 
         if progress is not None:
             progress.update()
@@ -311,7 +311,7 @@ class _PartGroup(_CADObject):
         else:
             combined_loc = loc * self.loc
 
-        result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(self.loc.wrapped), "name": self.name}
+        result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(wrapped_or_None(self.loc)), "name": self.name}
         for obj in self.objects:
             result["parts"].append(
                 obj.collect_shapes(
