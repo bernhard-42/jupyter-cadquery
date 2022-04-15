@@ -28,9 +28,9 @@ from cad_viewer_widget.sidecar import (
     close_sidecars as close_viewers,
 )
 
-import cad_viewer_widget._version
-
-from ._version import __version_info__, __version__
+from cad_viewer_widget._version import __version__ as cvw_version
+from ._version import __version_info__ as jcq_version_info, __version__ as jcq_version
+from .ocp_utils import ocp_version
 
 from .cad_objects import (
     Assembly,
@@ -53,12 +53,10 @@ from .defaults import (
 
 from .utils import warn
 from .tools import auto_show
-from .ocp_utils import ocp_version
-
 
 def versions():
-    print("jupyter_cadquery ", __version__)
-    print("cad_viewer_widget", cad_viewer_widget._version.__version__)
+    print("jupyter_cadquery ", jcq_version)
+    print("cad_viewer_widget", cvw_version)
     print("OCP              ", ocp_version())
 
 
