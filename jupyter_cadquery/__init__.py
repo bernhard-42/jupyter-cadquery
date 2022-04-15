@@ -41,6 +41,7 @@ from .cad_objects import (
     Vertices,
     show,
     web_color,
+    get_pick,
 )
 
 from .defaults import (

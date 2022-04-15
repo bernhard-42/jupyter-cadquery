@@ -136,6 +136,25 @@ class PartGroup(_PartGroup):
                 print(f"no object found for pick {pick}")
         return None
 
+def get_pick(assembly, pick):
+    if pick == {}:
+        print("First double click on an object in the CAD viewer")
+        return None
+    if isinstance(assembly, PartGroup):
+        return assembly.get_pick(pick)
+    else:
+        path = pick["path"]
+        name = pick["name"]
+        id_ = "/".join([path, name])
+
+        short_path = "/".join(id_.split("/")[2:])
+        if assembly.objects.get(short_path) is not None:
+            return assembly.objects[short_path]
+        else:
+            short_path = "/".join(id_.split("/")[2:-1])
+            if assembly.objects.get(short_path) is not None:
+                return assembly.objects[short_path]
+        return None
 
 class Assembly(PartGroup):
     def __init__(self, *args, **kwargs):
