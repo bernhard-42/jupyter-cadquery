@@ -14,9 +14,8 @@
 # limitations under the License.
 #
 
-import platform
 from .utils import warn
-
+from cad_viewer_widget import get_sidecar, get_default_sidecar
 
 class Defaults:
     def __init__(self):
@@ -176,12 +175,26 @@ def set_defaults(**kwargs):
 
 
 def apply_defaults(**kwargs):
+
+    viewer = kwargs.get("viewer")
+    if viewer is None:
+        viewer = get_default_sidecar()
+    sidecar = get_sidecar(viewer)
+
     result = dict(get_defaults())
     for k, v in kwargs.items():
         if result.get(k, "") != "":
             result[k] = v
         else:
             print(f"unknown parameter {k}")
+    
+    for k in ["anchor", "cad_width", "tree_width", "height", "theme", "pinning"]:
+        # omit create args that cannot be set after viewer is created, unless explicit given
+        # -> leading to a warning
+        if sidecar is not None and kwargs.get(k) is None:
+                del result[k]
+
+
     return result
 
 
