@@ -16,18 +16,17 @@ LONG_DESCRIPTION = "An extension to render cadquery objects in JupyterLab via py
 
 setup_args = {
     "name": "jupyter_cadquery",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
     "long_description": LONG_DESCRIPTION,
     "include_package_data": True,
     "python_requires": ">=3.6",
     "install_requires": [
         "webcolors~=1.11",
-        "jupyterlab~=3.3",
         "voila~=0.3",
         "cadquery_massembly~=0.9",
-        "pyquaternion~=0.9.9",
-        "cad-viewer-widget~=1.1.1",
+        "numpy-quaternion==2022.4.1",
+        "cad-viewer-widget~=1.3.0",
         "cachetools~=5.0.0",
     ],
     "extras_require": {

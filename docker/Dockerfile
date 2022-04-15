@@ -5,12 +5,17 @@ RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
     apt-get install --no-install-recommends -y libgl1-mesa-glx libglu1-mesa && \
     apt-get clean
 
+#  mamba create -n cvw python=3.9
+#  ca cvw
+#  conda install -c conda-forge "hdf5=1.10.6"
+#  mamba install -c conda-forge -c cadquery cadquery=master
+
 RUN conda create -n cq -c default -c conda-forge -c cadquery python=3.8 cadquery=master && \
     conda clean --all && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 RUN . "/opt/conda/etc/profile.d/conda.sh" && conda activate cq && \
-    pip install jupyter-cadquery==3.0.0 cadquery-massembly~=0.9 voila~=0.3 matplotlib==3.3 && \
+    pip install jupyter-cadquery==3.1.0 cadquery-massembly~=0.9 voila~=0.3 matplotlib==3.3 && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 VOLUME /home/cq/
