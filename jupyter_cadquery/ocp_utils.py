@@ -546,11 +546,16 @@ def tq_to_loc(t, q):
 
 
 def loc_to_tq(loc):
+    if loc is None:
+        return (None, None)
+        
     T = loc.Transformation()
     t = T.TranslationPart()
     q = T.GetRotation()
     return ((t.X(), t.Y(), t.Z()), (q.X(), q.Y(), q.Z(), q.W()))
 
+def wrapped_or_None(obj):
+    return None if obj is None else obj.wrapped
 
 def __location__repr__(self):
     t, r = loc_to_tq(self.wrapped)
