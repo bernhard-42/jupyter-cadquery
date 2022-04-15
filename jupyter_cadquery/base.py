@@ -18,17 +18,12 @@ import numpy as np
 
 from cadquery import Compound, __version__
 
-from cad_viewer_widget import show as viewer_show
+from cad_viewer_widget import show as viewer_show, get_sidecar
 
 from jupyter_cadquery.progress import Progress
 from jupyter_cadquery.utils import Color, Timer, warn
 from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox, wrapped_or_None
-from jupyter_cadquery.tessellator import (
-    discretize_edge,
-    tessellate,
-    compute_quality,
-    bbox_edges
-)
+from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality, bbox_edges
 from jupyter_cadquery.mp_tessellator import (
     is_apply_result,
     mp_tessellate,
@@ -133,7 +128,7 @@ class _Part(_CADObject):
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
 
             if parallel and is_apply_result(result):
-                mesh = result  
+                mesh = result
                 bb = {}
             else:
                 mesh, bb = result
@@ -312,7 +307,11 @@ class _PartGroup(_CADObject):
         else:
             combined_loc = loc * self.loc
 
-        result = {"parts": [], "loc": None if self.loc is None else loc_to_tq(wrapped_or_None(self.loc)), "name": self.name}
+        result = {
+            "parts": [],
+            "loc": None if self.loc is None else loc_to_tq(wrapped_or_None(self.loc)),
+            "name": self.name,
+        }
         for obj in self.objects:
             result["parts"].append(
                 obj.collect_shapes(
@@ -394,7 +393,7 @@ def _combined_bb(shapes):
                 else:
                     if shape["bb"] is not None:
                         bb.update(shape["bb"])
-                        
+
                 # after updating the global bounding box, remove the local
                 del shape["bb"]
             else:
@@ -414,7 +413,7 @@ def mp_get_results(shapes, progress):
                         mesh, bb = get_mp_result(shape["shape"])
                         shape["shape"] = mesh
                         shape["bb"] = bb
-        
+
                     if progress is not None:
                         progress.update()
             else:
@@ -446,6 +445,7 @@ def get_normal_len(render_normals, shapes, deviation):
 
     return normal_len
 
+
 def insert_bbox(bbox, shapes, states):
     # derive the top level states path part
     prefix = list(states)[0].split("/")[1]
@@ -463,6 +463,7 @@ def insert_bbox(bbox, shapes, states):
     shapes["parts"].insert(0, bbox)
     # and states
     states[f"/{prefix}/BoundingBox"] = [3, 1]
+
 
 def _show(part_group, **kwargs):
     for k in kwargs:
@@ -526,7 +527,7 @@ def _show(part_group, **kwargs):
             parallel = preset("parallel", config.get("parallel"))
             with Timer(timeit, "", "tessellate", 1):
                 num_shapes = part_group.count_shapes()
-                progress_len = 2*num_shapes if parallel else num_shapes
+                progress_len = 2 * num_shapes if parallel else num_shapes
                 progress = None if num_shapes < 2 else Progress(progress_len)
 
                 if parallel:
@@ -542,7 +543,7 @@ def _show(part_group, **kwargs):
                 bb = _combined_bb(shapes).to_dict()
                 # add global bounding box
                 shapes["bb"] = bb
-                
+
                 if progress is not None:
                     progress.done()
 
@@ -553,7 +554,7 @@ def _show(part_group, **kwargs):
                 shapes,
                 preset("deviation", config.get("deviation")),
             )
-            
+
             show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
             if show_bbox:
                 insert_bbox(show_bbox, shapes, states)
