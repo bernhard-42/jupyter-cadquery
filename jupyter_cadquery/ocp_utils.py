@@ -403,8 +403,8 @@ class StepReader:
         else:
             return result
 
-    def persist(self, filename):
-        def _persist(assembly):
+    def save_assembly(self, filename):
+        def _save_assembly(assembly):
             result = []
             for assembly in assembly:
                 obj = {
@@ -415,16 +415,16 @@ class StepReader:
                     "loc": loc_to_tq(assembly["loc"]),
                 }
                 if assembly["shapes"]:
-                    obj["shapes"] = _persist(assembly["shapes"])
+                    obj["shapes"] = _save_assembly(assembly["shapes"])
                 result.append(obj)
             return result
 
-        objs = _persist(self.assembly)
+        objs = _save_assembly(self.assembly)
         with open(filename, "wb") as fd:
             pickle.dump(objs, fd)
 
-    def unpersist(self, filename):
-        def _unpersist(objs):
+    def load_assembly(self, filename):
+        def _load_assembly(objs):
             result = []
             for obj in objs:
                 assembly = {
@@ -435,12 +435,12 @@ class StepReader:
                     "loc": tq_to_loc(*obj["loc"]),
                 }
                 if obj["shapes"]:
-                    assembly["shapes"] = _unpersist(obj["shapes"])
+                    assembly["shapes"] = _load_assembly(obj["shapes"])
                 result.append(assembly)
             return result
 
         with open(filename, "rb") as fd:
-            self.assembly = _unpersist(pickle.load(fd))
+            self.assembly = _load_assembly(pickle.load(fd))
 
 
 # Export STL
