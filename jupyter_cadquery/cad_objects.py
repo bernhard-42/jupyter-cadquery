@@ -614,6 +614,9 @@ def show(*cad_objs, **kwargs):
     - show_parent:        Show the parent for edges, faces and vertices objects
     - show_bbox:          Show bounding box (default=False)
     - collapse:           Collapse CAD tree (1: collapse nodes with single leaf, 2: collapse all nodes)
+    - cad_width:          Width of CAD view part of the view (default=800)
+    - tree_width:         Width of navigation tree part of the view (default=250)
+    - height:             Height of the CAD view (default=600)
     - tools:              Show the viewer tools like the object tree (default=True)
     - glass:              Show the viewer in glass mode, i.e (CAD navigation as transparent overlay (default=False)
     - timeit:             Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)

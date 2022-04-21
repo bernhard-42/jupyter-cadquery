@@ -26,6 +26,7 @@ from cad_viewer_widget.sidecar import (
     get_sidecars as get_viewers,
     close_sidecar as close_viewer,
     close_sidecars as close_viewers,
+    set_default as set_default_viewer,
 )
 
 from cad_viewer_widget._version import __version__ as cvw_version
@@ -74,9 +75,9 @@ def open_viewer(viewer=None, default=True, **kwargs):
         set_defaults(theme=kwargs["theme"])
 
     if default:
-        set_defaults(viewer=viewer)
+        set_default_viewer(viewer)
 
-    show(viewer=viewer)
+    show(viewer=viewer, **kwargs)
     return cv
 
 

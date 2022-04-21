@@ -17,6 +17,7 @@
 from .utils import warn
 from cad_viewer_widget import get_sidecar, get_default_sidecar
 
+
 class Defaults:
     def __init__(self):
         self.reset_defaults()
@@ -142,7 +143,7 @@ class Defaults:
             "position": None,
             "quaternion": None,
             "target": None,
-            "zoom": 1,
+            "zoom": None,
             "zoom_speed": 1.0,
             "pan_speed": 1.0,
             "rotate_speed": 1.0,
@@ -187,13 +188,12 @@ def apply_defaults(**kwargs):
             result[k] = v
         else:
             print(f"unknown parameter {k}")
-    
-    for k in ["anchor", "cad_width", "tree_width", "height", "theme", "pinning"]:
+
+    for k in ["anchor", "theme", "pinning"]:
         # omit create args that cannot be set after viewer is created, unless explicit given
         # -> leading to a warning
         if sidecar is not None and kwargs.get(k) is None:
-                del result[k]
-
+            del result[k]
 
     return result
 
@@ -244,6 +244,9 @@ def add_shape_args(config):
             "collpase",
             "tools",
             "glass",
+            "cad_width",
+            "tree_width",
+            "height",
             "timeit",
             "js_debug",
         ]
