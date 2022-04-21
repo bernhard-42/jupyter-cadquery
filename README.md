@@ -8,13 +8,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
 
-## Release v3.1.0 (xx.04.2022)
-
-- remove show_bb0x
-
-## Release v3.1.0 (24.02.2022)
-
-### Overview
+## Overview
 
 Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[pythreejs](https://github.com/jupyter-widgets/pythreejs)_ and JupyterLab's _[sidecar](https://github.com/jupyter-widgets/jupyterlab-sidecar)_ looked reasonable in 2019, it turned out they had too many limitations. _pythreejs_ is stuck with an outdated version of _[threejs](https://github.com/mrdoob/three.js/)_ and the _sidecar_ project did not improve usability to a level I would have liked to have.
 
@@ -31,53 +25,63 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
    **Note:** For changes see the migration section at the end of this page.
 
-### New features
+## Release v3.1.0 (xx.04.2022)
+
+### New features:
 
 - **Performance**
 
-  - By removing the back and forth communication from pythreejs (Python) to Javascript (threejs), the new version is significantly faster in showing multi object assemblies.
+  - Change exchange of shapes and tracks from Python to Javascript to binary mode
+  - Introduced LRU cache for tessellation results (128MB default)
+  - Introduced LRU cache for bounding box calculation
+  - Introduced multiprocessing for large assemblies (10s to 100s objects)
 
-- **CadQuery feature support**
+- **Step reader**
 
-  - Supports the latest **CadQuery Sketch class**.
+  - Added import function for STEP files into CadQuery assemblies preserving names and colors
+  - Added save_assembly/load_assembly to quickly save and load parsed STEP files
 
-- **New CAD View Controller**
+- **Animation system**
 
-  - Besides the _orbit_ controller (with z-axis being restricted to show up) it now also supports a **trackball controller** with full freedom of moving the CAD objects. The trackball controller uses the holroyd algorithm (see e.g. [here](https://www.mattkeeter.com/projects/rotation/)) to have better control of movements and avoid the usual trackball tumbling.
+  - Introduced slider for animation
+  - Added animated explode mode for CadQuery assemblies based on Animation system
 
-- **A full re-implementation of Sidecar**
+- **Bounding Box**
 
-  - Sidecars will be **reused** based on name of the sidecar
-  - Supports **different anchors** (_right_, _split-right_, _split-left_, _split-top_, _split-bottom_).
-  - Sidecars opening with anchor _right_ will adapt the size to the the size of the CAD view
+  - Removed OCCT bounding box algorithm and created a fast and precise top level bounding box after tessellation via numpy
+  - Show bounding box (AABB) on tree click or cad view double click
 
-- **WebGL contexts**
+- **CAD view**
 
-  - In a browser only a limited number of WebGL context can be shown at the same time (e.g. 16 in Chrome on my Mac). Hence, _Jupyter-CadQuery_ now thoroughly tracks WebGL contexts, i.e. **releases WebGL context** when sidecar gets closed.
+  - Element isolation
+    - Added feature to isolate elements (shift double click or shift click on navigation tree)
+    - Isolated objects are centered around the center of elements bounding box
+  - Added highlighting of tree nodes when element picked
+  - Added remove elements via navigation tree (meta click)
 
-- **Replay mode**
+- **UI**
+  - Introduced light progress bar for assemblies
+  - Parameters cad_width, tree_width and height can be changed after view is opened
+  - Introduce glass mode
+  - Hide checkbox options behind a 'More' menu for small CAD viewers
+  - Enable auto-dark mode according to browser setting (added 'browser' mode to theme keyword)
+  - Added highlighting for the most recent selected view button
+  - Added tree collapsing/expanding buttons
+  - Extend help for new features
 
-  - Supports **CadQuery Sketch class**.
-  - Replay mode now can **show bounding box** instead of result to compare step with result.
+### Fixes:
 
-- **New features**
-
-  - _Jupyter-CadQuery_ now allows to show **all three grids** (xy, xz, yz).
-  - `show_bbox` additionally shows the bounding box.
-  - CAD viewer icons are scalable svg icons.
-  - Clipping supports an **intersection mode**.
-  - The animation controller is now part of the Javascript component.
-  - export_html exports the whole view (with tools) as a HTML page
-  - export_png export the CAD view (without tools) as a PNG
-
-**Fixes**
-
-- more than I can remember (or am willing to read out of git log) ...
+- Change radio button behaviour to standard behaviour
+- Send notifications for changed "target" parameter
+- Fixed slider color for Safari
+- Fixed scrollbar for Firefox
+- Fixed initial zoom for views wider than high
+- Fixed get_pick to support cq.Assembly
 
 ## Key Features
 
 - CadQuery support
-  - Supports _CadQuery >= 2.1_ including _master_ (as of 2021-02-14)
+  - Supports _CadQuery >= 2.1_ including _master_ (as of 2021-04-21)
 - Viewing options:
   - Directly in the JupyterLab output cell
   - In a central Jupyterlab sidecar for any JupyterLab cell (see example 1 below)
@@ -92,6 +96,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Supports [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
 - Animations
   - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of models (see example 2 and 3 below)
+  - Animated explode mode
 - Sketches
   - Support Sketch class for both `show` and `replay`
 - Auto display of _CadQuery_ shapes

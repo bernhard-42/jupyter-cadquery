@@ -1,5 +1,103 @@
 # Changelog
 
+## Release v3.1.0 (xx.04.2022)
+
+### New features:
+
+- **Performance**
+
+  - Change exchange of shapes and tracks from Python to Javascript to binary mode
+  - Introduced LRU cache for tessellation results (128MB default)
+  - Introduced LRU cache for bounding box calculation
+  - Introduced multiprocessing for large assemblies (10s to 100s objects)
+
+- **Step reader**
+
+  - Added import function for STEP files into CadQuery assemblies preserving names and colors
+  - Added save_assembly/load_assembly to quickly store and load parsed STEP files
+
+- **Animation system**
+
+  - Introduced slider for animation
+  - Added animated explode mode for CadQuery assemblies based on Animation system
+
+- **Bounding Box**
+
+  - Removed OCCT bounding box algorithm and created a fast and precise top level bounding box after tessellation via numpy
+  - Show bounding box (AABB) on tree click or cad view double click
+
+- **CAD view**
+
+  - Element isolation
+    - Added feature to isolate elements (shift double click or shift click on navigation tree)
+    - Isolated objects are centered around the center of elements bounding box
+  - Added highlighting of tree nodes when element picked
+  - Added remove elements via navigation tree (meta click)
+
+- **UI**
+  - Introduced light progress bar for assemblies
+  - Parameters cad_width, tree_width and height can be changed after view is opened
+  - Introduce glass mode
+  - Hide checkbox options behind a 'More' menu for small CAD viewers
+  - Enable auto-dark mode according to browser setting (added 'browser' mode to theme keyword)
+  - Added highlighting for the most recent selected view button
+  - Added tree collapsing/expanding buttons
+  - Extend help for new features
+
+### Fixes:
+
+- Change radio button behaviour to standard behaviour
+- Send notifications for changed "target" parameter
+- Fixed slider color for Safari
+- Fixed scrollbar for Firefox
+- Fixed initial zoom for views wider than high
+- Fixed get_pick to support cq.Assembly
+
+## Release v3.0.0 (24.02.2022)
+
+### New features
+
+- **Performance**
+
+  - By removing the back and forth communication from pythreejs (Python) to Javascript (threejs), the new version is significantly faster in showing multi object assemblies.
+
+- **CadQuery feature support**
+
+  - Supports the latest **CadQuery Sketch class**.
+
+- **New CAD View Controller**
+
+  - Besides the _orbit_ controller (with z-axis being restricted to show up) it now also supports a **trackball controller** with full freedom of moving the CAD objects. The trackball controller uses the holroyd algorithm (see e.g. [here](https://www.mattkeeter.com/projects/rotation/)) to have better control of movements and avoid the usual trackball tumbling.
+
+- **A full re-implementation of Sidecar**
+
+  - Sidecars will be **reused** based on name of the sidecar
+  - Supports **different anchors** (_right_, _split-right_, _split-left_, _split-top_, _split-bottom_).
+  - Sidecars opening with anchor _right_ will adapt the size to the the size of the CAD view
+
+- **WebGL contexts**
+
+  - In a browser only a limited number of WebGL context can be shown at the same time (e.g. 16 in Chrome on my Mac). Hence, _Jupyter-CadQuery_ now thoroughly tracks WebGL contexts, i.e. **releases WebGL context** when sidecar gets closed.
+
+- **Replay mode**
+
+  - Supports **CadQuery Sketch class**.
+  - Replay mode now can **show bounding box** instead of result to compare step with result.
+
+- **New features**
+
+  - _Jupyter-CadQuery_ now allows to show **all three grids** (xy, xz, yz).
+  - `show_bbox` additionally shows the bounding box.
+  - CAD viewer icons are scalable svg icons.
+  - Clipping supports an **intersection mode**.
+  - The animation controller is now part of the Javascript component.
+  - export_html exports the whole view (with tools) as a HTML page
+  - export_png export the CAD view (without tools) as a PNG
+
+- **Fixes**
+
+  - more than I can remember (or am willing to read out of git log) ...
+
 ## Release v2.2.1 (07.10.2021)
 
 - **New features**
