@@ -16,7 +16,7 @@
 
 from jupyter_cadquery import PartGroup, Part
 from jupyter_cadquery.cad_objects import to_assembly
-from jupyter_cadquery.base import _tessellate_group, get_normal_len
+from jupyter_cadquery.base import _tessellate_group, get_normal_len, _combined_bb
 from jupyter_cadquery.defaults import get_default, get_defaults, preset
 
 
@@ -114,6 +114,10 @@ def _convert(*cad_objs, **kwargs):
         preset("deviation", config.get("deviation")),
     )
 
+    bb = _combined_bb(shapes).to_dict()
+    # add global bounding box
+    shapes["bb"] = bb
+
     data = {
         "data": dict(shapes=shapes, states=states),
         "type": "data",
@@ -172,7 +176,7 @@ def show(*cad_objs, **kwargs):
     - theme:             Theme "light" or "dark" (default="light")
     - tools:             Show the viewer tools like the object tree
     - timeit:            Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
-    
+
     NOT SUPPORTED ANY MORE:
     - mac_scrollbar      The default now
     - bb_factor:         Removed
