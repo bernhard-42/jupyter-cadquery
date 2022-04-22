@@ -61,28 +61,38 @@ class Viewer:
         mesh_data = data["data"]
         config = data["config"]
 
-        if logo or config.get("cad_width") is None:
+        if logo:
+            config["cad_width"] = get_default("cad_width")
+            config["tree_width"] = get_default("tree_width")
+            config["height"] = get_default("height")
+
+        if config.get("cad_width") is None:
             config["cad_width"] = get_default("cad_width")
         else:
             if config.get("cad_width") < 640:
                 warn("cad_width has to be >= 640, setting to 640")
                 config["cad_width"] = 640
 
-        if logo or config.get("height") is None:
+        if config.get("height") is None:
             config["height"] = get_default("height")
         else:
             if config.get("height") < 400:
                 warn("height has to be >= 400, setting to 400")
                 config["height"] = 400
 
-        if logo or config.get("tree_width") is not None:
+        if config.get("tree_width") is None:
             config["tree_width"] = get_default("tree_width")
         else:
             if config.get("tree_width") < 200:
                 warn("tree_width has to be >= 200, setting to 200")
                 config["tree_width"] = 200
+                
+        if config.get("glass") is None:
+            config["glass"] = get_default("glass")
 
-        width = config["cad_width"] + config["tree_width"] + 6
+        width = config["cad_width"] + 6
+        if not config["glass"]:
+            width += config["tree_width"]
 
         if self.interactive is not None:
             self.interactive.layout.width = px(width - 30)
@@ -96,24 +106,24 @@ class Viewer:
             self.splash = False
 
         kwargs = add_shape_args(config)
-
         self.viewer.clear_tracks()
         self.viewer.add_shapes(**mesh_data, **kwargs)
         info(create_args(config))
         info(add_shape_args(config))
 
-    def start_viewer(self, cad_width, cad_height, theme):
+    def start_viewer(self, cad_width, cad_height, theme, glass_mode):
         info(f"zmq_port:   {self.zmq_port}")
         info(f"theme:      {theme}")
         info(f"cad_width:  {cad_width}")
         info(f"cad_height: {cad_height}")
+        info(f"glass_mode: {glass_mode}")
 
-        set_defaults(theme=theme, cad_width=cad_width, height=cad_height)
+        set_defaults(theme=theme, cad_width=cad_width, height=cad_height, glass=glass_mode)
 
         # remove jupyter cadquery start message
         clear_output()
 
-        self.viewer = show(theme=theme, cad_width=cad_width, height=cad_height, pinning=False)
+        self.viewer = show(theme=theme, cad_width=cad_width, height=cad_height, glass=glass_mode, pinning=False)
         self.splash = True
 
         self.log_view = widgets.Accordion(children=[self.log_output])
@@ -205,9 +215,10 @@ def start_viewer():
     cad_width = get_default("cad_width") if os.environ.get("CAD_WIDTH") is None else int(os.environ["CAD_WIDTH"])
     cad_height = get_default("height") if os.environ.get("CAD_HEIGHT") is None else int(os.environ["CAD_HEIGHT"])
     theme = get_default("theme") if os.environ.get("THEME") is None else os.environ["THEME"]
-
+    glass_mode = get_default("glass") if os.environ.get("GLASS_MODE") is None else (os.environ["GLASS_MODE"] == "1")
+    
     VIEWER = Viewer(zmq_port)
-    VIEWER.start_viewer(cad_width, cad_height, theme)
+    VIEWER.start_viewer(cad_width, cad_height, theme, glass_mode)
 
 
 def stop_viewer():

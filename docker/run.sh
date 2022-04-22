@@ -3,10 +3,13 @@
 VIEWER=0
 export THEME=light
 
-while getopts "dv" o; do
+while getopts "dvgw:h:" o; do
     case "${o}" in
         v)
             VIEWER=1
+            ;;
+        g)
+            export GLASS_MODE=1
             ;;
         w)
             export CAD_WIDTH=${OPTARG}

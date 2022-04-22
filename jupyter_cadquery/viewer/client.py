@@ -96,7 +96,11 @@ def _convert(*cad_objs, **kwargs):
         part_group = part_group.objects[0]
 
     # Do not send defaults for postion, rotation and zoom unless they are set in kwargs
-    config = {k: v for k, v in get_defaults().items() if not k in ("position", "rotation", "zoom")}
+    config = {
+        k: v
+        for k, v in get_defaults().items()
+        if not k in ("position", "rotation", "zoom", "cad_width", "tree_width", "height", "glass")
+    }
 
     for k, v in kwargs.items():
         if v is not None:
@@ -105,7 +109,9 @@ def _convert(*cad_objs, **kwargs):
     shapes, states = _tessellate_group(part_group, kwargs, Progress(), config.get("timeit"))
 
     config["normal_len"] = get_normal_len(
-        preset("render_normals", config.get("render_normals")), shapes, preset("deviation", config.get("deviation")),
+        preset("render_normals", config.get("render_normals")),
+        shapes,
+        preset("deviation", config.get("deviation")),
     )
 
     data = {
