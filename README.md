@@ -25,7 +25,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
    **Note:** For changes see the migration section at the end of this page.
 
-## Release v3.1.0rc1 (xx.04.2022)
+## Release v3.1.0rc1 (22.04.2022)
 
 ### New features:
 
