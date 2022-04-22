@@ -2,12 +2,12 @@
 set -eu
 
 usage() { 
-    echo "Usage: $0 [-p <zmq port>] [-w <width>] [-h <height>] [-d]" 1>&2; 
+    echo "Usage: $0 [-p <zmq port>] [-w <width>] [-h <height>] [-d] [-g]" 1>&2; 
     exit 1; 
 }
 
 export THEME="light"
-while getopts ":p:w:h:d" o; do
+while getopts ":p:w:h:dg" o; do
     case "${o}" in
         p)
             export ZMQ_PORT=${OPTARG}
@@ -20,6 +20,9 @@ while getopts ":p:w:h:d" o; do
             ;;
         d)
             export THEME="dark"
+            ;;
+        g)
+            export GLASS_MODE=1
             ;;
         *)
             usage

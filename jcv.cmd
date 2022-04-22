@@ -10,6 +10,7 @@ if /I "%1" == "-p" set ZMQ_PORT=%2 & shift
 if /I "%1" == "-h" set CAD_HEIGHT=%2 & shift
 if /I "%1" == "-w" set CAD_WIDTH=%2 & shift
 if /I "%1" == "-d" set THEME=dark
+if /I "%1" == "-g" set GLASS_MODE=1
 shift
 if not "%1" == "" goto GETOPTS
 
