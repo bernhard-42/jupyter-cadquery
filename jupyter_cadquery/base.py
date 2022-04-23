@@ -513,7 +513,6 @@ def _show(part_group, **kwargs):
             config["glass"] = defaults["glass"]
             config["title"] = defaults["viewer"]
             
-            print("\nconfig", config)
             for k, v in create_args(kwargs).items():
                 config[k] = v
 
