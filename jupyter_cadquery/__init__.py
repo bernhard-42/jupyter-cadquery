@@ -50,6 +50,7 @@ from .defaults import (
     get_defaults,
     set_defaults,
     reset_defaults,
+    create_args,
 )
 
 from .utils import warn
@@ -63,7 +64,12 @@ def versions():
 
 
 def open_viewer(viewer=None, default=True, **kwargs):
-    cv = cvw_open_viewer(title=viewer, **kwargs)
+    args = create_args(get_defaults())
+    for k, v in kwargs.items():
+        args[k] = v
+    args["title"] = viewer
+    cv = cvw_open_viewer(**args)
+
     set_defaults(reset_camera=True)
 
     if kwargs.get("cad_width") is not None:
