@@ -56,7 +56,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
   
 
-## Release v3.1.0rc2 (23.04.2022)
+## Release v3.1.0rc3 (23.04.2022)
 
 ### New features:
 
@@ -150,7 +150,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      ```
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
      ```bash
-     pip install jupyter-cadquery==3.1.0rc2 matplotlib
+     pip install jupyter-cadquery==3.1.0rc3 matplotlib
      ```
      Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
      ```bash
@@ -202,14 +202,14 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.1.0rc2
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.1.0rc3
      ```
 
      Jupyter in the container will start in directory `/home/cq`
 
    - To start with examples, you can
 
-     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.1.0rc2` or
+     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.1.0rc3` or
      - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
 
    - If you want to change the Dockerfile, `make docker` will create a new docker image
@@ -219,7 +219,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    - Start the browser based viewer (eventually add cli options, see notes below):
 
      ```bash
-     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.1.0rc2 -v
+     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.1.0rc3 -v
      ```
 
    - In your code import the `show` or `show_object` function from the viewer:
