@@ -241,7 +241,7 @@ def add_shape_args(config):
             "clipIntersection",
             "clipPlaneHelpers",
             "clipNormal",
-            "collpase",
+            "collapse",
             "tools",
             "glass",
             "cad_width",
