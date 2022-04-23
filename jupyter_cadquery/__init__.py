@@ -74,6 +74,8 @@ def open_viewer(viewer=None, default=True, **kwargs):
         set_defaults(height=kwargs["height"])
     if kwargs.get("theme") is not None:
         set_defaults(theme=kwargs["theme"])
+    if kwargs.get("glass") is not None:
+        set_defaults(glass=kwargs["glass"])
 
     if default:
         set_default_viewer(viewer)
