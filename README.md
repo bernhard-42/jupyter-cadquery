@@ -15,7 +15,7 @@ Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[
 _Jupyter-CadQuery_ is now a 3 layer project:
 
 1. **[three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)**
-   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html). This layer could also serve as the viewer for a CadQuery integration into VS Code (anybody willing to give it a try?)
+   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html).
 
 2. **[cad-view-widget](https://github.com/bernhard-42/cad-viewer-widget)**
    A thin layer on top of _cad-viewer-widget_ that wraps the CAD viewer into an [ipywidget](https://github.com/jupyter-widgets/ipywidgets). The API documentation can be found [here](https://bernhard-42.github.io/cad-viewer-widget/cad_viewer_widget/index.html)
@@ -25,7 +25,38 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
    **Note:** For changes see the migration section at the end of this page.
 
-## Release v3.1.0rc2 (22.04.2022)
+## Key Features
+
+- CadQuery support
+  - _CadQuery >= 2.1_ including _master_ (as of 2021-04)
+  - [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
+  - [CadQuery Sketch](https://cadquery.readthedocs.io/en/latest/sketch.html) class for both `show` and `replay`
+  - Auto display of _CadQuery_ shapes
+- STEP files
+  - A STEP reader to load STEP files into _CadQuery_ Assemblies preserving hierarchy, names and colors
+- Viewing options:
+  - Directly in the JupyterLab output cell
+  - In a central Jupyterlab sidecar for any JupyterLab cell
+  - As a standalone viewer for use from any IDE
+- Animations (see examples below)
+  - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of model
+  - Animated explode mode for _CadQuery_ assemblies
+- Debugging
+  - Step-by-step in an IDE with the standalone viewer (see example below)
+  - Visually 
+      - by displaying selected _CadQuery_ faces and edges
+      - by replaying steps of the rendered object in the Notebook (see example below)
+- Viewer features
+  - Toggle visibility of shapes and edges
+  - Orthographic and perspective view
+  - Clipping with max 3 clipping planes (of free orientation)
+  - Transparency mode
+  - Double click on shapes shows bounding box info
+  - Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
+
+  
+
+## Release v3.1.0rc2 (23.04.2022)
 
 ### New features:
 
@@ -78,53 +109,33 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 - Fixed initial zoom for views wider than high
 - Fixed get_pick to support cq.Assembly
 
-## Key Features
-
-- CadQuery support
-  - Supports _CadQuery >= 2.1_ including _master_ (as of 2021-04-21)
-- Viewing options:
-  - Directly in the JupyterLab output cell
-  - In a central Jupyterlab sidecar for any JupyterLab cell (see example 1 below)
-  - As a standalone viewer for use from any IDE (see example 3 below)
-- Viewer features
-  - Toggle visibility of shapes and edges
-  - Orthographic and perspective view
-  - Clipping with max 3 clipping planes (of free orientation)
-  - Transparency mode
-  - Double click on shapes shows bounding box info
-- Assemblies
-  - Supports [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
-- Animations
-  - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of models (see example 2 and 3 below)
-  - Animated explode mode
-- Sketches
-  - Support Sketch class for both `show` and `replay`
-- Auto display of _CadQuery_ shapes
-- Visual debugging by
-  - displaying selected _CadQuery_ faces and edges
-  - replaying steps of the rendered object (note, this is not supported in the standalone viewer)
 
 ## Examples
 
-1. **Simple Example in JupyterLab using Sidecar (light theme)**
+### Animation system in JupyterLab
 
-   ![Sidecar](screenshots/sidecar.png)
+- Self programmed animation
 
-   To try this yourself, you can use the code [here](#example-code)
+    ![Animated Hexapod](screenshots/hexapod-crawling.gif)
 
-2. **Animation system in JupyterLab**
+- Explode objects animation 
 
-   ![Animated Hexapod in Sidecar](screenshots/hexapod-crawling.gif)
+  Source of STEP file: https://print.grabcad.com/library/quadruped-robot-w-code-1#!
 
-3. **Debugging in VS Code with Standalone Viewer**
+  ![Exploded Quadruped](screenshots/explode.gif)
+ 
+### Debugging 
+- In VS Code with Standalone Viewer
 
-   ![Sidecar](screenshots/debugging.gif)
+  - The top half is the CadQuery code being debugged in VS Code
+  - The bottom half is the standalone viewer in a browser window
+  - The `show` command in the code will tessellate the objects and send them via [zmq](https://pyzmq.readthedocs.io/en/latest/) to the standalone viewer
+    
+    ![Debugging in IDE](screenshots/debugging.gif)
 
-   Note:
+- By replaying in the notebook
 
-   - The top half is the CadQuery code being debugged in VS Code
-   - The bottom half is the standalone viewer in a browser window
-   - The `show` command in the code will tessellate the objects and send them via [zmq](https://pyzmq.readthedocs.io/en/latest/) to the standalone viewer
+    ![Replaying](screenshots/replay.gif)
 
 ## Installation
 
