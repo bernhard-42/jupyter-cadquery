@@ -282,6 +282,9 @@ class StepReader:
         return self.shape_tool.GetLocation_s(label)
 
     def load(self, filename):
+        if not os.path.exists(filename):
+            raise FileNotFoundError(filename)
+
         print("Reading STEP file ...", flush=True, end="")
         time.sleep(0.01)  # ensure output is shown
 
