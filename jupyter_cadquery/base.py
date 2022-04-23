@@ -18,7 +18,7 @@ import numpy as np
 
 from cadquery import Compound, __version__
 
-from cad_viewer_widget import show as viewer_show
+from cad_viewer_widget import show as viewer_show, get_default_sidecar, _set_default_sidecar, get_sidecar
 
 from jupyter_cadquery.progress import Progress
 from jupyter_cadquery.utils import Color, Timer, warn
@@ -487,6 +487,8 @@ def _show(part_group, **kwargs):
         warn("quality is ignored. Use deviation to control smoothness of edges")
         del kwargs["quality"]
 
+    sidecar_backup = None
+
     # if kwargs.get("parallel") is not None:
     #     if kwargs["parallel"] and platform.system() != "Linux":
     #         warn("parallel=True only works on Linux. Setting parallel=False")
@@ -525,6 +527,15 @@ def _show(part_group, **kwargs):
         else:
 
             config = apply_defaults(**kwargs)
+
+            if config.get("viewer") == "":
+                # If viewer is "" (the show default), then the default sidecar should be taken into account
+                config["viewer"] = None
+            elif config.get("viewer") is None:
+                # if viewer is None (explicitely set), then ignore the default sidecar, i.e. back it up and set to None
+                sidecar_backup = get_default_sidecar()
+                _set_default_sidecar(None)
+
             if config.get("reset_camera") is False:  #  could be None
                 if config.get("zoom") is not None:
                     del config["zoom"]
@@ -563,12 +574,16 @@ def _show(part_group, **kwargs):
                 shapes,
                 preset("deviation", config.get("deviation")),
             )
-
+                    
             show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
             if show_bbox:
                 insert_bbox(show_bbox, shapes, states)
 
         with Timer(timeit, "", "show shapes", 1):
             cv = viewer_show(shapes, states, **show_args(config))
+            
+            # If we forced to ignore the default sidecar, restore it
+            if sidecar_backup is not None:
+                _set_default_sidecar(sidecar_backup)
 
     return cv

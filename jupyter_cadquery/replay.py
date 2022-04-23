@@ -472,7 +472,8 @@ class Replay(object):
                     edge_accuracy=self.edge_accuracy,
                     reset_camera=self.reset_camera,
                     show_parent=False,
-                    show_bbox=show_bbox
+                    show_bbox=show_bbox,
+                    viewer=""
                 )
                 self.reset_camera = False
             except Exception:  # pylint:disable=broad-except

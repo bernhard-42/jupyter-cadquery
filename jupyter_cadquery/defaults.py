@@ -34,7 +34,8 @@ class Defaults:
         Valid keywords:
 
         DISPLAY OPTIONS
-        - viewer:             Name of the sidecar viewer (default=None)
+        - viewer:             Name of the sidecar viewer (default=""): 
+                              "" uses the default sidecar (if exists) and None forces to use notebook cell
         - anchor:             How to open sidecar: "right", "split-right", "split-bottom", ... (default="right")
         - cad_width:          Width of CAD view part of the view (default=800)
         - tree_width:         Width of navigation tree part of the view (default=250)
@@ -89,7 +90,7 @@ class Defaults:
         """
 
         for k, v in kwargs.items():
-            if self.get_default(k, "") == "":
+            if self.get_default(k, float("nan")) == float("nan"):
                 print(f"Paramater {k} is not a valid argument for show()")
 
             # elif k == "parallel" and v and platform.system() != "Linux":
@@ -104,7 +105,7 @@ class Defaults:
             #
             # display options
             #
-            "viewer": None,
+            "viewer": "",
             "anchor": "right",
             "cad_width": 800,
             "tree_width": 250,
@@ -185,7 +186,7 @@ def apply_defaults(**kwargs):
 
     result = dict(get_defaults())
     for k, v in kwargs.items():
-        if result.get(k, "") != "":
+        if result.get(k, float("nan")) != float("nan"):  # use a value that will never be used ("" and None are used)
             result[k] = v
         else:
             print(f"unknown parameter {k}")
@@ -284,9 +285,7 @@ def show_args(config):
 
     if config.get("normal_len") is not None:
         args["normal_len"] = config["normal_len"]
-    if config.get("viewer") is not None:
-        args["title"] = config["viewer"]
-        del config["viewer"]
+    args["title"] = config.get("viewer")
     return args
 
 

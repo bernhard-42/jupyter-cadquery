@@ -574,7 +574,8 @@ def show(*cad_objs, **kwargs):
     Valid keywords:
 
     DISPLAY OPTIONS
-    - viewer:             Name of the sidecar viewer (default=None)
+    - viewer:             Name of the sidecar viewer (default=""): 
+                          "" uses the default sidecar (if exists) and None forces to use notebook cell
     - anchor:             How to open sidecar: "right", "split-right", "split-bottom", ... (default="right")
     - cad_width:          Width of CAD view part of the view (default=800)
     - tree_width:         Width of navigation tree part of the view (default=250)
