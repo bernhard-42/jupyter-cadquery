@@ -64,6 +64,7 @@ MAX_HASH_KEY = 2147483647
 # Caching helpers
 #
 
+
 def make_key(objs, loc=None, optimal=False):  # pylint: disable=unused-argument
     # optimal is not used and as such ignored
     if not isinstance(objs, (tuple, list)):
@@ -88,13 +89,16 @@ cache = LRUCache(maxsize=16 * 1024 * 1024, getsizeof=get_size)
 # Version
 #
 
+
 def ocp_version():
     lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.*.*.*")[0]
     return lib.split(".so.")[-1]
 
+
 #
 # Bounding Box
 #
+
 
 class BoundingBox(object):
     def __init__(self, obj=None, optimal=False):
@@ -246,9 +250,11 @@ def np_bbox(p, t, q):
     bbmax = np.max(v, axis=0)
     return {"xmin": bbmin[0], "xmax": bbmax[0], "ymin": bbmin[1], "ymax": bbmax[1], "zmin": bbmin[2], "zmax": bbmax[2]}
 
+
 #
 # StepReader
 #
+
 
 def clean_string(s):
     return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C").replace(" ", "_")
@@ -549,14 +555,16 @@ def tq_to_loc(t, q):
 def loc_to_tq(loc):
     if loc is None:
         return (None, None)
-        
+
     T = loc.Transformation()
     t = T.TranslationPart()
     q = T.GetRotation()
     return ((t.X(), t.Y(), t.Z()), (q.X(), q.Y(), q.Z(), q.W()))
 
+
 def wrapped_or_None(obj):
     return None if obj is None else obj.wrapped
+
 
 def __location__repr__(self):
     t, r = loc_to_tq(self.wrapped)

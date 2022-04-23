@@ -55,6 +55,7 @@ from .defaults import (
 from .utils import warn
 from .tools import auto_show
 
+
 def versions():
     print("jupyter_cadquery ", jcq_version)
     print("cad_viewer_widget", cvw_version)
