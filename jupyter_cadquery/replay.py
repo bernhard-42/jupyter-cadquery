@@ -477,7 +477,7 @@ class Replay(object):
                 )
                 self.reset_camera = False
             except Exception:  # pylint:disable=broad-except
-                print("\nWarning: object cannot be shown", traceback.format_exc())
+                print("\nWarning: object cannot be shown")
 
 
 def replay(
