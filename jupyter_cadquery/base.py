@@ -37,6 +37,7 @@ from jupyter_cadquery.defaults import (
     apply_defaults,
     create_args,
     add_shape_args,
+    get_defaults,
     tessellation_args,
     show_args,
     preset,
@@ -504,6 +505,15 @@ def _show(part_group, **kwargs):
             logo = pickle.loads(base64.b64decode(LOGO_DATA))
 
             config = add_shape_args(logo["config"])
+            
+            defaults = get_defaults();
+            config["cad_width"] = defaults["cad_width"]
+            config["tree_width"] = defaults["tree_width"]
+            config["height"] = defaults["height"]
+            config["glass"] = defaults["glass"]
+            config["title"] = defaults["viewer"]
+            
+            print("\nconfig", config)
             for k, v in create_args(kwargs).items():
                 config[k] = v
 

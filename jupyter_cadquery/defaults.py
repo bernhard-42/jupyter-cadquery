@@ -76,6 +76,7 @@ class Defaults:
         - show_parent:        Show the parent for edges, faces and vertices objects
         - show_bbox:          Show bounding box (default=False)
         - tools:              Show the viewer tools like the object tree (default=True)
+        - glass:              Show the viewer in glass mode, i.e (CAD navigation as transparent overlay (default=False)
         - timeit:             Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
         - parallel:           (Linux only) Whether to use multiprocessing for parallel tessellation
         - js_debug:           Enable debug output in browser console (default=False)
@@ -283,6 +284,9 @@ def show_args(config):
 
     if config.get("normal_len") is not None:
         args["normal_len"] = config["normal_len"]
+    if config.get("viewer") is not None:
+        args["title"] = config["viewer"]
+        del config["viewer"]
     return args
 
 
