@@ -507,14 +507,14 @@ def _show(part_group, **kwargs):
             logo = pickle.loads(base64.b64decode(LOGO_DATA))
 
             config = add_shape_args(logo["config"])
-            
-            defaults = get_defaults();
+
+            defaults = get_defaults()
             config["cad_width"] = defaults["cad_width"]
             config["tree_width"] = defaults["tree_width"]
             config["height"] = defaults["height"]
             config["glass"] = defaults["glass"]
             config["title"] = defaults["viewer"]
-            
+
             for k, v in create_args(kwargs).items():
                 config[k] = v
 
@@ -574,14 +574,14 @@ def _show(part_group, **kwargs):
                 shapes,
                 preset("deviation", config.get("deviation")),
             )
-                    
+
             show_bbox = preset("show_bbox", kwargs.get("show_bbox"))
             if show_bbox:
                 insert_bbox(show_bbox, shapes, states)
 
         with Timer(timeit, "", "show shapes", 1):
             cv = viewer_show(shapes, states, **show_args(config))
-            
+
             # If we forced to ignore the default sidecar, restore it
             if sidecar_backup is not None:
                 _set_default_sidecar(sidecar_backup)
