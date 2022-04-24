@@ -46,16 +46,16 @@ from OCP.GProp import GProp_GProps
 
 # Step reader
 from OCP.STEPCAFControl import STEPCAFControl_Reader
-from OCP.TDF import TDF_LabelSequence, TDF_Label
+from OCP.TDF import TDF_LabelSequence, TDF_Label, TDF_ChildIterator
 from OCP.TCollection import TCollection_ExtendedString
 from OCP.TDocStd import TDocStd_Document
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorSurf
 from OCP.TDataStd import TDataStd_Name
 from OCP.TCollection import TCollection_AsciiString
 from OCP.Quantity import Quantity_ColorRGBA
-from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound
+from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator
 from OCP.TopLoc import TopLoc_Location
-from OCP.TopAbs import TopAbs_SOLID, TopAbs_COMPOUND
+from OCP.TopAbs import TopAbs_SOLID, TopAbs_COMPOUND, TopAbs_SHELL
 
 
 MAX_HASH_KEY = 2147483647
@@ -255,6 +255,8 @@ def np_bbox(p, t, q):
 # StepReader
 #
 
+MISSING_COLOR = (0.5, 0, 0.5, 1)
+
 
 def clean_string(s):
     return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C").replace(" ", "_")
@@ -279,13 +281,87 @@ class StepReader:
         if self.color_tool.GetColor(label, XCAFDoc_ColorSurf, col):
             return (col.GetRGB().Red(), col.GetRGB().Green(), col.GetRGB().Blue(), col.Alpha())
         else:
-            return (0.5, 0.5, 0.5, 1.0)
+            return MISSING_COLOR
+
+    def get_location(self, label):
+        return self.shape_tool.GetLocation_s(label)
 
     def get_shape(self, label):
         return self.shape_tool.GetShape_s(label)
 
-    def get_location(self, label):
-        return self.shape_tool.GetLocation_s(label)
+    def get_shape_details(self, shape, name, loc):
+        it = TDF_ChildIterator()
+        it.Initialize(shape)
+        i = 0
+        shapes = []
+
+        while it.More():
+            label = it.Value()
+            shape = self.shape_tool.GetShape_s(label)
+
+            if shape.ShapeType() == TopAbs_SOLID:
+                shapes.append(
+                    {
+                        "shape": shape,
+                        "shapes": [],
+                        "color": self.get_color(label),
+                        "name": f"{name}_{i+1}",
+                        "loc": loc,
+                    }
+                )
+                i += 1
+
+            elif shape.ShapeType == TopAbs_COMPOUND:
+                print("Nested compounds not supported yet")
+
+            elif shape.ShapeType == TopAbs_SHELL:
+                print("Shells nested in compounds not supported yet")
+
+            it.Next()
+
+        return shapes
+
+    def get_subshapes(self, label, loc=None):
+        label_comps = TDF_LabelSequence()
+        self.shape_tool.GetComponents_s(label, label_comps)
+
+        iloc = TopLoc_Location()
+        iloc.Identity()
+
+        result = []
+
+        for i in range(label_comps.Length()):
+            label_comp = label_comps.Value(i + 1)
+            loc = self.get_location(label_comp)
+
+            sub_shape = None
+            if self.shape_tool.IsReference_s(label_comp):
+                label_ref = TDF_Label()
+                self.shape_tool.GetReferredShape_s(label_comp, label_ref)
+            else:
+                label_ref = label_comp
+
+            name = self.get_name(label_ref)
+            shape = self.get_shape(label_ref)
+            sub_shape = {
+                "name": name,
+                "color": self.get_color(label_ref),
+                "loc": loc,  # no location in the reference
+                "shape": shape,
+            }
+
+            shapes = self.get_subshapes(label_ref)
+
+            # If a label has subshapes, use them. Else, if the compound label has children, use these
+            if shape.ShapeType() == TopAbs_COMPOUND and len(shapes) == 0 and label_ref.HasChild():
+                sub_shape["shapes"] = self.get_shape_details(label_ref, name, iloc)
+            else:
+                sub_shape["shapes"] = shapes
+
+            if sub_shape is not None:
+                result.append(sub_shape)
+
+        return result
 
     def load(self, filename):
         if not os.path.exists(filename):
@@ -315,64 +391,53 @@ class StepReader:
 
         result = []
         for i in range(root_labels.Length()):
-            label = root_labels.Value(i + 1)
-            if self.shape_tool.IsAssembly_s(label):
-                result.append(
-                    {
-                        "name": self.get_name(label),
-                        "shape": self.get_shape(label),
-                        "shapes": self.get_subshapes(label),
-                        "color": self.get_color(label),
-                        "loc": self.get_location(label),
-                    }
-                )
-            else:
-                raise RuntimeError("ERROR: Shapes are not supported")
-
-        self.assembly = result
-
-    def get_subshapes(self, label, loc=None):
-        label_comps = TDF_LabelSequence()
-        is_assembly = self.shape_tool.GetComponents_s(label, label_comps)
-
-        if not is_assembly and self.get_shape(label).ShapeType() == TopAbs_COMPOUND:
-            is_assembly = self.shape_tool.GetSubShapes_s(label, label_comps)
-
-        result = []
-
-        for i in range(label_comps.Length()):
-            label_comp = label_comps.Value(i + 1)
-
             sub_shape = None
-            if self.shape_tool.IsReference_s(label_comp):
-                label_ref = TDF_Label()
-                self.shape_tool.GetReferredShape_s(label_comp, label_ref)
+            root_label = root_labels.Value(i + 1)
+            if self.shape_tool.IsAssembly_s(root_label):
                 sub_shape = {
-                    "name": self.get_name(label_ref),
-                    "color": self.get_color(label_ref),
-                    "shape": self.get_shape(label_ref),
-                    "shapes": self.get_subshapes(label_ref),
-                    # one has to use the location of the component, not of the reference
-                    "loc": self.get_location(label_comp),
+                    "name": self.get_name(root_label),
+                    "shape": self.get_shape(root_label),
+                    "shapes": self.get_subshapes(root_label),
+                    "color": self.get_color(root_label),
+                    "loc": self.get_location(root_label),
                 }
-            else:
-                shape = self.get_shape(label_comp)
-                if shape.ShapeType() in (TopAbs_SOLID, TopAbs_COMPOUND):
-                    if shape.ShapeType() == TopAbs_COMPOUND:
-                        print(f"{self.get_name(label)}_{i+1}", "yet another compound")
+            elif self.shape_tool.IsShape_s(root_label):
+                loc = self.get_location(root_label)
+                name = self.get_name(root_label)
+                shape = self.shape_tool.GetShape_s(root_label)
+                if root_label.HasChild():
                     sub_shape = {
-                        # self.get_name(label_comp) crashes
-                        "name": f"{self.get_name(label)}_{i+1}",
-                        "color": self.get_color(label_comp),
+                        "name": name,
+                        "shape": shape,
+                        "shapes": self.get_shape_details(root_label, name, loc),
+                        "color": self.get_color(root_label),
+                        "loc": loc,
+                    }
+                else:
+                    sub_shape = {
+                        "name": name,
                         "shape": shape,
                         "shapes": [],
-                        "loc": self.get_location(label_comp),
+                        "color": self.get_color(root_label),
+                        "loc": loc,
                     }
+            elif self.shape_tool.IsCompound_s(root_label):
+                raise ValueError("Compound not yet supported")
+            elif self.shape_tool.IsComponent_s(root_label):
+                raise ValueError("Component not yet supported")
+            elif self.shape_tool.IsSimpleShape_s(root_label):
+                raise ValueError("SimpleShape not yet supported")
+            elif self.shape_tool.IsReference_s(root_label):
+                raise ValueError("Reference not yet supported")
+            elif self.shape_tool.IsSubShape_s(root_label):
+                raise ValueError("SubShape not yet supported")
+            else:
+                raise ValueError("Unknown label type")
 
             if sub_shape is not None:
                 result.append(sub_shape)
 
-        return result
+        self.assembly = result
 
     def to_cadquery(self):
         def to_workplane(obj):
