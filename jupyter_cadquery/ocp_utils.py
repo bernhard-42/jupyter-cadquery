@@ -2,12 +2,10 @@ from glob import glob
 import io
 import itertools
 import os
-import pickle
 import platform
 import sys
 import tempfile
-import time
-import unicodedata
+
 
 from cachetools import LRUCache, cached
 
@@ -43,19 +41,6 @@ from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.BRepTools import BRepTools
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
-
-# Step reader
-from OCP.STEPCAFControl import STEPCAFControl_Reader
-from OCP.TDF import TDF_LabelSequence, TDF_Label, TDF_ChildIterator
-from OCP.TCollection import TCollection_ExtendedString
-from OCP.TDocStd import TDocStd_Document
-from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorSurf
-from OCP.TDataStd import TDataStd_Name
-from OCP.TCollection import TCollection_AsciiString
-from OCP.Quantity import Quantity_ColorRGBA
-from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator
-from OCP.TopLoc import TopLoc_Location
-from OCP.TopAbs import TopAbs_SOLID, TopAbs_COMPOUND, TopAbs_SHELL
 
 
 MAX_HASH_KEY = 2147483647
@@ -251,272 +236,6 @@ def np_bbox(p, t, q):
     return {"xmin": bbmin[0], "xmax": bbmax[0], "ymin": bbmin[1], "ymax": bbmax[1], "zmin": bbmin[2], "zmax": bbmax[2]}
 
 
-#
-# StepReader
-#
-
-MISSING_COLOR = (0.5, 0, 0.5, 1)
-
-
-def clean_string(s):
-    return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C").replace(" ", "_")
-
-
-class StepReader:
-    def __init__(self):
-        self.shape_tool = None
-        self.color_tool = None
-        self.assembly = None
-
-    def get_name(self, label):
-        t = TDataStd_Name()
-        if label.FindAttribute(TDataStd_Name.GetID_s(), t):
-            name = TCollection_AsciiString(t.Get()).ToCString()
-            return clean_string(name)
-        else:
-            return "Component"
-
-    def get_color(self, label):
-        col = Quantity_ColorRGBA()
-        if self.color_tool.GetColor(label, XCAFDoc_ColorSurf, col):
-            return (col.GetRGB().Red(), col.GetRGB().Green(), col.GetRGB().Blue(), col.Alpha())
-        else:
-            return MISSING_COLOR
-
-    def get_location(self, label):
-        return self.shape_tool.GetLocation_s(label)
-
-    def get_shape(self, label):
-        return self.shape_tool.GetShape_s(label)
-
-    def get_shape_details(self, shape, name, loc):
-        it = TDF_ChildIterator()
-        it.Initialize(shape)
-        i = 0
-        shapes = []
-
-        while it.More():
-            label = it.Value()
-            shape = self.shape_tool.GetShape_s(label)
-
-            if shape.ShapeType() == TopAbs_SOLID:
-                shapes.append(
-                    {
-                        "shape": shape,
-                        "shapes": [],
-                        "color": self.get_color(label),
-                        "name": f"{name}_{i+1}",
-                        "loc": loc,
-                    }
-                )
-                i += 1
-
-            elif shape.ShapeType == TopAbs_COMPOUND:
-                print("Nested compounds not supported yet")
-
-            elif shape.ShapeType == TopAbs_SHELL:
-                print("Shells nested in compounds not supported yet")
-
-            it.Next()
-
-        return shapes
-
-    def get_subshapes(self, label, loc=None):
-        label_comps = TDF_LabelSequence()
-        self.shape_tool.GetComponents_s(label, label_comps)
-
-        iloc = TopLoc_Location()
-        iloc.Identity()
-
-        result = []
-
-        for i in range(label_comps.Length()):
-            label_comp = label_comps.Value(i + 1)
-            loc = self.get_location(label_comp)
-
-            sub_shape = None
-            if self.shape_tool.IsReference_s(label_comp):
-                label_ref = TDF_Label()
-                self.shape_tool.GetReferredShape_s(label_comp, label_ref)
-            else:
-                label_ref = label_comp
-
-            name = self.get_name(label_ref)
-            shape = self.get_shape(label_ref)
-            sub_shape = {
-                "name": name,
-                "color": self.get_color(label_ref),
-                "loc": loc,  # no location in the reference
-                "shape": shape,
-            }
-
-            shapes = self.get_subshapes(label_ref)
-
-            # If a label has subshapes, use them. Else, if the compound label has children, use these
-            if shape.ShapeType() == TopAbs_COMPOUND and len(shapes) == 0 and label_ref.HasChild():
-                sub_shape["shapes"] = self.get_shape_details(label_ref, name, iloc)
-            else:
-                sub_shape["shapes"] = shapes
-
-            if sub_shape is not None:
-                result.append(sub_shape)
-
-        return result
-
-    def load(self, filename):
-        if not os.path.exists(filename):
-            raise FileNotFoundError(filename)
-
-        print("Reading STEP file ...", flush=True, end="")
-        time.sleep(0.01)  # ensure output is shown
-
-        fmt = TCollection_ExtendedString("CadQuery-XCAF")
-        doc = TDocStd_Document(fmt)
-
-        self.shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
-        self.color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
-
-        reader = STEPCAFControl_Reader()
-        reader.SetNameMode(True)
-        reader.SetColorMode(True)
-        reader.SetLayerMode(True)
-
-        reader.ReadFile(filename)
-        reader.Transfer(doc)
-        print(" done")
-        time.sleep(0.01)  # ensure output is shown
-
-        root_labels = TDF_LabelSequence()
-        self.shape_tool.GetFreeShapes(root_labels)
-
-        result = []
-        for i in range(root_labels.Length()):
-            sub_shape = None
-            root_label = root_labels.Value(i + 1)
-            if self.shape_tool.IsAssembly_s(root_label):
-                sub_shape = {
-                    "name": self.get_name(root_label),
-                    "shape": self.get_shape(root_label),
-                    "shapes": self.get_subshapes(root_label),
-                    "color": self.get_color(root_label),
-                    "loc": self.get_location(root_label),
-                }
-            elif self.shape_tool.IsShape_s(root_label):
-                loc = self.get_location(root_label)
-                name = self.get_name(root_label)
-                shape = self.shape_tool.GetShape_s(root_label)
-                if root_label.HasChild():
-                    sub_shape = {
-                        "name": name,
-                        "shape": shape,
-                        "shapes": self.get_shape_details(root_label, name, loc),
-                        "color": self.get_color(root_label),
-                        "loc": loc,
-                    }
-                else:
-                    sub_shape = {
-                        "name": name,
-                        "shape": shape,
-                        "shapes": [],
-                        "color": self.get_color(root_label),
-                        "loc": loc,
-                    }
-            elif self.shape_tool.IsCompound_s(root_label):
-                raise ValueError("Compound not yet supported")
-            elif self.shape_tool.IsComponent_s(root_label):
-                raise ValueError("Component not yet supported")
-            elif self.shape_tool.IsSimpleShape_s(root_label):
-                raise ValueError("SimpleShape not yet supported")
-            elif self.shape_tool.IsReference_s(root_label):
-                raise ValueError("Reference not yet supported")
-            elif self.shape_tool.IsSubShape_s(root_label):
-                raise ValueError("SubShape not yet supported")
-            else:
-                raise ValueError("Unknown label type")
-
-            if sub_shape is not None:
-                result.append(sub_shape)
-
-        self.assembly = result
-
-    def to_cadquery(self):
-        def to_workplane(obj):
-            return cq.Workplane(obj=cq.Shape(obj))
-
-        def to_location(obj):
-            return cq.Location(obj)
-
-        def to_color(rgba):
-            return cq.Color(*rgba)
-
-        def walk(objs):
-            a = cq.Assembly()
-            names = {}
-            for obj in objs:
-                name = obj["name"]
-
-                # Create a unique name by postfixing the enumerator index if needed
-                if names.get(name) is None:
-                    names[name] = 1
-                else:
-                    names[name] += 1
-                    name = f"{obj['name']}_{names[name]}"
-
-                a.add(
-                    walk(obj["shapes"]) if len(obj["shapes"]) > 0 else to_workplane(obj["shape"]),
-                    name=name,
-                    color=to_color(obj["color"]),
-                    loc=to_location(obj.get("loc")),
-                )
-            return a
-
-        result = walk(self.assembly)
-
-        if len(result.children) == 1:
-            return result.children[0]
-        else:
-            return result
-
-    def save_assembly(self, filename):
-        def _save_assembly(assembly):
-            result = []
-            for assembly in assembly:
-                obj = {
-                    "name": assembly["name"],
-                    "shape": serialize(assembly["shape"]),
-                    "shapes": [],
-                    "color": assembly["color"],
-                    "loc": loc_to_tq(assembly["loc"]),
-                }
-                if assembly["shapes"]:
-                    obj["shapes"] = _save_assembly(assembly["shapes"])
-                result.append(obj)
-            return result
-
-        objs = _save_assembly(self.assembly)
-        with open(filename, "wb") as fd:
-            pickle.dump(objs, fd)
-
-    def load_assembly(self, filename):
-        def _load_assembly(objs):
-            result = []
-            for obj in objs:
-                assembly = {
-                    "name": obj["name"],
-                    "shape": deserialize(obj["shape"]),
-                    "shapes": [],
-                    "color": obj["color"],
-                    "loc": tq_to_loc(*obj["loc"]),
-                }
-                if obj["shapes"]:
-                    assembly["shapes"] = _load_assembly(obj["shapes"])
-                result.append(assembly)
-            return result
-
-        with open(filename, "rb") as fd:
-            self.assembly = _load_assembly(pickle.load(fd))
-
-
 # Export STL
 
 
@@ -541,6 +260,9 @@ def write_stl_file(compound, filename, tolerance=None, angular_tolerance=None):
 
 
 def serialize(shape):
+    if shape is None:
+        return None
+
     if platform.system() == "Darwin":
         with tempfile.NamedTemporaryFile() as tf:
             BinTools.Write_s(shape, tf.name)
@@ -554,6 +276,9 @@ def serialize(shape):
 
 
 def deserialize(buffer):
+    if buffer is None:
+        return None
+
     shape = TopoDS_Shape()
     if platform.system() == "Darwin":
         with tempfile.NamedTemporaryFile() as tf:
