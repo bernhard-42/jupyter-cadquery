@@ -6,13 +6,10 @@ import platform
 import sys
 import tempfile
 
-
 from cachetools import LRUCache, cached
 
 import numpy as np
 from quaternion import rotate_vectors
-
-import cadquery as cq
 
 from cadquery import Compound, Location
 from cadquery.occ_impl.shapes import downcast
