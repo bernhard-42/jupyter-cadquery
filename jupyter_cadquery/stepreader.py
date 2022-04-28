@@ -302,12 +302,17 @@ class StepReader:
 
             return a
 
-        if len(self.assemblies) == 0 or len(self.assemblies[0]["shapes"]) == 0:
+        if len(self.assemblies) == 0 or (
+            self.assemblies[0]["shapes"] is not None and len(self.assemblies[0]["shapes"]) == 0
+        ):
             raise ValueError("Empty assembly list")
 
         result = cq.Assembly(name="Group")
         for assembly in self.assemblies:
-            result.add(walk(assembly["shapes"], assembly["name"], cq.Location(assembly["loc"])))
+            if assembly["shapes"] is None:
+                result.add(to_workplane(assembly["shape"]), name=assembly["name"], loc=cq.Location(assembly["loc"]))
+            else:
+                result.add(walk(assembly["shapes"], assembly["name"], cq.Location(assembly["loc"])))
 
         if len(result.children) == 1:
             return result.children[0]
