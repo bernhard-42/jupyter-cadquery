@@ -4,12 +4,6 @@ dist/
 build/
 *.py[cod]
 node_modules/
-
-# Compiled javascript
-# jupyter_cadquery/static/
-
-# OS X
-.DS_Store
 .mypy_cache
 yarn.lock
 scratch
@@ -17,3 +11,10 @@ labextensions.txt.bak
 Untitled.ipynb
 TODO
 vslot-2020_1.dxf
+step.py
+
+# Compiled javascript
+# jupyter_cadquery/static/
+
+# OS X
+.DS_Store
