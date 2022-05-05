@@ -354,8 +354,9 @@ def wrapped_or_None(obj):
 
 
 def __location__repr__(self):
-    t, r = loc_to_tq(self.wrapped)
-    return f"Location: t=({t[0]}, {t[1]}, {t[2]}), q=({r[0]}, {r[1]}, {r[2]}, {r[3]})"
+    f = lambda x: f"{x:8.3f}"
+    t, q = loc_to_tq(self.wrapped)
+    return f"Location: t=({f(t[0])}, {f(t[1])}, {f(t[2])}), q=({f(q[0])}, {f(q[1])}, {f(q[2])}, {f(q[3])})"
 
 
 Location.__repr__ = __location__repr__  # type: ignore
