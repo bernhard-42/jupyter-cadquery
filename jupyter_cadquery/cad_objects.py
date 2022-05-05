@@ -668,13 +668,3 @@ def show(*cad_objs, **kwargs):
     else:
 
         return _show(None, **kwargs)
-
-
-def exportJson(cad_obj, filename):
-    shapes, states = _tessellate_group(to_assembly(cad_obj))
-    bb = _combined_bb(shapes).to_dict()
-    # add global bounding box
-    shapes["bb"] = bb
-
-    with open(filename, "w", encoding="utf-8") as fd:
-        fd.write(numpy_to_json((shapes, states)))
