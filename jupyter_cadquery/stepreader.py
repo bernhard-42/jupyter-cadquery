@@ -271,14 +271,14 @@ class StepReader:
             self.save_assembly(cache_filename)
             print("done")
 
-    def to_cadquery(self):
+    def to_cadquery(self, path=None):
         """
         Convert internal AssemblyObjects format to CadQuery Assemblies
         :return: cadquery.Assembly
         """
 
         def to_workplane(obj):
-            return cq.Workplane(obj=cq.Shape(obj))
+            return cq.Workplane(obj=cq.Solid(obj))
 
         def walk(objs, name=None, loc=None):
             a = cq.Assembly(name=name, loc=loc)
@@ -315,9 +315,12 @@ class StepReader:
                 result.add(walk(assembly["shapes"], assembly["name"], cq.Location(assembly["loc"])))
 
         if len(result.children) == 1:
-            return result.children[0]
-        else:
-            return result
+            result = result.children[0]
+
+        if path != None:
+            result = result.objects[path].obj
+
+        return result
 
     def save_assembly(self, filename):
         """
