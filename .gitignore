@@ -18,3 +18,4 @@ step.py
 
 # OS X
 .DS_Store
+.virtual_documents/
