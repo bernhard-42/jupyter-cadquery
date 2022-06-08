@@ -26,7 +26,7 @@ setup_args = {
         "voila~=0.3",
         "cadquery_massembly~=0.9",
         "numpy-quaternion==2022.4.1",
-        "cad-viewer-widget~=1.3.2",
+        "cad-viewer-widget~=1.3.3",
         "cachetools~=5.0.0",
     ],
     "extras_require": {
