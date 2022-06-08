@@ -531,13 +531,17 @@ def _show(part_group, **kwargs):
             if config.get("viewer") == "":
                 # If viewer is "" (the show default), then the default sidecar should be taken into account
                 config["viewer"] = None
+                viewer = get_sidecar()
             elif config.get("viewer") is None:
                 # if viewer is None (explicitely set), then ignore the default sidecar, i.e. back it up and set to None
                 sidecar_backup = get_default_sidecar()
                 _set_default_sidecar(None)
+                viewer = None
             else:
-                # Clear remaining animation tracks. They might not fit to the next assembly
                 viewer = get_sidecar(config["viewer"])
+
+            if viewer is not None:
+                # Clear remaining animation tracks. They might not fit to the next assembly
                 viewer.clear_tracks()
 
             if config.get("reset_camera") is False:  #  could be None
