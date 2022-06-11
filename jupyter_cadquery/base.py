@@ -22,7 +22,7 @@ from cad_viewer_widget import show as viewer_show, get_default_sidecar, _set_def
 
 from jupyter_cadquery.progress import Progress
 from jupyter_cadquery.utils import Color, Timer, warn
-from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox, wrapped_or_None
+from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox, wrapped_or_None, np_bbox
 from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality, bbox_edges
 from jupyter_cadquery.mp_tessellator import (
     is_apply_result,
@@ -118,7 +118,6 @@ class _Part(_CADObject):
             func = mp_tessellate if parallel else tessellate
             result = func(
                 self.shape,
-                loc_to_tq(wrapped_or_None(loc)),
                 deviation=deviation,
                 quality=quality,
                 angular_tolerance=angular_tolerance,
@@ -128,11 +127,13 @@ class _Part(_CADObject):
 
             t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
 
+            t, q = loc_to_tq(wrapped_or_None(loc))
             if parallel and is_apply_result(result):
-                mesh = result
+                mesh = {"result": result, "t": t, "q": q}
                 bb = {}
             else:
-                mesh, bb = result
+                mesh = result
+                bb = np_bbox(result["vertices"], t, q)
 
         if progress is not None:
             progress.update()
@@ -410,10 +411,12 @@ def mp_get_results(shapes, progress):
         for shape in shapes["parts"]:
             if shape.get("parts") is None:
                 if shape.get("type") == "shapes":
-                    if is_apply_result(shape["shape"]):
-                        mesh, bb = get_mp_result(shape["shape"])
+                    if is_apply_result(shape["shape"].get("result")):
+                        mesh = get_mp_result(shape["shape"]["result"])
+                        t = shape["shape"]["t"]
+                        q = shape["shape"]["q"]
                         shape["shape"] = mesh
-                        shape["bb"] = bb
+                        shape["bb"] = np_bbox(mesh["vertices"], t, q)
 
                     if progress is not None:
                         progress.update()

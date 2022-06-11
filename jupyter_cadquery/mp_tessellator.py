@@ -74,7 +74,6 @@ def is_apply_result(obj):
 @cached(cache, key=make_key)
 def mp_tessellate(
     shapes,
-    loc,
     deviation,  # only provided for managing cache
     quality,
     angular_tolerance,
@@ -85,7 +84,7 @@ def mp_tessellate(
 
     shape = shapes[0]
 
-    key = make_key(shape, loc, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True)
+    key = make_key(shape, deviation, quality, angular_tolerance, compute_edges=True, compute_faces=True)
     path = keymap.add(key)
 
     clear_shared_mem(path)
@@ -95,7 +94,7 @@ def mp_tessellate(
     sm.buf[: len(s)] = s
 
     result = pool.apply_async(
-        mp_tess, (path, loc, deviation, quality, angular_tolerance, compute_faces, compute_edges, debug)
+        mp_tess, (path, deviation, quality, angular_tolerance, compute_faces, compute_edges, debug)
     )
 
     return result
