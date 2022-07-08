@@ -16,7 +16,7 @@ except ImportError:
     HAS_MASSEMBLY = False
 
 
-def save_binary(assembly, filename):
+def save_binary(assembly, filename, metadata=None):
     def to_tuple(vec):
         return vec.toTuple() if isinstance(vec, cq.Vector) else vec
 
@@ -64,6 +64,7 @@ def save_binary(assembly, filename):
         "type": typ,
         "obj": _save_binary(assembly),
         "mates": mates,
+        "metadata": metadata,
     }
     with open(filename, "wb") as fd:
         pickle.dump(objs, fd)
@@ -71,7 +72,7 @@ def save_binary(assembly, filename):
 
 def load_binary(filename, assembly_name=None):
     def to_workplane(obj):
-        return cq.Workplane(obj=cq.Shape(obj))
+        return cq.Workplane(obj=cq.Solid(obj))
 
     def _load_binary(obj, klass):
         if obj is None:
@@ -110,7 +111,7 @@ def load_binary(filename, assembly_name=None):
     if assembly_name is not None:
         assembly.name = assembly_name
 
-    return assembly
+    return assembly, buffer["metadata"]
 
 
 def exportJson(cad_obj, filename):
