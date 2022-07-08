@@ -294,10 +294,10 @@ class StepReader:
 
                 # Create a unique name by postfixing the enumerator index if needed
                 if names.get(name) is None:
-                    names[name] = 1
+                    names[name] = 0
                 else:
                     names[name] += 1
-                    name = f"{obj['name']}_{names[name]}"
+                name = f"{obj['name']}_{names[name]}"
 
                 a.add(
                     to_workplane(obj["shape"]) if obj["shapes"] is None else walk(obj["shapes"]),
