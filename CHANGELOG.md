@@ -1,6 +1,6 @@
 # Changelog
 
-## Release v3.1.0 (xx.04.2022)
+## Release v3.1.0 (08.07.2022)
 
 ### New features:
 
@@ -13,8 +13,8 @@
 
 - **Step reader**
 
-  - Added import function for STEP files into CadQuery assemblies preserving names and colors
-  - Added save_assembly/load_assembly to quickly store and load parsed STEP files
+  - Added import function for STEP files into CadQuery assemblies preserving names and colors (for colors, best effort only, since Jupyter CadQuery does not support colored faces)
+  - Added save_assembly/load_assembly to quickly save and load parsed STEP files in a binary BRep 
 
 - **Animation system**
 
