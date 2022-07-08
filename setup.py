@@ -22,12 +22,11 @@ setup_args = {
     "include_package_data": True,
     "python_requires": ">=3.6",
     "install_requires": [
-        "webcolors~=1.11",
-        "voila~=0.3",
-        "cadquery_massembly~=0.9",
+        "webcolors~=1.12",
+        "voila~=0.3.5",
         "numpy-quaternion==2022.4.1",
         "cad-viewer-widget~=1.3.3",
-        "cachetools~=5.0.0",
+        "cachetools~=5.2.0",
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},
