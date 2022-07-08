@@ -38,21 +38,17 @@ setup_args = {
     "author": "Bernhard Walter",
     "author_email": "b_walter@arcor.de",
     "url": "https://github.com/bernhard-42/jupyter-cadquery",
-    "keywords": [
-        "ipython",
-        "jupyter",
-        "widgets",
-    ],
+    "keywords": ["ipython", "jupyter", "widgets", "CAD", "cadquery"],
     "classifiers": [
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Framework :: IPython",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
         "Topic :: Multimedia :: Graphics",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
 }
 
