@@ -31,7 +31,7 @@ from cad_viewer_widget.sidecar import (
 
 from cad_viewer_widget._version import __version__ as cvw_version
 from ._version import __version_info__ as jcq_version_info, __version__ as jcq_version
-from .ocp_utils import ocp_version
+from .ocp_utils import occt_version
 from .stepreader import StepReader
 
 from .cad_objects import (
@@ -61,7 +61,7 @@ from .tools import auto_show
 def versions():
     print("jupyter_cadquery ", jcq_version)
     print("cad_viewer_widget", cvw_version)
-    print("OCP              ", ocp_version())
+    print("open cascade     ", occt_version())
 
 
 def open_viewer(viewer=None, default=True, **kwargs):

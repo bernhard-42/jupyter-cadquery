@@ -72,9 +72,12 @@ cache = LRUCache(maxsize=16 * 1024 * 1024, getsizeof=get_size)
 #
 
 
-def ocp_version():
-    lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.*.*.*")[0]
-    return lib.split(".so.")[-1]
+def occt_version():
+    try:
+        lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.*.*.*")[0]
+        return lib.split(".so.")[-1]
+    except:
+        return "(cannot retrieve Open CASCADE version)"
 
 
 #
