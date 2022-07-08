@@ -9,3 +9,4 @@ dependencies:
   - matplotlib=3.3
   - pip:
       - jupyter-cadquery==3.1.0
+      - cadquery-massembly==1.0.0rc0

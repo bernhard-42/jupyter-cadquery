@@ -100,6 +100,9 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Added tree collapsing/expanding buttons
   - Extend help for new features
 
+- **Dependencies**
+  - Removed [CadQuery-MAssembly](https://github.com/bernhard-42/cadquery-massembly) from dependencies to decouple versions. Needs to be separately installed now.
+  
 ### Fixes:
 
 - Change radio button behaviour to standard behaviour
@@ -144,18 +147,23 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 1. For using _Jupyter-CadQuery_ **in Jupyterlab**
 
    - If you don't have it already, create a new conda environment with the latest CadQuery (e.g. master)
+     
      ```bash
-     conda create -n jcq3 -c conda-forge -c cadquery python=3.8 cadquery=master
+     conda create -n jcq3 -c conda-forge -c cadquery python=3.9 cadquery=master
      conda activate jcq3
      ```
+
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
+
      ```bash
-     pip install jupyter-cadquery==3.1.0 matplotlib
+     pip install jupyter-cadquery==3.1.0 cadquery-massembly==1.0.0rc0 matplotlib
      ```
+
      Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
      ```bash
      conda install pywin32
      ```
+
    - Start _Jupyter-CadQuery_
 
      ```bash
