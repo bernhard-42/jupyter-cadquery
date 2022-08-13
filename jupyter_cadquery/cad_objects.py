@@ -37,7 +37,7 @@ from cadquery import (
 from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group, _combined_bb
 
 from .utils import Color, flatten, warn, numpy_to_json
-from .ocp_utils import get_rgb, is_compound, is_shape
+from .ocp_utils import get_rgba, is_compound, is_shape
 from .defaults import get_default, preset
 
 
@@ -364,7 +364,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
         else:
             color = Color(default_color)
     else:
-        color = Color(get_rgb(cad_obj.color))
+        color = Color(get_rgba(cad_obj.color))
 
     # Special handling for edge lists in an MAssembly
     is_edges = [isinstance(obj, Edge) for obj in cad_obj.shapes]
@@ -375,7 +375,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
             else:
                 color = Color(default_color)
         else:
-            color = Color(get_rgb(cad_obj.color))
+            color = Color(get_rgba(cad_obj.color))
 
         workplane = Workplane()
         workplane.objects = cad_obj.shapes
@@ -393,7 +393,7 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
             else:
                 color = Color(default_color)
         else:
-            color = Color(get_rgb(cad_obj.color))
+            color = Color(get_rgba(cad_obj.color))
         parent = [
             Part(
                 Workplane(shape),

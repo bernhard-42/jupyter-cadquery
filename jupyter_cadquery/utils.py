@@ -14,36 +14,55 @@ class Color:
     def __init__(self, color=None):
         if color is None:
             self.r = self.g = self.b = 160
+            self.a = 1.0
         elif isinstance(color, Color):
-            self.r, self.g, self.b = color.r, color.g, color.b
+            self.r, self.g, self.b, self.a = color.r, color.g, color.b, color.a
         elif isinstance(color, str):
             if color[0] == "#":
-                c = hex_to_rgb(color)
+                if len(color) > 7:
+                    c = hex_to_rgb(color[:7])
+                    self.a = int(color[7:9], 16) / 255
+                else:
+                    c = hex_to_rgb(color)
+                    self.a = 1.0
             else:
                 c = name_to_rgb(color)
             self.r = c.red
             self.g = c.green
             self.b = c.blue
-        elif isinstance(color, (tuple, list)) and len(color) == 3:
-            if all((isinstance(c, float) and (c <= 1.0) and (c >= 0.0)) for c in color):
-                self.r, self.g, self.b = (int(c * 255) for c in color)
-            elif all((isinstance(c, int) and (c <= 255) and (c >= 0)) for c in color):
-                self.r, self.g, self.b = color
+        elif isinstance(color, (tuple, list)) and len(color) >= 3:
+            if all((isinstance(c, float) and (c <= 1.0) and (c >= 0.0)) for c in color[:3]):
+                self.r, self.g, self.b = (int(c * 255) for c in color[:3])
+            elif all((isinstance(c, int) and (c <= 255) and (c >= 0)) for c in color[:3]):
+                self.r, self.g, self.b = color[:3]
             else:
                 self._invalid(color)
+
+            if len(color) == 3:
+                self.a = 1.0
+            else:
+                self.a = color[3] if color[3] <= 1.0 else color[3] / 100
         else:
             self._invalid(color)
 
     def __str__(self):
-        return f"Color({self.r}, {self.g}, {self.b})"
+        return f"Color({self.r}, {self.g}, {self.b}, {self.a})"
+
+    def __repr__(self):
+        return f"Color(({self.r}, {self.g}, {self.b}, {self.a}))"
 
     def _invalid(self, color):
         print(f"warning: {color} is an invalid color, using grey (#aaa)")
         self.r = self.g = self.b = 160
+        self.a = 1.0
 
     @property
     def rgb(self):
         return (self.r, self.g, self.b)
+
+    @property
+    def rgba(self):
+        return (self.r, self.g, self.b, self.a)
 
     @property
     def percentage(self):

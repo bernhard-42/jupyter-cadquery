@@ -140,8 +140,10 @@ class _Part(_CADObject):
 
         if isinstance(self.color, tuple):
             color = [c.web_color for c in self.color]  # pylint: disable=not-an-iterable
+            alpha = 1.0
         else:
             color = self.color.web_color
+            alpha = self.color.a
 
         return {
             "id": self.id,
@@ -149,6 +151,7 @@ class _Part(_CADObject):
             "name": self.name,
             "shape": mesh,
             "color": color,
+            "alpha": alpha,
             "renderback": self.renderback,
             "accuracy": quality,
             "bb": bb,
