@@ -1,5 +1,22 @@
 # Changelog
 
+## Release v3.2.0 (13.08.2022)
+
+### New features:
+
+- Support of **y-axis as camera up** axis like in Fusion 360
+- Support for **alpha channel for colors**.
+  **Note:** Transparent objects in WebGL are tricky and sometimes don't render at the right depth of the object.
+  Jupyter CadQuery uses the following algorithm:
+  - First draw all opaque objects with the correct depth information
+  - Then draw all transparent objects. 
+  Unfortunately, WebGL does not support depth info for transparent objects, see https://stackoverflow.com/a/37651610
+  Impact: Transparent objects might be fully or parts drawn at a wrong depth level. 
+  Nevertheless, I decided to support alpha channel
+### Fixes:
+
+- Top level bounding box returned numpy values which broke export to HTML
+
 ## Release v3.1.0 (08.07.2022)
 
 ### New features:

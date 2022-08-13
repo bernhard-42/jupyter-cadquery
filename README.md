@@ -55,62 +55,22 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
 
   
-
-## Release v3.1.0 (08.07.2022)
+## Release v3.2.0 (13.08.2022)
 
 ### New features:
 
-- **Performance**
-
-  - Change exchange of shapes and tracks from Python to Javascript to binary mode
-  - Introduced LRU cache for tessellation results (128MB default)
-  - Introduced LRU cache for bounding box calculation
-  - Introduced multiprocessing for large assemblies (10s to 100s objects)
-
-- **Step reader**
-
-  - Added import function for STEP files into CadQuery assemblies preserving names and colors (for colors, best effort only, since Jupyter CadQuery does not support colored faces)
-  - Added save_assembly/load_assembly to quickly save and load parsed STEP files in a binary BRep 
-
-- **Animation system**
-
-  - Introduced slider for animation
-  - Added animated explode mode for CadQuery assemblies based on Animation system
-
-- **Bounding Box**
-
-  - Removed OCCT bounding box algorithm and created a fast and precise top level bounding box after tessellation via numpy
-  - Show bounding box (AABB) on tree click or cad view double click
-
-- **CAD view**
-
-  - Element isolation
-    - Added feature to isolate elements (shift double click or shift click on navigation tree)
-    - Isolated objects are centered around the center of elements bounding box
-  - Added highlighting of tree nodes when element picked
-  - Added remove elements via navigation tree (meta click)
-
-- **UI**
-  - Introduced light progress bar for assemblies
-  - Parameters cad_width, tree_width and height can be changed after view is opened
-  - Introduce glass mode
-  - Hide checkbox options behind a 'More' menu for small CAD viewers
-  - Enable auto-dark mode according to browser setting (added 'browser' mode to theme keyword)
-  - Added highlighting for the most recent selected view button
-  - Added tree collapsing/expanding buttons
-  - Extend help for new features
-
-- **Dependencies**
-  - Removed [CadQuery-MAssembly](https://github.com/bernhard-42/cadquery-massembly) from dependencies to decouple versions. Needs to be separately installed now.
-  
+- Support of **y-axis as camera up** axis like in Fusion 360
+- Support for **alpha channel for colors**.
+  Note: Transparent objects in WebGL are tricky and sometimes don't render at the right depth of the object.
+  Jupyter CadQuery uses the following algorithm:
+  - First draw all opaque objects with the correct depth information
+  - Then draw all transparent objects. 
+  Unfortunately, WebGL does not support depth info for transparent objects, see https://stackoverflow.com/a/37651610
+  Impact: Transparent objects might be fully or parts drawn at a wrong depth level. 
+  Nevertheless, I decided to support alpha channel
 ### Fixes:
 
-- Change radio button behaviour to standard behaviour
-- Send notifications for changed "target" parameter
-- Fixed slider color for Safari
-- Fixed scrollbar for Firefox
-- Fixed initial zoom for views wider than high
-- Fixed get_pick to support cq.Assembly
+- Top level bounding box returned numpy values which broke export to HTML
 
 
 ## Examples
@@ -156,7 +116,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
      ```bash
-     pip install jupyter-cadquery==3.1.0 cadquery-massembly==1.0.0rc0 matplotlib
+     pip install jupyter-cadquery==3.2.0 cadquery-massembly==1.0.0rc0 matplotlib
      ```
 
      Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -210,14 +170,14 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.1.0
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.2.0
      ```
 
      Jupyter in the container will start in directory `/home/cq`
 
    - To start with examples, you can
 
-     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.1.0` or
+     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.2.0` or
      - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
 
    - If you want to change the Dockerfile, `make docker` will create a new docker image
@@ -227,7 +187,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    - Start the browser based viewer (eventually add cli options, see notes below):
 
      ```bash
-     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.1.0 -v
+     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.2.0 -v
      ```
 
    - In your code import the `show` or `show_object` function from the viewer:

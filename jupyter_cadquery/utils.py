@@ -12,9 +12,9 @@ def round_sig(x, sig):
 
 class Color:
     def __init__(self, color=None):
+        self.a = 1.0
         if color is None:
             self.r = self.g = self.b = 160
-            self.a = 1.0
         elif isinstance(color, Color):
             self.r, self.g, self.b, self.a = color.r, color.g, color.b, color.a
         elif isinstance(color, str):
@@ -24,7 +24,6 @@ class Color:
                     self.a = int(color[7:9], 16) / 255
                 else:
                     c = hex_to_rgb(color)
-                    self.a = 1.0
             else:
                 c = name_to_rgb(color)
             self.r = c.red
@@ -38,9 +37,7 @@ class Color:
             else:
                 self._invalid(color)
 
-            if len(color) == 3:
-                self.a = 1.0
-            else:
+            if len(color) == 4:
                 self.a = color[3] if color[3] <= 1.0 else color[3] / 100
         else:
             self._invalid(color)
