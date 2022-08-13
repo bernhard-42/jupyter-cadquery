@@ -11,9 +11,10 @@ from cachetools import LRUCache, cached
 import numpy as np
 from quaternion import rotate_vectors
 
-from cadquery import Compound, Location
+from cadquery import Compound, Location, Color
 from cadquery.occ_impl.shapes import downcast
 from .utils import distance
+from webcolors import hex_to_rgb
 
 from OCP.TopAbs import (
     TopAbs_EDGE,
@@ -332,6 +333,20 @@ def get_rgb(color):
         return (176, 176, 176)
     rgb = color.wrapped.GetRGB()
     return (int(255 * rgb.Red()), int(255 * rgb.Green()), int(255 * rgb.Blue()))
+
+
+def get_rgba(color):
+    if color is None:
+        return (176, 176, 176, 1.0)
+    else:
+        rgba = color.toTuple()
+        return (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255), rgba[3])
+
+
+def webcol_to_cq(col):
+    color = [c / 255.0 for c in hex_to_rgb(col[:7])]
+    alpha = 1.0 if len(col) == 7 else int(col[7:9], 16) / 255
+    return Color(*color, alpha)
 
 
 def tq_to_loc(t, q):
