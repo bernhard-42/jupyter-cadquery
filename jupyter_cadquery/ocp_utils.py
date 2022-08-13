@@ -190,12 +190,12 @@ class BoundingBox(object):
 
     def to_dict(self):
         return {
-            "xmin": self.xmin,
-            "xmax": self.xmax,
-            "ymin": self.ymin,
-            "ymax": self.ymax,
-            "zmin": self.zmin,
-            "zmax": self.zmax,
+            "xmin": float(self.xmin),
+            "xmax": float(self.xmax),
+            "ymin": float(self.ymin),
+            "ymax": float(self.ymax),
+            "zmin": float(self.zmin),
+            "zmax": float(self.zmax),
         }
 
     def __repr__(self):
