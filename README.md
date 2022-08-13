@@ -311,6 +311,7 @@ _Keywork arguments `kwargs`:_
 - Viewer options
 
   - `control`: Use trackball controls ('trackball') or orbit controls ('orbit') (default='trackball')
+  - `up`: Use z-axis ('Z') or y-axis ('Z') as up direction for the camera
   - `axes`: Show axes (default=False)
   - `axes0`: Show axes at (0,0,0) (default=False)
   - `grid`: Show grid (default=[False, False, False])

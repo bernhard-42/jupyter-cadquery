@@ -34,7 +34,7 @@ class Defaults:
         Valid keywords:
 
         DISPLAY OPTIONS
-        - viewer:             Name of the sidecar viewer (default=""): 
+        - viewer:             Name of the sidecar viewer (default=""):
                               "" uses the default sidecar (if exists) and None forces to use notebook cell
         - anchor:             How to open sidecar: "right", "split-right", "split-bottom", ... (default="right")
         - cad_width:          Width of CAD view part of the view (default=800)
@@ -57,6 +57,7 @@ class Defaults:
 
         VIEWER OPTIONS
         - control:            Use trackball controls ('trackball') or orbit controls ('orbit') (default='trackball')
+        - up:                 Use z-axis ('Z') or y-axis ('Z') as up direction for the camera
         - axes:               Show axes (default=False)
         - axes0:              Show axes at (0,0,0) (default=False)
         - grid:               Show grid (default=[False, False, False])
@@ -130,6 +131,7 @@ class Defaults:
             # viewer options
             #
             "control": "trackball",
+            "up": "Z",
             "axes": False,
             "axes0": False,
             "grid": [False, False, False],
@@ -222,6 +224,7 @@ def add_shape_args(config):
         if k
         in [
             "control",
+            "up",
             "axes",
             "axes0",
             "grid",
