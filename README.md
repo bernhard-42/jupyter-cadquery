@@ -121,6 +121,7 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
      ```bash
+     pip install jupyterlab jupyterlab-widgets==1.1.1   # ensure ipywidgets 7.7 is still supported
      pip install jupyter-cadquery==3.2.1 cadquery-massembly==1.0.0rc0 matplotlib
      ```
 
