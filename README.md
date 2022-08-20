@@ -54,8 +54,13 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Double click on shapes shows bounding box info
   - Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
 
+
+## Release v3.2.1 (20.08.2022)
+
+No feature change, just re-released 3.2.0 since a deployment error happened with 3.2.0 to Pypi
+
   
-## Release v3.2.1 (13.08.2022)
+## Release v3.2.0 (13.08.2022)
 
 ### New features:
 
