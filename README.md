@@ -55,7 +55,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
 
   
-## Release v3.2.0 (13.08.2022)
+## Release v3.2.1 (13.08.2022)
 
 ### New features:
 
@@ -116,7 +116,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
      ```bash
-     pip install jupyter-cadquery==3.2.0 cadquery-massembly==1.0.0rc0 matplotlib
+     pip install jupyter-cadquery==3.2.1 cadquery-massembly==1.0.0rc0 matplotlib
      ```
 
      Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -170,14 +170,14 @@ _Jupyter-CadQuery_ is now a 3 layer project:
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.2.0
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.2.1
      ```
 
      Jupyter in the container will start in directory `/home/cq`
 
    - To start with examples, you can
 
-     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.2.0` or
+     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.2.1` or
      - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
 
    - If you want to change the Dockerfile, `make docker` will create a new docker image
@@ -187,7 +187,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
    - Start the browser based viewer (eventually add cli options, see notes below):
 
      ```bash
-     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.2.0 -v
+     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.2.1 -v
      ```
 
    - In your code import the `show` or `show_object` function from the viewer:
