@@ -55,6 +55,11 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
 
 
+## Release v3.2.2 (21.08.2022)
+
+No feature change, change dependency to cad-viewer-widget 1.3.5 which fixes using ipywidgets 7.7.2 
+
+
 ## Release v3.2.1 (20.08.2022)
 
 No feature change, just re-released 3.2.0 since a deployment error happened with 3.2.0 to Pypi
@@ -121,8 +126,7 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
      ```bash
-     pip install jupyterlab jupyterlab-widgets==1.1.1   # ensure ipywidgets 7.7 is still supported
-     pip install jupyter-cadquery==3.2.1 cadquery-massembly==1.0.0rc0 matplotlib
+     pip install jupyter-cadquery==3.2.2 cadquery-massembly==1.0.0rc0 matplotlib
      ```
 
      Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -176,14 +180,14 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.2.1
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.2.2
      ```
 
      Jupyter in the container will start in directory `/home/cq`
 
    - To start with examples, you can
 
-     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.2.1` or
+     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.2.2` or
      - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
 
    - If you want to change the Dockerfile, `make docker` will create a new docker image
@@ -193,7 +197,7 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
    - Start the browser based viewer (eventually add cli options, see notes below):
 
      ```bash
-     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.2.1 -v
+     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.2.2 -v
      ```
 
    - In your code import the `show` or `show_object` function from the viewer:

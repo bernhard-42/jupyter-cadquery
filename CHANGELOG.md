@@ -1,5 +1,13 @@
 # Changelog
 
+## Release v3.2.2 (21.08.2022)
+
+No feature change, change dependency to cad-viewer-widget 1.3.5 which fixes using ipywidgets 7.7.2 
+
+## Release v3.2.1 (20.08.2022)
+
+No feature change, just re-released 3.2.0 since a deployment error happened with 3.2.0 to Pypi
+
 ## Release v3.2.0 (13.08.2022)
 
 ### New features:

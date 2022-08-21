@@ -17,7 +17,7 @@ RUN mamba install -n cq -y -c conda-forge -c cadquery cadquery=master && \
 
 RUN . "/opt/conda/etc/profile.d/conda.sh" && conda activate cq && \
     pip install jupyterlab jupyterlab-widgets==1.1.1 && \
-    pip install jupyter-cadquery==3.2.1 cadquery-massembly~=1.0.0rc0 jupyterlab~=3.4.3 voila~=0.3.5 && \
+    pip install jupyter-cadquery==3.2.2 cadquery-massembly~=1.0.0rc0 jupyterlab~=3.4.3 voila~=0.3.5 && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 VOLUME /home/cq/
