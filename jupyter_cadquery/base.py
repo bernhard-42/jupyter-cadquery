@@ -526,9 +526,6 @@ def _show(part_group, **kwargs):
 
             shapes = logo["data"]["shapes"]
             states = logo["data"]["states"]
-            bb = _combined_bb(shapes).to_dict()
-            # add global bounding box
-            shapes["bb"] = bb
 
         else:
 
