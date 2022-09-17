@@ -115,7 +115,10 @@ def load_binary(filename, assembly_name=None):
 
 
 def exportJson(cad_obj, filename):
-    shapes, states = _tessellate_group(to_assembly(cad_obj))
+    assembly = to_assembly(cad_obj)
+    if len(assembly.objects) == 1 and isinstance(assembly.objects[0], PartGroup):
+        assembly = assembly.objects[0]
+    shapes, states = _tessellate_group(assembly)
     bb = _combined_bb(shapes).to_dict()
     # add global bounding box
     shapes["bb"] = bb
