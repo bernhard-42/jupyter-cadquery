@@ -4,7 +4,7 @@ import cadquery as cq
 
 from jupyter_cadquery.ocp_utils import loc_to_tq, tq_to_loc, serialize, deserialize
 from jupyter_cadquery.base import _tessellate_group, _combined_bb
-from jupyter_cadquery.cad_objects import to_assembly
+from jupyter_cadquery.cad_objects import to_assembly, PartGroup
 from jupyter_cadquery.utils import numpy_to_json
 
 try:
