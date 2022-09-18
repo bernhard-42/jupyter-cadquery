@@ -43,9 +43,9 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Animated explode mode for _CadQuery_ assemblies
 - Debugging
   - Step-by-step in an IDE with the standalone viewer (see example below)
-  - Visually 
-      - by displaying selected _CadQuery_ faces and edges
-      - by replaying steps of the rendered object in the Notebook (see example below)
+  - Visually
+    - by displaying selected _CadQuery_ faces and edges
+    - by replaying steps of the rendered object in the Notebook (see example below)
 - Viewer features
   - Toggle visibility of shapes and edges
   - Orthographic and perspective view
@@ -54,34 +54,21 @@ _Jupyter-CadQuery_ is now a 3 layer project:
   - Double click on shapes shows bounding box info
   - Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
 
+## Release v3.3.0 (18.09.2022)
 
-## Release v3.2.2 (21.08.2022)
+This version the default view angle, hence the change of the minor version number. If you want to keep the old view behaviour of _Jupyter CadQuery_ for existing models, use `up="L"` (L as in legacy) as `show` parameter directly or via `set_defaults`.
 
-No feature change, change dependency to cad-viewer-widget 1.3.5 which fixes using ipywidgets 7.7.2 
+### Changes:
 
+- Changed view button orientation behaviour:
+  - up="Z" now works like FreeCAD, Onshape, ... with isometric view changed and buttons adapted (e.g. front is now defined differently!)
+  - up="Y" works like "Fusion 360" in "y up" mode
+  - up="L" works like the old z up mode of Jupyter CadQuery
+- Logo and hexapod example adapted to new view behaviour
 
-## Release v3.2.1 (20.08.2022)
-
-No feature change, just re-released 3.2.0 since a deployment error happened with 3.2.0 to Pypi
-
-  
-## Release v3.2.0 (13.08.2022)
-
-### New features:
-
-- Support of **y-axis as camera up** axis like in Fusion 360
-- Support for **alpha channel for colors**.
-  Note: Transparent objects in WebGL are tricky and sometimes don't render at the right depth of the object.
-  Jupyter CadQuery uses the following algorithm:
-  - First draw all opaque objects with the correct depth information
-  - Then draw all transparent objects. 
-  Unfortunately, WebGL does not support depth info for transparent objects, see https://stackoverflow.com/a/37651610
-  Impact: Transparent objects might be fully or parts drawn at a wrong depth level. 
-  Nevertheless, I decided to support alpha channel
 ### Fixes:
 
-- Top level bounding box returned numpy values which broke export to HTML
-
+- Fixed default parameters of `exportSTL`
 
 ## Examples
 
@@ -89,26 +76,27 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
 
 - Self programmed animation
 
-    ![Animated Hexapod](screenshots/hexapod-crawling.gif)
+  ![Animated Hexapod](screenshots/hexapod-crawling.gif)
 
-- Explode objects animation 
+- Explode objects animation
 
   Source of STEP file: https://print.grabcad.com/library/quadruped-robot-w-code-1#!
 
   ![Exploded Quadruped](screenshots/explode.gif)
- 
-### Debugging 
+
+### Debugging
+
 - In VS Code with Standalone Viewer
 
   - The top half is the CadQuery code being debugged in VS Code
   - The bottom half is the standalone viewer in a browser window
   - The `show` command in the code will tessellate the objects and send them via [zmq](https://pyzmq.readthedocs.io/en/latest/) to the standalone viewer
-    
+
     ![Debugging in IDE](screenshots/debugging.gif)
 
 - By replaying in the notebook
 
-    ![Replaying](screenshots/replay.gif)
+  ![Replaying](screenshots/replay.gif)
 
 ## Installation
 
@@ -117,7 +105,7 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
 1. For using _Jupyter-CadQuery_ **in Jupyterlab**
 
    - If you don't have it already, create a new conda environment with the latest CadQuery (e.g. master)
-     
+
      ```bash
      conda create -n jcq3 -c conda-forge -c cadquery python=3.9 cadquery=master
      conda activate jcq3
@@ -126,10 +114,11 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
      ```bash
-     pip install jupyter-cadquery==3.2.2 cadquery-massembly==1.0.0rc0 matplotlib
+     pip install jupyter-cadquery==3.3.0 cadquery-massembly==1.0.0rc0 matplotlib
      ```
 
      Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
+
      ```bash
      conda install pywin32
      ```
@@ -180,14 +169,14 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
      ```bash
      WORKDIR=/tmp/jupyter
      mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.2.2
+     docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.3.0
      ```
 
      Jupyter in the container will start in directory `/home/cq`
 
    - To start with examples, you can
 
-     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.2.2` or
+     - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.3.0` or
      - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
 
    - If you want to change the Dockerfile, `make docker` will create a new docker image
@@ -197,7 +186,7 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
    - Start the browser based viewer (eventually add cli options, see notes below):
 
      ```bash
-     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.2.2 -v
+     docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.3.0 -v
      ```
 
    - In your code import the `show` or `show_object` function from the viewer:
@@ -281,7 +270,7 @@ _Keywork arguments `kwargs`:_
 - Viewer options
 
   - `control`: Use trackball controls ('trackball') or orbit controls ('orbit') (default='trackball')
-  - `up`: Use z-axis ('Z') or y-axis ('Z') as up direction for the camera
+  - `up`: Use z-axis ('Z') or y-axis ('Z') as up direction for the camera, legacy behaviour: 'L' (default='Z')
   - `axes`: Show axes (default=False)
   - `axes0`: Show axes at (0,0,0) (default=False)
   - `grid`: Show grid (default=[False, False, False])

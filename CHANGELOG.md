@@ -1,8 +1,24 @@
 # Changelog
 
+## Release v3.3.0 (18.09.2022)
+
+This version the default view angle, hence the change of the minor version number. If you want to keep the old view behaviour of _Jupyter CadQuery_ for existing models, use `up="L"` (L as in legacy) as `show` parameter directly or via `set_defaults`.
+
+### Changes:
+
+- Changed view button orientation behaviour:
+  - up="Z" now works like FreeCAD, Onshape, ... with isometric view changed and buttons adapted (e.g. front is now defined differently!)
+  - up="Y" works like "Fusion 360" in "y up" mode
+  - up="L" works like the old z up mode of Jupyter CadQuery
+- Logo and hexapod example adapted to new view behaviour
+
+### Fixes:
+
+- Fixed default parameters of `exportSTL`
+
 ## Release v3.2.2 (21.08.2022)
 
-No feature change, change dependency to cad-viewer-widget 1.3.5 which fixes using ipywidgets 7.7.2 
+No feature change, change dependency to cad-viewer-widget 1.3.5 which fixes using ipywidgets 7.7.2
 
 ## Release v3.2.1 (20.08.2022)
 
@@ -17,10 +33,11 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
   **Note:** Transparent objects in WebGL are tricky and sometimes don't render at the right depth of the object.
   Jupyter CadQuery uses the following algorithm:
   - First draw all opaque objects with the correct depth information
-  - Then draw all transparent objects. 
-  Unfortunately, WebGL does not support depth info for transparent objects, see https://stackoverflow.com/a/37651610
-  Impact: Transparent objects might be fully or parts drawn at a wrong depth level. 
-  Nevertheless, I decided to support alpha channel
+  - Then draw all transparent objects.
+    Unfortunately, WebGL does not support depth info for transparent objects, see https://stackoverflow.com/a/37651610
+    Impact: Transparent objects might be fully or parts drawn at a wrong depth level.
+    Nevertheless, I decided to support alpha channel
+
 ### Fixes:
 
 - Top level bounding box returned numpy values which broke export to HTML
@@ -39,7 +56,7 @@ No feature change, just re-released 3.2.0 since a deployment error happened with
 - **Step reader**
 
   - Added import function for STEP files into CadQuery assemblies preserving names and colors (for colors, best effort only, since Jupyter CadQuery does not support colored faces)
-  - Added save_assembly/load_assembly to quickly save and load parsed STEP files in a binary BRep 
+  - Added save_assembly/load_assembly to quickly save and load parsed STEP files in a binary BRep
 
 - **Animation system**
 
