@@ -19,7 +19,7 @@ from .cad_objects import _PartGroup, _Part
 from .ocp_utils import write_stl_file, is_compound
 
 
-def exportSTL(cadObj, filename, tolerance=None, angular_tolerance=None):
+def exportSTL(cadObj, filename, tolerance=0.01, angular_tolerance=0.2):
     compound = None
     if isinstance(cadObj, (_PartGroup, _Part)):
         compound = cadObj.compound()
