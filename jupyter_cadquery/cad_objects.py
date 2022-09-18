@@ -633,7 +633,7 @@ def show(*cad_objs, names=None, **kwargs):
 
     VIEWER OPTIONS
     - control:            Use trackball controls ('trackball') or orbit controls ('orbit') (default='trackball')
-    - up:                 Use z-axis ('Z') or y-axis ('Z') as up direction for the camera
+    - up:                 Use z-axis ('Z') or y-axis ('Y') as up direction for the camera (or 'L' for legacy z-axis up mode)
     - axes:               Show axes (default=False)
     - axes0:              Show axes at (0,0,0) (default=False)
     - grid:               Show grid (default=[False, False, False])
