@@ -5,8 +5,8 @@ channels:
 dependencies:
   - python=3.10
   - pip=21.0
-  - cadquery=master
   - matplotlib=3.3
+  - cadquery=master
   - pip:
       - jupyter-cadquery==3.3.0
       - cadquery-massembly==1.0.0rc0
