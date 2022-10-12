@@ -21,6 +21,14 @@ try:
 except ImportError:
     HAS_MASSEMBLY = False
 
+try:
+    import build123d as bd
+
+    HAS_BUILD123D = True
+except ImportError:
+    HAS_BUILD123D = False
+
+from build123d import BuildFace, BuildHull, BuildLine, BuildPart, BuildSketch
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import (
     Workplane,
@@ -37,7 +45,7 @@ from cadquery import (
 from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group, _combined_bb
 
 from .utils import Color, flatten, warn, numpy_to_json
-from .ocp_utils import get_rgba, is_compound, is_shape
+from .ocp_utils import get_rgba, is_compound, is_shape, get_faces
 from .defaults import get_default, preset
 
 
@@ -461,13 +469,18 @@ def _is_wirelist(cad_obj):
 
 
 def _debug(msg):
-    # print("DEBUG:", msg)
+    print("DEBUG:", msg)
     pass
 
 
 def to_assembly(
     *cad_objs, names=None, name="Group", render_mates=None, mate_scale=1, default_color=None, show_parent=True
 ):
+    def bd_to_cq(objs):
+        w = Workplane()
+        w.objects = objs
+        return w
+
     if names is None:
         names = [None] * len(cad_objs)
 
@@ -476,6 +489,23 @@ def to_assembly(
     obj_id = 0
 
     for obj_name, cad_obj in zip(names, cad_objs):
+
+        # Pre-transform build123d objects
+
+        if HAS_BUILD123D and isinstance(cad_obj, bd.BuildLine):
+            cad_obj = bd_to_cq(cad_obj.line)
+
+        elif HAS_BUILD123D and isinstance(cad_obj, bd.BuildPart):
+            cad_obj = cad_obj.part
+
+        elif HAS_BUILD123D and isinstance(cad_obj, bd.BuildSketch):
+            cad_obj = cad_obj.sketch
+
+        elif HAS_BUILD123D and isinstance(cad_obj, bd.ShapeList):
+            cad_obj = bd_to_cq(cad_obj)
+
+        # Transform the cad_obj to a Part or PartGroup
+
         if isinstance(cad_obj, (PartGroup, Part, Faces, Edges, Vertices)):
             _debug(f"CAD Obj {obj_id}: PartGroup, Part, Faces, Edges, Vertices")
             assembly.add(cad_obj)
@@ -555,10 +585,20 @@ def to_assembly(
         elif isinstance(cad_obj, (Shape, Compound)):
             _debug(f"CAD Obj {obj_id}: Shape, Compound")
             obj_name = "Part" if obj_name is None else obj_name
+
+            print(cad_obj, next(get_faces(cad_obj.wrapped), "None"))
+
+            if next(get_faces(cad_obj.wrapped), None) is None:
+                # edges only
+                workplane = Workplane()
+                workplane.objects = cad_obj
+                show_parent = False
+            else:
+                # solid or face
+                workplane = Workplane(cad_obj)
+
             assembly.add(
-                _from_workplane(
-                    Workplane(cad_obj), obj_id, obj_name, default_color=default_color, show_parent=show_parent
-                )
+                _from_workplane(workplane, obj_id, obj_name, default_color=default_color, show_parent=show_parent)
             )
 
         elif is_compound(cad_obj):
