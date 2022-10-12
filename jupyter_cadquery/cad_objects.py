@@ -28,7 +28,6 @@ try:
 except ImportError:
     HAS_BUILD123D = False
 
-from build123d import BuildFace, BuildHull, BuildLine, BuildPart, BuildSketch
 from cadquery.occ_impl.shapes import Face, Edge, Wire
 from cadquery import (
     Workplane,
@@ -583,22 +582,27 @@ def to_assembly(
             assembly.add_list(_from_vector(cad_obj, obj_id, obj_name, show_parent=show_parent))
 
         elif isinstance(cad_obj, (Shape, Compound)):
-            _debug(f"CAD Obj {obj_id}: Shape, Compound")
-            obj_name = "Part" if obj_name is None else obj_name
-
-            print(cad_obj, next(get_faces(cad_obj.wrapped), "None"))
 
             if next(get_faces(cad_obj.wrapped), None) is None:
+                _debug(f"CAD Obj {obj_id}: Compound with edges only")
                 # edges only
+                obj_name = "Edges" if obj_name is None else obj_name
                 workplane = Workplane()
                 workplane.objects = cad_obj
-                show_parent = False
+                assembly.add_list(_from_edgelist(workplane, obj_id, obj_name, show_parent=False))
             else:
+                _debug(f"CAD Obj {obj_id}: Shape, Compound")
                 # solid or face
+                obj_name = "Part" if obj_name is None else obj_name
                 workplane = Workplane(cad_obj)
-
             assembly.add(
-                _from_workplane(workplane, obj_id, obj_name, default_color=default_color, show_parent=show_parent)
+                _from_workplane(
+                    workplane,
+                    obj_id,
+                    obj_name,
+                    default_color=default_color,
+                    show_parent=show_parent,
+                )
             )
 
         elif is_compound(cad_obj):
