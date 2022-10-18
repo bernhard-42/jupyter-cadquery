@@ -1,8 +1,12 @@
 # Changelog
 
+## Release v3.4.0 (18.10.2022)
+
+Support for [build123d](https://github.com/gumyr/build123d) (experimental).
+
 ## Release v3.3.0 (18.09.2022)
 
-This version the default view angle, hence the change of the minor version number. If you want to keep the old view behaviour of _Jupyter CadQuery_ for existing models, use `up="L"` (L as in legacy) as `show` parameter directly or via `set_defaults`.
+This version changes the default view angle, hence the change of the minor version number. If you want to keep the old view behaviour of _Jupyter CadQuery_ for existing models, use `up="L"` (L as in legacy) as `show` parameter directly or via `set_defaults`.
 
 ### Changes:
 
