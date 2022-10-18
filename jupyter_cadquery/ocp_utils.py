@@ -16,10 +16,7 @@ from cadquery.occ_impl.shapes import downcast
 from .utils import distance
 from webcolors import hex_to_rgb
 
-from OCP.TopAbs import (
-    TopAbs_EDGE,
-    TopAbs_FACE,
-)
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_SOLID, TopAbs_WIRE, TopAbs_VERTEX
 from OCP.TopoDS import TopoDS_Compound, TopoDS_Shape
 from OCP.TopExp import TopExp_Explorer
 
@@ -30,7 +27,7 @@ from OCP.TopLoc import TopLoc_Location
 
 
 # Bounding Box
-from OCP.TopoDS import TopoDS_Shape
+from OCP.TopoDS import TopoDS_Shape, TopoDS_Solid
 from OCP.BinTools import BinTools
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
@@ -295,14 +292,6 @@ def deserialize(buffer):
 # OCP types and accessors
 
 
-def is_compound(topods_shape):
-    return isinstance(topods_shape, TopoDS_Compound)
-
-
-def is_shape(topods_shape):
-    return isinstance(topods_shape, TopoDS_Shape)
-
-
 def _get_topo(shape, topo):
     explorer = TopExp_Explorer(shape, topo)
     hashes = {}
@@ -315,12 +304,71 @@ def _get_topo(shape, topo):
         explorer.Next()
 
 
+def get_solids(shape):
+    return _get_topo(shape, TopAbs_SOLID)
+
+
 def get_faces(shape):
     return _get_topo(shape, TopAbs_FACE)
 
 
+def get_wires(shape):
+    return _get_topo(shape, TopAbs_WIRE)
+
+
 def get_edges(shape):
     return _get_topo(shape, TopAbs_EDGE)
+
+
+def get_vertices(shape):
+    return _get_topo(shape, TopAbs_VERTEX)
+
+
+def is_compound(topods_shape):
+    return isinstance(topods_shape, TopoDS_Compound)
+
+
+def is_shape(topods_shape):
+    return isinstance(topods_shape, TopoDS_Shape)
+
+
+def is_solid(topods_shape):
+    return isinstance(topods_shape, TopoDS_Solid)
+
+
+def is_solids_compound(topods_shape):
+    if isinstance(topods_shape, TopoDS_Compound):
+        e = get_solids(topods_shape)
+        return next(e, None) is not None
+    return False
+
+
+def is_faces_compound(topods_shape):
+    if isinstance(topods_shape, TopoDS_Compound):
+        e = get_faces(topods_shape)
+        return next(e, None) is not None
+    return False
+
+
+def is_wires_compound(topods_shape):
+    if isinstance(topods_shape, TopoDS_Compound):
+        e = get_wires(topods_shape)
+        return next(e, None) is not None
+    return False
+
+
+def is_edges_compound(topods_shape):
+    if isinstance(topods_shape, TopoDS_Compound):
+        e = get_edges(topods_shape)
+        return next(e, None) is not None
+    return False
+
+
+def is_vertices_compound(topods_shape):
+    if isinstance(topods_shape, TopoDS_Compound):
+        e = get_vertices(topods_shape)
+        return next(e, None) is not None
+    return False
 
 
 def get_point(vertex):

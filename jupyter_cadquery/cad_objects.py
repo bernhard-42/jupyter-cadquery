@@ -21,11 +21,22 @@ try:
 except ImportError:
     HAS_MASSEMBLY = False
 
-from cadquery.occ_impl.shapes import Face, Edge, Wire
+try:
+    import build123d as bd
+
+    HAS_BUILD123D = True
+
+except ImportError:
+    HAS_BUILD123D = False
+
 from cadquery import (
     Workplane,
     Sketch,
     Shape,
+    Solid,
+    Face,
+    Wire,
+    Edge,
     Compound,
     Vector,
     Vertex,
@@ -34,10 +45,10 @@ from cadquery import (
     Color as CqColor,
 )
 
-from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show, _tessellate_group, _combined_bb
+from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
-from .utils import Color, flatten, warn, numpy_to_json
-from .ocp_utils import get_rgba, is_compound, is_shape
+from .utils import Color, flatten, warn
+from .ocp_utils import get_rgba, is_compound, is_shape, get_solids, get_faces, get_wires, get_edges, get_vertices
 from .defaults import get_default, preset
 
 
@@ -50,6 +61,12 @@ FACE_COLOR = "Violet"
 def web_color(name):
     wc = Color(name)
     return CqColor(*wc.percentage)
+
+
+def cq_wrap(obj):
+    w = Workplane()
+    w.objects = obj
+    return w
 
 
 class Part(_Part):
@@ -252,6 +269,13 @@ def _parent(cad_obj, obj_id):
         return []
 
 
+def _from_solidlist(cad_obj, obj_id, name="Solids", show_parent=True):
+    result = [Part(cad_obj, "%s_%d" % (name, obj_id))]
+    if show_parent:
+        result = _parent(cad_obj, obj_id) + result
+    return result
+
+
 def _from_facelist(cad_obj, obj_id, name="Faces", show_parent=True):
     result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=Color(FACE_COLOR))]
     if show_parent:
@@ -266,7 +290,7 @@ def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
     return result
 
 
-def _from_wirelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
+def _from_wirelist(cad_obj, obj_id, name="Wires", color=None, show_parent=True):
     result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
@@ -428,6 +452,14 @@ def _from_workplane(cad_obj, obj_id, name="Part", default_color=None, show_paren
     return result
 
 
+def _is_solidlist(cad_obj):
+    return (
+        hasattr(cad_obj, "objects")
+        and cad_obj.objects != []
+        and all([isinstance(obj, Solid) for obj in cad_obj.objects])
+    )
+
+
 def _is_facelist(cad_obj):
     return (
         hasattr(cad_obj, "objects")
@@ -476,6 +508,65 @@ def to_assembly(
     obj_id = 0
 
     for obj_name, cad_obj in zip(names, cad_objs):
+
+        # Handle build123d objects and convert them to a format support by the following conversions
+
+        if HAS_BUILD123D:
+
+            is_build123d = True
+
+            if isinstance(cad_obj, bd.BuildPart):
+                _debug(f"CAD Obj {obj_id}: build123d.BuildPart")
+                cad_obj = cad_obj.part
+            elif isinstance(cad_obj, bd.BuildSketch):
+                _debug(f"CAD Obj {obj_id}: build123d.BuildSketch")
+                cad_obj = cad_obj.sketch
+            elif isinstance(cad_obj, bd.BuildLine):
+                _debug(f"CAD Obj {obj_id}: build123d.BuildLine")
+                cad_obj = cad_obj.line
+            elif isinstance(cad_obj, (bd.Compound, bd.ShapeList)):
+                _debug(f"CAD Obj {obj_id}: build123d.ShapeList")
+            else:
+                is_build123d = False
+
+            if is_build123d and isinstance(cad_obj, (bd.Compound, bd.ShapeList)):
+                cad_obj = cq_wrap([Shape.cast(obj.wrapped) for obj in cad_obj])
+
+            if isinstance(cad_obj, bd.direct_api.Shape):
+                _debug(f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)")
+                cad_obj = Shape.cast(cad_obj.wrapped)
+
+        # Handle TopDS_Compound
+
+        if is_compound(cad_obj):
+            _debug(f"CAD Obj {obj_id}: TopoDS Compound")
+
+            if next(get_solids(cad_obj), None) is not None:
+                objs = get_solids(cad_obj)
+
+            elif next(get_faces(cad_obj), None) is not None:
+                objs = get_faces(cad_obj)
+
+            elif next(get_wires(cad_obj), None) is not None:
+                objs = get_wires(cad_obj)
+
+            elif next(get_edges(cad_obj), None) is not None:
+                objs = get_edges(cad_obj)
+
+            elif next(get_vertices(cad_obj), None) is not None:
+                objs = get_vertices(cad_obj)
+
+            else:
+                raise NotImplementedError("Unknow TopoDS Compund")
+
+            cad_obj = cq_wrap([Shape.cast(obj) for obj in objs])
+
+        elif is_shape(cad_obj):
+            _debug(f"CAD Obj {obj_id}: TopoDS Shape")
+            cad_obj = Shape.cast(cad_obj)
+
+        # Conversions
+
         if isinstance(cad_obj, (PartGroup, Part, Faces, Edges, Vertices)):
             _debug(f"CAD Obj {obj_id}: PartGroup, Part, Faces, Edges, Vertices")
             assembly.add(cad_obj)
@@ -507,25 +598,30 @@ def to_assembly(
                 )
             )
 
-        elif isinstance(cad_obj, Edge):
-            _debug(f"CAD Obj {obj_id}: Edge")
-            obj_name = "Faces" if obj_name is None else obj_name
-            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
-
         elif isinstance(cad_obj, Face):
             _debug(f"CAD Obj {obj_id}: Face")
-            obj_name = "Faces" if obj_name is None else obj_name
+            obj_name = "Edges" if obj_name is None else obj_name
             assembly.add_list(_from_facelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
 
         elif isinstance(cad_obj, Wire):
             _debug(f"CAD Obj {obj_id}: Wire")
             obj_name = "Wires" if obj_name is None else obj_name
-            assembly.add(_from_wirelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_wirelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
+
+        elif isinstance(cad_obj, Edge):
+            _debug(f"CAD Obj {obj_id}: Edge")
+            obj_name = "Faces" if obj_name is None else obj_name
+            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
 
         elif isinstance(cad_obj, Vertex):
             _debug(f"CAD Obj {obj_id}: Vertex")
             obj_name = "Vertices" if obj_name is None else obj_name
             assembly.add_list(_from_vertexlist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
+
+        elif _is_solidlist(cad_obj) and len(cad_obj.objects) > 1:
+            _debug(f"CAD Obj {obj_id}: solidlist")
+            obj_name = "Solids" if obj_name is None else obj_name
+            assembly.add_list(_from_solidlist(cad_obj, obj_id, obj_name, show_parent=show_parent))
 
         elif _is_facelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: facelist")
@@ -552,24 +648,29 @@ def to_assembly(
             obj_name = "Vector" if obj_name is None else obj_name
             assembly.add_list(_from_vector(cad_obj, obj_id, obj_name, show_parent=show_parent))
 
-        elif isinstance(cad_obj, (Shape, Compound)):
-            _debug(f"CAD Obj {obj_id}: Shape, Compound")
+        elif isinstance(cad_obj, Compound):
+            _debug(f"CAD Obj {obj_id}: Compound")
+            obj_name = "Part" if obj_name is None else obj_name
+            if isinstance(list(cad_obj)[0], (Wire, Edge, Vertex)):
+                _debug(f"CAD Obj {obj_id}: Compound of wire, edge, vertex")
+                new_obj = Workplane()
+                new_obj.objects = [cad_obj]
+            else:
+                new_obj = cad_obj
+            assembly.add(
+                _from_workplane(
+                    Workplane(new_obj), obj_id, obj_name, default_color=default_color, show_parent=show_parent
+                )
+            )
+
+        elif isinstance(cad_obj, Shape):
+            _debug(f"CAD Obj {obj_id}: Shape")
             obj_name = "Part" if obj_name is None else obj_name
             assembly.add(
                 _from_workplane(
                     Workplane(cad_obj), obj_id, obj_name, default_color=default_color, show_parent=show_parent
                 )
             )
-
-        elif is_compound(cad_obj):
-            _debug(f"CAD Obj {obj_id}: TopoDS Compound")
-            obj_name = "Compound" if obj_name is None else obj_name
-            assembly.add(_Part([cad_obj], name=obj_name, color=default_color))
-
-        elif is_shape(cad_obj):
-            _debug(f"CAD Obj {obj_id}: TopoDS Shape")
-            obj_name = "Shape" if obj_name is None else obj_name
-            assembly.add(_Part([cad_obj], name=obj_name, color=default_color))
 
         elif isinstance(cad_obj.val(), Vector):
             _debug(f"CAD Obj {obj_id}: Vector val()")

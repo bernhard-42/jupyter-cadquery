@@ -8,6 +8,13 @@ from jupyter_cadquery.cad_objects import to_assembly
 from jupyter_cadquery.base import _tessellate_group
 from .utils import numpy_to_json
 
+try:
+    import build123d as bd
+
+    HAS_BUILD123D = True
+except ImportError:
+    HAS_BUILD123D = False
+
 # pylint: disable=protected-access
 # pylint: disable=unnecessary-lambda
 def auto_show():
@@ -28,6 +35,17 @@ def auto_show():
     cq.Shape._ipython_display_ = lambda cad_obj: show(cad_obj)
     cq.Assembly._ipython_display_ = lambda cad_obj: show(cad_obj)
     cq.Sketch._ipython_display_ = lambda cad_obj: show(cad_obj)
+
+    if HAS_BUILD123D:
+        bd.BuildPart._ipython_display_ = lambda cad_obj: show(cad_obj)
+        bd.BuildSketch._ipython_display_ = lambda cad_obj: show(cad_obj)
+        bd.BuildLine._ipython_display_ = lambda cad_obj: show(cad_obj)
+        bd.ShapeList._ipython_display_ = lambda cad_obj: show(cad_obj)
+        bd.Shape._ipython_display_ = lambda cad_obj: show(cad_obj)
+        try:
+            del bd.Shape._repr_javascript_
+        except:
+            pass
 
 
 def show_constraints(assy, qs):
