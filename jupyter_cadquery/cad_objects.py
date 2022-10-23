@@ -15,19 +15,29 @@
 #
 
 try:
-    from cadquery_massembly import MAssembly, Mate
-
-    HAS_MASSEMBLY = True
-except ImportError:
-    HAS_MASSEMBLY = False
-
-try:
     import build123d as bd
 
     HAS_BUILD123D = True
 
 except ImportError:
     HAS_BUILD123D = False
+
+try:
+    from cadquery_massembly import MAssembly, Mate
+    from cadquery_massembly.massembly import MateDef
+
+    HAS_MASSEMBLY = True
+
+    if HAS_BUILD123D:
+        from cadquery_massembly.build123d import BuildAssembly, MAssembly as B_MAssembly
+
+        HAS_BUILD123D_MASSEMBLY = True
+    else:
+        HAS_BUILD123D_MASSEMBLY = False
+
+except ImportError:
+    HAS_MASSEMBLY = False
+
 
 from cadquery import (
     Workplane,
@@ -44,6 +54,7 @@ from cadquery import (
     Assembly as CqAssembly,
     Color as CqColor,
 )
+from pyparsing import col
 
 from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
@@ -67,6 +78,43 @@ def cq_wrap(obj):
     w = Workplane()
     w.objects = obj
     return w
+
+
+def convert_build123d_massembly(bma, mate_defs=None):
+
+    ma = MAssembly(
+        obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
+        name=bma.name,
+        color=None if bma.color is None else Color(*bma.color.to_tuple(percentage=True)),
+        loc=None if bma.loc is None else Location(bma.loc.wrapped),
+    )
+    ma.mates = {}
+
+    if mate_defs is None:
+        mate_defs = {}
+
+    # Collect mate defs and record the fully qualified path
+    for name, mate_def in bma.mates.items():
+        if mate_def.assembly == bma:
+            mate_defs[name] = bma.cq_name
+
+    for child in bma.children:
+        ma.add(convert_build123d_massembly(child, mate_defs), name=child.name)
+
+    # On the top element add the converted mate defs
+    if bma.parent is None:
+        for name, mate_def in bma.mates.items():
+            ma.mates[name] = MateDef(
+                Mate(
+                    mate_def.mate.origin.to_tuple(),
+                    mate_def.mate.x_dir.to_tuple(),
+                    mate_def.mate.z_dir.to_tuple(),
+                ),
+                ma.objects[mate_defs[name]],
+                mate_def.mate.is_origin,
+            )
+
+    return ma
 
 
 class Part(_Part):
@@ -493,7 +541,7 @@ def _is_wirelist(cad_obj):
 
 
 def _debug(msg):
-    # print("DEBUG:", msg)
+    print("DEBUG:", msg)
     pass
 
 
@@ -535,6 +583,13 @@ def to_assembly(
             if isinstance(cad_obj, bd.direct_api.Shape):
                 _debug(f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)")
                 cad_obj = Shape.cast(cad_obj.wrapped)
+
+            if isinstance(cad_obj, BuildAssembly):
+                _debug(f"CAD Obj {obj_id}: build123d BuildAssembly")
+                cad_obj = convert_build123d_massembly(cad_obj.assembly)
+            elif isinstance(cad_obj, B_MAssembly):
+                _debug(f"CAD Obj {obj_id}: build123d MAssembly")
+                cad_obj = convert_build123d_massembly(cad_obj)
 
         # Handle TopDS_Compound
 
