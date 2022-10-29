@@ -28,15 +28,16 @@ try:
 
     HAS_MASSEMBLY = True
 
-    if HAS_BUILD123D:
-        from cadquery_massembly.build123d import BuildAssembly, MAssembly as B_MAssembly
-
-        HAS_BUILD123D_MASSEMBLY = True
-    else:
-        HAS_BUILD123D_MASSEMBLY = False
-
 except ImportError:
     HAS_MASSEMBLY = False
+
+try:
+    from cadquery_massembly.build123d import BuildAssembly, MAssembly as B_MAssembly
+
+    HAS_BUILD123D_MASSEMBLY = True
+
+except ImportError:
+    HAS_BUILD123D_MASSEMBLY = False
 
 
 from cadquery import (
@@ -583,6 +584,8 @@ def to_assembly(
             if isinstance(cad_obj, bd.direct_api.Shape):
                 _debug(f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)")
                 cad_obj = Shape.cast(cad_obj.wrapped)
+
+        if HAS_BUILD123D_MASSEMBLY:
 
             if isinstance(cad_obj, BuildAssembly):
                 _debug(f"CAD Obj {obj_id}: build123d BuildAssembly")
