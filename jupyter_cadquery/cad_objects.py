@@ -86,7 +86,7 @@ def convert_build123d_massembly(bma, mate_defs=None):
     ma = MAssembly(
         obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
         name=bma.name,
-        color=None if bma.color is None else Color(*bma.color.to_tuple(percentage=True)),
+        color=None if bma.color is None else CqColor(*bma.color.to_tuple(percentage=True)),
         loc=None if bma.loc is None else Location(bma.loc.wrapped),
     )
     ma.mates = {}
