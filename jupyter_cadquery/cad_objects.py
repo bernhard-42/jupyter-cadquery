@@ -655,7 +655,7 @@ def to_assembly(
 
         elif isinstance(cad_obj, Face):
             _debug(f"CAD Obj {obj_id}: Face")
-            obj_name = "Edges" if obj_name is None else obj_name
+            obj_name = "Faces" if obj_name is None else obj_name
             assembly.add_list(_from_facelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
 
         elif isinstance(cad_obj, Wire):
@@ -665,7 +665,7 @@ def to_assembly(
 
         elif isinstance(cad_obj, Edge):
             _debug(f"CAD Obj {obj_id}: Edge")
-            obj_name = "Faces" if obj_name is None else obj_name
+            obj_name = "Edges" if obj_name is None else obj_name
             assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
 
         elif isinstance(cad_obj, Vertex):
