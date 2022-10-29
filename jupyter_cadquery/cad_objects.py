@@ -727,7 +727,7 @@ def to_assembly(
                 )
             )
 
-        elif isinstance(cad_obj.val(), Vector):
+        elif hasattr(cad_obj, "val") and isinstance(cad_obj.val(), Vector):
             _debug(f"CAD Obj {obj_id}: Vector val()")
             obj_name = "Vector" if obj_name is None else obj_name
             assembly.add_list(_from_vectorlist(cad_obj, obj_id, obj_name, show_parent=show_parent))
