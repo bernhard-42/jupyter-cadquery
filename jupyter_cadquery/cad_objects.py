@@ -32,7 +32,7 @@ except ImportError:
     HAS_MASSEMBLY = False
 
 try:
-    from cadquery_massembly.build123d import BuildAssembly, MAssembly as B_MAssembly
+    from cadquery_massembly.build123d import BuildAssembly, MAssembly as B_MAssembly, Mate as B_Mate
 
     HAS_BUILD123D_MASSEMBLY = True
 
@@ -81,41 +81,45 @@ def cq_wrap(obj):
     return w
 
 
-def convert_build123d_massembly(bma, mate_defs=None):
+def convert_build123d_massembly(obj, mate_defs=None):
+    if isinstance(obj, B_MAssembly):
+        bma = obj
+        ma = MAssembly(
+            obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
+            name=bma.name,
+            color=None if bma.color is None else CqColor(*bma.color.to_tuple(percentage=True)),
+            loc=None if bma.loc is None else Location(bma.loc.wrapped),
+        )
+        ma.mates = {}
 
-    ma = MAssembly(
-        obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
-        name=bma.name,
-        color=None if bma.color is None else CqColor(*bma.color.to_tuple(percentage=True)),
-        loc=None if bma.loc is None else Location(bma.loc.wrapped),
-    )
-    ma.mates = {}
+        if mate_defs is None:
+            mate_defs = {}
 
-    if mate_defs is None:
-        mate_defs = {}
-
-    # Collect mate defs and record the fully qualified path
-    for name, mate_def in bma.mates.items():
-        if mate_def.assembly == bma:
-            mate_defs[name] = bma.cq_name
-
-    for child in bma.children:
-        ma.add(convert_build123d_massembly(child, mate_defs), name=child.name)
-
-    # On the top element add the converted mate defs
-    if bma.parent is None:
+        # Collect mate defs and record the fully qualified path
         for name, mate_def in bma.mates.items():
-            ma.mates[name] = MateDef(
-                Mate(
-                    mate_def.mate.origin.to_tuple(),
-                    mate_def.mate.x_dir.to_tuple(),
-                    mate_def.mate.z_dir.to_tuple(),
-                ),
-                ma.objects[mate_defs[name]],
-                mate_def.mate.is_origin,
-            )
+            if mate_def.assembly == bma:
+                mate_defs[name] = bma.cq_name
 
-    return ma
+        for child in bma.children:
+            ma.add(convert_build123d_massembly(child, mate_defs), name=child.name)
+
+        # On the top element add the converted mate defs
+        if bma.parent is None:
+            for name, mate_def in bma.mates.items():
+                ma.mates[name] = MateDef(
+                    Mate(
+                        mate_def.mate.origin.to_tuple(),
+                        mate_def.mate.x_dir.to_tuple(),
+                        mate_def.mate.z_dir.to_tuple(),
+                    ),
+                    ma.objects[mate_defs[name]],
+                    mate_def.mate.is_origin,
+                )
+
+        return ma
+    else:
+        if isinstance(obj, B_Mate):
+            return Mate(obj.origin.to_tuple(), obj.x_dir.to_tuple(), obj.z_dir.to_tuple())
 
 
 class Part(_Part):
@@ -590,8 +594,9 @@ def to_assembly(
             if isinstance(cad_obj, BuildAssembly):
                 _debug(f"CAD Obj {obj_id}: build123d BuildAssembly")
                 cad_obj = convert_build123d_massembly(cad_obj.assembly)
-            elif isinstance(cad_obj, B_MAssembly):
-                _debug(f"CAD Obj {obj_id}: build123d MAssembly")
+
+            elif isinstance(cad_obj, (B_MAssembly, B_Mate)):
+                _debug(f"CAD Obj {obj_id}: build123d MAssembly or Mate")
                 cad_obj = convert_build123d_massembly(cad_obj)
 
         # Handle TopDS_Compound
