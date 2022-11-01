@@ -19,22 +19,6 @@ from jupyter_cadquery.cad_objects import to_assembly
 from jupyter_cadquery.base import _tessellate_group, get_normal_len, _combined_bb
 from jupyter_cadquery.defaults import get_default, get_defaults, preset
 
-from time import time
-
-
-def timer_func(func):
-    # This function shows the execution time of
-    # the function object passed
-    def wrap_func(*args, **kwargs):
-        t1 = time()
-        result = func(*args, **kwargs)
-        t2 = time()
-        print(f"Function {func.__name__!r} executed in {(t2-t1):.4f}s")
-        return result
-
-    return wrap_func
-
-
 import pickle
 import zmq
 
@@ -56,7 +40,6 @@ def connect(context):
     return socket
 
 
-@timer_func
 def send(data):
     context = zmq.Context()
     socket = connect(context)
@@ -97,7 +80,6 @@ class Progress:
         print(".", end="", flush=True)
 
 
-@timer_func
 def _convert(*cad_objs, names=None, colors=None, alphas=None, **kwargs):
     part_group = to_assembly(
         *cad_objs,
@@ -161,7 +143,6 @@ def animate(tracks, speed):
     send(data)
 
 
-@timer_func
 def show(*cad_objs, names=None, colors=None, alphas=None, **kwargs):
     """Show CAD objects in Jupyter
 
@@ -213,7 +194,6 @@ def reset():
     OBJECTS = {"objs": [], "names": [], "colors": [], "alphas": []}
 
 
-@timer_func
 def show_object(obj, name=None, options=None, clear=False, **kwargs):
     global OBJECTS
 
