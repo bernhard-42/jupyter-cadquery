@@ -32,7 +32,11 @@ except ImportError:
     HAS_MASSEMBLY = False
 
 try:
-    from cadquery_massembly.build123d import BuildAssembly, MAssembly as B_MAssembly, Mate as B_Mate
+    from cadquery_massembly.build123d import (
+        BuildAssembly,
+        MAssembly as B_MAssembly,
+        Mate as B_Mate,
+    )
 
     HAS_BUILD123D_MASSEMBLY = True
 
@@ -60,7 +64,16 @@ from pyparsing import col
 from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
 from .utils import Color, get_color, flatten, warn
-from .ocp_utils import get_rgba, is_compound, is_shape, get_solids, get_faces, get_wires, get_edges, get_vertices
+from .ocp_utils import (
+    get_rgba,
+    is_compound,
+    is_shape,
+    get_solids,
+    get_faces,
+    get_wires,
+    get_edges,
+    get_vertices,
+)
 from .defaults import get_default, preset
 
 
@@ -89,7 +102,9 @@ def convert_build123d_massembly(obj, mate_defs=None):
         ma = MAssembly(
             obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
             name=bma.name,
-            color=None if bma.color is None else CqColor(*bma.color.to_tuple(percentage=True)),
+            color=None
+            if bma.color is None
+            else CqColor(*bma.color.to_tuple(percentage=True)),
             loc=None if bma.loc is None else Location(bma.loc.wrapped),
         )
         ma.mates = {}
@@ -121,11 +136,15 @@ def convert_build123d_massembly(obj, mate_defs=None):
         return ma
     else:
         if isinstance(obj, B_Mate):
-            return Mate(obj.origin.to_tuple(), obj.x_dir.to_tuple(), obj.z_dir.to_tuple())
+            return Mate(
+                obj.origin.to_tuple(), obj.x_dir.to_tuple(), obj.z_dir.to_tuple()
+            )
 
 
 class Part(_Part):
-    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, shape, name="Part", color=None, show_faces=True, show_edges=True
+    ):
 
         self.cq_shape = shape
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
@@ -140,7 +159,9 @@ class Part(_Part):
 
 
 class Faces(_Faces):
-    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
+    def __init__(
+        self, faces, name="Faces", color=None, show_faces=True, show_edges=True
+    ):
         self.cq_shape = faces
         super().__init__(_to_occ(faces.combine()), name, color, show_faces, show_edges)
 
@@ -244,9 +265,13 @@ def _to_occ(cad_obj):
     def sketch_to_occ(sketch):
         locs = sketch.locs if sketch.locs else [Location()]
         if sketch._faces:  # pylint:disable=protected-access
-            objs = flatten([sketch._faces.moved(loc).Faces() for loc in locs])  # pylint:disable=protected-access
+            objs = flatten(
+                [sketch._faces.moved(loc).Faces() for loc in locs]
+            )  # pylint:disable=protected-access
         else:
-            objs = [edge.moved(loc) for edge in sketch._edges for loc in locs]  # pylint:disable=protected-access
+            objs = [
+                edge.moved(loc) for edge in sketch._edges for loc in locs
+            ]  # pylint:disable=protected-access
 
         return [obj.wrapped for obj in objs]
 
@@ -309,7 +334,11 @@ def _parent(cad_obj, obj_id):
                 show_parent=False,
             )
         elif isinstance(cad_obj.parent.val(), Wire):
-            return [_from_wirelist(cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR))]
+            return [
+                _from_wirelist(
+                    cad_obj.parent, obj_id, name="Parent", color=Color(EDGE_COLOR)
+                )
+            ]
         else:
             return [
                 Part(
@@ -323,16 +352,20 @@ def _parent(cad_obj, obj_id):
         return []
 
 
-def _from_solidlist(cad_obj, obj_id, name="Solids", color=None, alpha=None, show_parent=True):
+def _from_solidlist(
+    cad_obj, obj_id, name="Solids", color=None, alpha=None, show_parent=True
+):
     color = get_color(color, get_default("default_color"), alpha)
 
-    result = [Part(cad_obj, "%s_%d" % (name, obj_id))]
+    result = [Part(cad_obj, "%s_%d" % (name, obj_id), color=color)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_facelist(cad_obj, obj_id, name="Faces", color=None, alpha=None, show_parent=True):
+def _from_facelist(
+    cad_obj, obj_id, name="Faces", color=None, alpha=None, show_parent=True
+):
     color = get_color(color, FACE_COLOR, alpha)
 
     result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=color)]
@@ -391,7 +424,9 @@ def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=T
 
 
 # pylint:disable=protected-access
-def _from_sketch(cad_obj, obj_id, color=None, alpha=None, show_parent=True, show_selection=True):
+def _from_sketch(
+    cad_obj, obj_id, color=None, alpha=None, show_parent=True, show_selection=True
+):
 
     result = []
 
@@ -401,31 +436,60 @@ def _from_sketch(cad_obj, obj_id, color=None, alpha=None, show_parent=True, show
     if cad_obj._faces:
         for loc in locs:
             workplane.objects += cad_obj._faces.moved(loc).Faces()
-        result += _from_facelist(workplane, obj_id, name="Faces", show_parent=show_parent)
+        result += _from_facelist(
+            workplane, obj_id, name="Faces", show_parent=show_parent
+        )
     elif cad_obj._edges:
         workplane.objects = [edge.moved(loc) for edge in cad_obj._edges for loc in locs]
-        result += _from_edgelist(workplane, obj_id, name="Edges", show_parent=show_parent)
+        result += _from_edgelist(
+            workplane, obj_id, name="Edges", show_parent=show_parent
+        )
 
     if show_selection and cad_obj._selection:
         workplane = Workplane()
         if isinstance(cad_obj._selection[0], Location):
             workplane.objects = [
-                Vertex.makeVertex(0, 0, 0).moved(loc * obj) for obj in cad_obj._selection for loc in locs
+                Vertex.makeVertex(0, 0, 0).moved(loc * obj)
+                for obj in cad_obj._selection
+                for loc in locs
             ]
-            sel = _from_vertexlist(workplane, obj_id, name="Locations", color=color, show_parent=show_parent)
+            sel = _from_vertexlist(
+                workplane,
+                obj_id,
+                name="Locations",
+                color=color,
+                show_parent=show_parent,
+            )
 
         elif isinstance(cad_obj._selection[0], Face):
             for loc in locs:
-                workplane.objects += flatten([obj._faces.moved(loc).Faces() for obj in cad_obj._selection])
-            sel = _from_facelist(workplane, obj_id, name="Faces", color=color, alpha=alpha, show_parent=show_parent)
+                workplane.objects += flatten(
+                    [obj._faces.moved(loc).Faces() for obj in cad_obj._selection]
+                )
+            sel = _from_facelist(
+                workplane,
+                obj_id,
+                name="Faces",
+                color=color,
+                alpha=alpha,
+                show_parent=show_parent,
+            )
 
         elif isinstance(cad_obj._selection[0], (Edge, Wire)):
-            workplane.objects = [edge.moved(loc) for edge in cad_obj._selection for loc in locs]
-            sel = _from_edgelist(workplane, obj_id, name="Edges", color=color, show_parent=show_parent)
+            workplane.objects = [
+                edge.moved(loc) for edge in cad_obj._selection for loc in locs
+            ]
+            sel = _from_edgelist(
+                workplane, obj_id, name="Edges", color=color, show_parent=show_parent
+            )
 
         elif isinstance(cad_obj._selection[0], Vertex):
-            workplane.objects = [vertex.moved(loc) for vertex in cad_obj._selection for loc in locs]
-            sel = _from_vertexlist(workplane, obj_id, name="Vertices", color=color, show_parent=show_parent)
+            workplane.objects = [
+                vertex.moved(loc) for vertex in cad_obj._selection for loc in locs
+            ]
+            sel = _from_vertexlist(
+                workplane, obj_id, name="Vertices", color=color, show_parent=show_parent
+            )
 
         result.append(PartGroup(sel, name=f"Selection_{obj_id}"))
 
@@ -446,7 +510,9 @@ def _from_mate(cad_obj, name="Mate", mate_scale=1):
     return Edges(to_edge(cad_obj, scale=mate_scale), name=name, width=3, color=rgb)
 
 
-def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, default_color=None):
+def from_assembly(
+    cad_obj, top, loc=None, render_mates=False, mate_scale=1, default_color=None
+):
     loc = Location()
     render_loc = cad_obj.loc
 
@@ -499,7 +565,12 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
         rgb = (Color((255, 0, 0)), Color((0, 128, 0)), Color((0, 0, 255)))
         pg = PartGroup(
             [
-                Edges(to_edge(mate_def.mate, scale=mate_scale), name=name, width=3, color=rgb)
+                Edges(
+                    to_edge(mate_def.mate, scale=mate_scale),
+                    name=name,
+                    width=3,
+                    color=rgb,
+                )
                 for name, mate_def in top.mates.items()
                 if mate_def.assembly == cad_obj
             ],
@@ -509,11 +580,21 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
         if pg.objects:
             parent.append(pg)
 
-    children = [from_assembly(c, top, loc, render_mates, mate_scale) for c in cad_obj.children]
+    children = [
+        from_assembly(c, top, loc, render_mates, mate_scale) for c in cad_obj.children
+    ]
     return PartGroup(parent + children, cad_obj.name, loc=render_loc)
 
 
-def _from_workplane(cad_obj, obj_id, name="Part", color=None, alpha=None, default_color=None, show_parent=False):
+def _from_workplane(
+    cad_obj,
+    obj_id,
+    name="Part",
+    color=None,
+    alpha=None,
+    default_color=None,
+    show_parent=False,
+):
     color = get_color(color, default_color, alpha)
 
     result = Part(cad_obj, "%s_%d" % (name, obj_id), color=color)
@@ -587,7 +668,9 @@ def to_assembly(
     if alphas is None:
         alphas = [1.0] * len(cad_objs)
 
-    default_color = get_default("default_color") if default_color is None else default_color
+    default_color = (
+        get_default("default_color") if default_color is None else default_color
+    )
     assembly = PartGroup([], name)
     obj_id = 0
 
@@ -617,7 +700,9 @@ def to_assembly(
                 cad_obj = cq_wrap([Shape.cast(obj.wrapped) for obj in cad_obj])
 
             if isinstance(cad_obj, bd.direct_api.Shape):
-                _debug(f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)")
+                _debug(
+                    f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)"
+                )
                 cad_obj = Shape.cast(cad_obj.wrapped)
 
         if HAS_BUILD123D_MASSEMBLY:
@@ -669,7 +754,11 @@ def to_assembly(
             _debug(f"CAD Obj {obj_id}: MAssembly")
             assembly.add(
                 from_assembly(
-                    cad_obj, cad_obj, render_mates=render_mates, mate_scale=mate_scale, default_color=default_color
+                    cad_obj,
+                    cad_obj,
+                    render_mates=render_mates,
+                    mate_scale=mate_scale,
+                    default_color=default_color,
                 )
             )
 
@@ -698,57 +787,118 @@ def to_assembly(
             _debug(f"CAD Obj {obj_id}: Face")
             obj_name = "Faces" if obj_name is None else obj_name
             assembly.add_list(
-                _from_facelist(Workplane(cad_obj), obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent)
+                _from_facelist(
+                    Workplane(cad_obj),
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    obj_alpha,
+                    show_parent=show_parent,
+                )
             )
 
         elif isinstance(cad_obj, Wire):
             _debug(f"CAD Obj {obj_id}: Wire")
             obj_name = "Wires" if obj_name is None else obj_name
-            assembly.add_list(_from_wirelist(Workplane(cad_obj), obj_id, obj_name, obj_color, show_parent=show_parent))
+            assembly.add_list(
+                _from_wirelist(
+                    Workplane(cad_obj),
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    show_parent=show_parent,
+                )
+            )
 
         elif isinstance(cad_obj, Edge):
             _debug(f"CAD Obj {obj_id}: Edge")
             obj_name = "Edges" if obj_name is None else obj_name
-            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, obj_name, obj_color, show_parent=show_parent))
+            assembly.add_list(
+                _from_edgelist(
+                    Workplane(cad_obj),
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    show_parent=show_parent,
+                )
+            )
 
         elif isinstance(cad_obj, Vertex):
             _debug(f"CAD Obj {obj_id}: Vertex")
             obj_name = "Vertices" if obj_name is None else obj_name
             assembly.add_list(
-                _from_vertexlist(Workplane(cad_obj), obj_id, obj_name, obj_color, show_parent=show_parent)
+                _from_vertexlist(
+                    Workplane(cad_obj),
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    show_parent=show_parent,
+                )
             )
 
         elif _is_solidlist(cad_obj) and len(cad_obj.objects) > 1:
             _debug(f"CAD Obj {obj_id}: solidlist")
             obj_name = "Solids" if obj_name is None else obj_name
             assembly.add_list(
-                _from_solidlist(cad_obj, obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent)
+                _from_solidlist(
+                    cad_obj,
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    obj_alpha,
+                    show_parent=show_parent,
+                )
             )
 
         elif _is_facelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: facelist")
             obj_name = "Faces" if obj_name is None else obj_name
-            assembly.add_list(_from_facelist(cad_obj, obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent))
+            assembly.add_list(
+                _from_facelist(
+                    cad_obj,
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    obj_alpha,
+                    show_parent=show_parent,
+                )
+            )
 
         elif _is_edgelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: edgelist")
             obj_name = "Edges" if obj_name is None else obj_name
-            assembly.add_list(_from_edgelist(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
+            assembly.add_list(
+                _from_edgelist(
+                    cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent
+                )
+            )
 
         elif _is_wirelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: wirelist")
             obj_name = "Wires" if obj_name is None else obj_name
-            assembly.add_list(_from_wirelist(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
+            assembly.add_list(
+                _from_wirelist(
+                    cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent
+                )
+            )
 
         elif _is_vertexlist(cad_obj):
             _debug(f"CAD Obj {obj_id}: vertexlist")
             obj_name = "Vertices" if obj_name is None else obj_name
-            assembly.add_list(_from_vertexlist(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
+            assembly.add_list(
+                _from_vertexlist(
+                    cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent
+                )
+            )
 
         elif isinstance(cad_obj, Vector):
             _debug(f"CAD Obj {obj_id}: Vector")
             obj_name = "Vector" if obj_name is None else obj_name
-            assembly.add_list(_from_vector(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
+            assembly.add_list(
+                _from_vector(
+                    cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent
+                )
+            )
 
         elif isinstance(cad_obj, Compound):
             _debug(f"CAD Obj {obj_id}: Compound")
@@ -790,7 +940,14 @@ def to_assembly(
             _debug(f"CAD Obj {obj_id}: Vector val()")
             obj_name = "Vector" if obj_name is None else obj_name
             assembly.add_list(
-                _from_vectorlist(cad_obj, obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent)
+                _from_vectorlist(
+                    cad_obj,
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    obj_alpha,
+                    show_parent=show_parent,
+                )
             )
 
         elif isinstance(cad_obj, Workplane):
@@ -965,4 +1122,10 @@ def show_object(obj, name=None, options=None, clear=False, **kwargs):
     OBJECTS["colors"].append(color)
     OBJECTS["alphas"].append(alpha)
 
-    show(*OBJECTS["objs"], names=OBJECTS["names"], colors=OBJECTS["colors"], alphas=OBJECTS["alphas"], **kwargs)
+    show(
+        *OBJECTS["objs"],
+        names=OBJECTS["names"],
+        colors=OBJECTS["colors"],
+        alphas=OBJECTS["alphas"],
+        **kwargs,
+    )
