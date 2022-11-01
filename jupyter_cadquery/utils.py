@@ -70,6 +70,13 @@ class Color:
         return rgb_to_hex((self.r, self.g, self.b))
 
 
+def get_color(in_color, def_color, alpha):
+    color = Color(def_color if in_color is None else in_color)
+    if isinstance(alpha, float) and 0 <= alpha < 1.0:
+        color.a = alpha
+    return color
+
+
 #
 # Helpers
 #
