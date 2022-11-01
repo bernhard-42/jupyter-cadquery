@@ -59,7 +59,7 @@ from pyparsing import col
 
 from jupyter_cadquery.base import _PartGroup, _Part, _Edges, _Faces, _Vertices, _show
 
-from .utils import Color, flatten, warn
+from .utils import Color, get_color, flatten, warn
 from .ocp_utils import get_rgba, is_compound, is_shape, get_solids, get_faces, get_wires, get_edges, get_vertices
 from .defaults import get_default, preset
 
@@ -68,6 +68,8 @@ EDGE_COLOR = "Silver"
 THICK_EDGE_COLOR = "MediumOrchid"
 VERTEX_COLOR = "MediumOrchid"
 FACE_COLOR = "Violet"
+
+OBJECTS = {"objs": [], "names": [], "colors": [], "alphas": []}
 
 
 def web_color(name):
@@ -124,8 +126,7 @@ def convert_build123d_massembly(obj, mate_defs=None):
 
 class Part(_Part):
     def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
-        if color is None:
-            color = get_default("default_color")
+
         self.cq_shape = shape
         super().__init__(_to_occ(shape), name, color, show_faces, show_edges)
 
@@ -322,61 +323,75 @@ def _parent(cad_obj, obj_id):
         return []
 
 
-def _from_solidlist(cad_obj, obj_id, name="Solids", show_parent=True):
+def _from_solidlist(cad_obj, obj_id, name="Solids", color=None, alpha=None, show_parent=True):
+    color = get_color(color, get_default("default_color"), alpha)
+
     result = [Part(cad_obj, "%s_%d" % (name, obj_id))]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_facelist(cad_obj, obj_id, name="Faces", show_parent=True):
-    result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=Color(FACE_COLOR))]
+def _from_facelist(cad_obj, obj_id, name="Faces", color=None, alpha=None, show_parent=True):
+    color = get_color(color, FACE_COLOR, alpha)
+
+    result = [Faces(cad_obj, "%s_%d" % (name, obj_id), color=color)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
 def _from_edgelist(cad_obj, obj_id, name="Edges", color=None, show_parent=True):
-    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)]
+    color = get_color(color, THICK_EDGE_COLOR, 1.0)
+
+    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=color, width=3)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
 def _from_wirelist(cad_obj, obj_id, name="Wires", color=None, show_parent=True):
-    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or THICK_EDGE_COLOR), width=3)]
+    color = get_color(color, THICK_EDGE_COLOR, 1.0)
+
+    result = [Edges(cad_obj, "%s_%d" % (name, obj_id), color=color, width=3)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
-def _from_vector(vec, obj_id, name="Vector", show_parent=True):
+def _from_vector(vec, obj_id, name="Vector", color=None, show_parent=True):
+    color = get_color(color, THICK_EDGE_COLOR, 1.0)
+
     tmp = Workplane()
     obj = tmp.newObject([vec])
-    return _from_vectorlist(obj, obj_id, name, show_parent=show_parent)
+    return _from_vectorlist(obj, obj_id, name, color=color, show_parent=show_parent)
 
 
 def _from_vectorlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=True):
+    color = get_color(color, VERTEX_COLOR, 1.0)
+
     if cad_obj.vals():
         vectors = cad_obj.vals()
     else:
         vectors = [cad_obj.val()]
     obj = cad_obj.newObject([Vertex.makeVertex(v.x, v.y, v.z) for v in vectors])
-    result = [Vertices(obj, "%s_%d" % (name, obj_id), color=Color(color or VERTEX_COLOR), size=6)]
+    result = [Vertices(obj, "%s_%d" % (name, obj_id), color=color, size=6)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
 def _from_vertexlist(cad_obj, obj_id, name="Vertices", color=None, show_parent=True):
-    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=Color(color or VERTEX_COLOR), size=6)]
+    color = get_color(color, VERTEX_COLOR, 1.0)
+
+    result = [Vertices(cad_obj, "%s_%d" % (name, obj_id), color=color, size=6)]
     if show_parent:
         result = _parent(cad_obj, obj_id) + result
     return result
 
 
 # pylint:disable=protected-access
-def _from_sketch(cad_obj, obj_id, show_parent=True, show_selection=True):
+def _from_sketch(cad_obj, obj_id, color=None, alpha=None, show_parent=True, show_selection=True):
 
     result = []
 
@@ -397,20 +412,20 @@ def _from_sketch(cad_obj, obj_id, show_parent=True, show_selection=True):
             workplane.objects = [
                 Vertex.makeVertex(0, 0, 0).moved(loc * obj) for obj in cad_obj._selection for loc in locs
             ]
-            sel = _from_vertexlist(workplane, obj_id, name="Locations", show_parent=show_parent)
+            sel = _from_vertexlist(workplane, obj_id, name="Locations", color=color, show_parent=show_parent)
 
         elif isinstance(cad_obj._selection[0], Face):
             for loc in locs:
                 workplane.objects += flatten([obj._faces.moved(loc).Faces() for obj in cad_obj._selection])
-            sel = _from_facelist(workplane, obj_id, name="Faces", show_parent=show_parent)
+            sel = _from_facelist(workplane, obj_id, name="Faces", color=color, alpha=alpha, show_parent=show_parent)
 
         elif isinstance(cad_obj._selection[0], (Edge, Wire)):
             workplane.objects = [edge.moved(loc) for edge in cad_obj._selection for loc in locs]
-            sel = _from_edgelist(workplane, obj_id, name="Edges", show_parent=show_parent)
+            sel = _from_edgelist(workplane, obj_id, name="Edges", color=color, show_parent=show_parent)
 
         elif isinstance(cad_obj._selection[0], Vertex):
             workplane.objects = [vertex.moved(loc) for vertex in cad_obj._selection for loc in locs]
-            sel = _from_vertexlist(workplane, obj_id, name="Vertices", show_parent=show_parent)
+            sel = _from_vertexlist(workplane, obj_id, name="Vertices", color=color, show_parent=show_parent)
 
         result.append(PartGroup(sel, name=f"Selection_{obj_id}"))
 
@@ -498,8 +513,10 @@ def from_assembly(cad_obj, top, loc=None, render_mates=False, mate_scale=1, defa
     return PartGroup(parent + children, cad_obj.name, loc=render_loc)
 
 
-def _from_workplane(cad_obj, obj_id, name="Part", default_color=None, show_parent=False):
-    result = Part(cad_obj, "%s_%d" % (name, obj_id), color=Color(default_color))
+def _from_workplane(cad_obj, obj_id, name="Part", color=None, alpha=None, default_color=None, show_parent=False):
+    color = get_color(color, default_color, alpha)
+
+    result = Part(cad_obj, "%s_%d" % (name, obj_id), color=color)
     # if show_parent:
     #     result = _parent(cad_obj, obj_id) + result
     return result
@@ -546,21 +563,35 @@ def _is_wirelist(cad_obj):
 
 
 def _debug(msg):
-    print("DEBUG:", msg)
+    # print("DEBUG:", msg)
     pass
 
 
 def to_assembly(
-    *cad_objs, names=None, name="Group", render_mates=None, mate_scale=1, default_color=None, show_parent=True
+    *cad_objs,
+    names=None,
+    colors=None,
+    alphas=None,
+    name="Group",
+    render_mates=None,
+    mate_scale=1,
+    default_color=None,
+    show_parent=True,
 ):
     if names is None:
         names = [None] * len(cad_objs)
+
+    if colors is None:
+        colors = [None] * len(cad_objs)
+
+    if alphas is None:
+        alphas = [1.0] * len(cad_objs)
 
     default_color = get_default("default_color") if default_color is None else default_color
     assembly = PartGroup([], name)
     obj_id = 0
 
-    for obj_name, cad_obj in zip(names, cad_objs):
+    for obj_name, obj_color, obj_alpha, cad_obj in zip(names, colors, alphas, cad_objs):
 
         # Handle build123d objects and convert them to a format support by the following conversions
 
@@ -657,6 +688,8 @@ def to_assembly(
                 _from_sketch(
                     cad_obj,
                     obj_id,
+                    obj_color,
+                    obj_alpha,
                     show_parent=show_parent,
                 )
             )
@@ -664,52 +697,58 @@ def to_assembly(
         elif isinstance(cad_obj, Face):
             _debug(f"CAD Obj {obj_id}: Face")
             obj_name = "Faces" if obj_name is None else obj_name
-            assembly.add_list(_from_facelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(
+                _from_facelist(Workplane(cad_obj), obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent)
+            )
 
         elif isinstance(cad_obj, Wire):
             _debug(f"CAD Obj {obj_id}: Wire")
             obj_name = "Wires" if obj_name is None else obj_name
-            assembly.add_list(_from_wirelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_wirelist(Workplane(cad_obj), obj_id, obj_name, obj_color, show_parent=show_parent))
 
         elif isinstance(cad_obj, Edge):
             _debug(f"CAD Obj {obj_id}: Edge")
             obj_name = "Edges" if obj_name is None else obj_name
-            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_edgelist(Workplane(cad_obj), obj_id, obj_name, obj_color, show_parent=show_parent))
 
         elif isinstance(cad_obj, Vertex):
             _debug(f"CAD Obj {obj_id}: Vertex")
             obj_name = "Vertices" if obj_name is None else obj_name
-            assembly.add_list(_from_vertexlist(Workplane(cad_obj), obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(
+                _from_vertexlist(Workplane(cad_obj), obj_id, obj_name, obj_color, show_parent=show_parent)
+            )
 
         elif _is_solidlist(cad_obj) and len(cad_obj.objects) > 1:
             _debug(f"CAD Obj {obj_id}: solidlist")
             obj_name = "Solids" if obj_name is None else obj_name
-            assembly.add_list(_from_solidlist(cad_obj, obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(
+                _from_solidlist(cad_obj, obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent)
+            )
 
         elif _is_facelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: facelist")
             obj_name = "Faces" if obj_name is None else obj_name
-            assembly.add_list(_from_facelist(cad_obj, obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_facelist(cad_obj, obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent))
 
         elif _is_edgelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: edgelist")
             obj_name = "Edges" if obj_name is None else obj_name
-            assembly.add_list(_from_edgelist(cad_obj, obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_edgelist(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
 
         elif _is_wirelist(cad_obj):
             _debug(f"CAD Obj {obj_id}: wirelist")
             obj_name = "Wires" if obj_name is None else obj_name
-            assembly.add_list(_from_wirelist(cad_obj, obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_wirelist(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
 
         elif _is_vertexlist(cad_obj):
             _debug(f"CAD Obj {obj_id}: vertexlist")
             obj_name = "Vertices" if obj_name is None else obj_name
-            assembly.add_list(_from_vertexlist(cad_obj, obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_vertexlist(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
 
         elif isinstance(cad_obj, Vector):
             _debug(f"CAD Obj {obj_id}: Vector")
             obj_name = "Vector" if obj_name is None else obj_name
-            assembly.add_list(_from_vector(cad_obj, obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(_from_vector(cad_obj, obj_id, obj_name, obj_color, show_parent=show_parent))
 
         elif isinstance(cad_obj, Compound):
             _debug(f"CAD Obj {obj_id}: Compound")
@@ -722,7 +761,13 @@ def to_assembly(
                 new_obj = cad_obj
             assembly.add(
                 _from_workplane(
-                    Workplane(new_obj), obj_id, obj_name, default_color=default_color, show_parent=show_parent
+                    Workplane(new_obj),
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    obj_alpha,
+                    default_color=default_color,
+                    show_parent=show_parent,
                 )
             )
 
@@ -731,21 +776,37 @@ def to_assembly(
             obj_name = "Part" if obj_name is None else obj_name
             assembly.add(
                 _from_workplane(
-                    Workplane(cad_obj), obj_id, obj_name, default_color=default_color, show_parent=show_parent
+                    Workplane(cad_obj),
+                    obj_id,
+                    obj_name,
+                    obj_color,
+                    obj_alpha,
+                    default_color=default_color,
+                    show_parent=show_parent,
                 )
             )
 
         elif hasattr(cad_obj, "val") and isinstance(cad_obj.val(), Vector):
             _debug(f"CAD Obj {obj_id}: Vector val()")
             obj_name = "Vector" if obj_name is None else obj_name
-            assembly.add_list(_from_vectorlist(cad_obj, obj_id, obj_name, show_parent=show_parent))
+            assembly.add_list(
+                _from_vectorlist(cad_obj, obj_id, obj_name, obj_color, obj_alpha, show_parent=show_parent)
+            )
 
         elif isinstance(cad_obj, Workplane):
             _debug(f"CAD Obj {obj_id}: Workplane")
             obj_name = "Part" if obj_name is None else obj_name
             if len(cad_obj.vals()) == 1 and not isinstance(cad_obj.val(), Sketch):
                 assembly.add(
-                    _from_workplane(cad_obj, obj_id, obj_name, default_color=default_color, show_parent=show_parent)
+                    _from_workplane(
+                        cad_obj,
+                        obj_id,
+                        obj_name,
+                        obj_color,
+                        obj_alpha,
+                        default_color=default_color,
+                        show_parent=show_parent,
+                    )
                 )
             else:
                 assembly2 = PartGroup([], name="Group_%s" % obj_id)
@@ -756,7 +817,13 @@ def to_assembly(
                     else:
                         assembly2.add(
                             _from_workplane(
-                                Workplane(obj), j, obj_name, default_color=default_color, show_parent=show_parent
+                                Workplane(obj),
+                                j,
+                                obj_name,
+                                obj_color,
+                                obj_alpha,
+                                default_color=default_color,
+                                show_parent=show_parent,
                             )
                         )
                 assembly.add(assembly2)
@@ -768,7 +835,7 @@ def to_assembly(
     return assembly
 
 
-def show(*cad_objs, names=None, **kwargs):
+def show(*cad_objs, names=None, colors=None, alphas=None, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:
@@ -852,6 +919,8 @@ def show(*cad_objs, names=None, **kwargs):
         assembly = to_assembly(
             *cad_objs,
             names=names,
+            colors=colors,
+            alphas=alphas,
             render_mates=render_mates,
             mate_scale=mate_scale,
             default_color=default_color,
@@ -870,3 +939,30 @@ def show(*cad_objs, names=None, **kwargs):
     else:
 
         return _show(None, **kwargs)
+
+
+def reset():
+    global OBJECTS
+
+    OBJECTS = {"objs": [], "names": [], "colors": [], "alphas": []}
+
+
+def show_object(obj, name=None, options=None, clear=False, **kwargs):
+    global OBJECTS
+
+    if clear:
+        reset()
+
+    if options is None:
+        color = None
+        alpha = 1.0
+    else:
+        color = options.get("color")
+        alpha = options.get("alpha", 1.0)
+
+    OBJECTS["objs"].append(obj)
+    OBJECTS["names"].append(name)
+    OBJECTS["colors"].append(color)
+    OBJECTS["alphas"].append(alpha)
+
+    show(*OBJECTS["objs"], names=OBJECTS["names"], colors=OBJECTS["colors"], alphas=OBJECTS["alphas"], **kwargs)

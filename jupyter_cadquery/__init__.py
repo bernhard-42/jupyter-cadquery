@@ -42,6 +42,7 @@ from .cad_objects import (
     Edges,
     Vertices,
     show,
+    show_object,
     web_color,
     get_pick,
 )
