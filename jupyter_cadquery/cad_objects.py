@@ -764,7 +764,7 @@ def to_assembly(
 
         elif HAS_MASSEMBLY and isinstance(cad_obj, Mate):
             _debug(f"CAD Obj {obj_id}: Mate")
-            obj_name = "Mate" if obj_name is None else obj_name
+            obj_name = "Mate_%d" % obj_id if obj_name is None else obj_name
             assembly.add(_from_mate(cad_obj, name=obj_name, mate_scale=mate_scale))
 
         elif isinstance(cad_obj, CqAssembly):
