@@ -1,1 +1,1 @@
-from .client import animate, show
+from .client import animate, show, show_object

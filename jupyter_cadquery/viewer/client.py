@@ -19,13 +19,29 @@ from jupyter_cadquery.cad_objects import to_assembly
 from jupyter_cadquery.base import _tessellate_group, get_normal_len, _combined_bb
 from jupyter_cadquery.defaults import get_default, get_defaults, preset
 
+from time import time
+
+
+def timer_func(func):
+    # This function shows the execution time of
+    # the function object passed
+    def wrap_func(*args, **kwargs):
+        t1 = time()
+        result = func(*args, **kwargs)
+        t2 = time()
+        print(f"Function {func.__name__!r} executed in {(t2-t1):.4f}s")
+        return result
+
+    return wrap_func
+
 
 import pickle
 import zmq
 
 ZMQ_PORT = 5555
 REQUEST_TIMEOUT = 2000
-OBJECTS = []
+
+OBJECTS = {"objs": [], "names": [], "colors": [], "alphas": []}
 
 
 def set_port(port):
@@ -40,6 +56,7 @@ def connect(context):
     return socket
 
 
+@timer_func
 def send(data):
     context = zmq.Context()
     socket = connect(context)
@@ -80,16 +97,17 @@ class Progress:
         print(".", end="", flush=True)
 
 
-def _convert(*cad_objs, **kwargs):
-    color = kwargs.get("default_color")
-    if color is None:
-        color = get_default("default_color")
-
+@timer_func
+def _convert(*cad_objs, names=None, colors=None, alphas=None, **kwargs):
     part_group = to_assembly(
         *cad_objs,
-        render_mates=kwargs.get("render_mates"),
+        names=names,
+        colors=colors,
+        alphas=alphas,
+        render_mates=kwargs.get("render_mates", False),
         mate_scale=kwargs.get("mate_scale", 1),
-        default_color=color,
+        default_color=kwargs.get("default_color", get_default("default_color")),
+        show_parent=kwargs.get("show_parent", get_default("show_parent")),
     )
 
     if len(part_group.objects) == 1 and isinstance(part_group.objects[0], PartGroup):
@@ -143,7 +161,8 @@ def animate(tracks, speed):
     send(data)
 
 
-def show(*cad_objs, **kwargs):
+@timer_func
+def show(*cad_objs, names=None, colors=None, alphas=None, **kwargs):
     """Show CAD objects in Jupyter
 
     Valid keywords:
@@ -184,17 +203,33 @@ def show(*cad_objs, **kwargs):
     - quality            Use 'deviation'to control smoothness of rendered egdes
     """
 
-    data = _convert(*cad_objs, **kwargs)
+    data = _convert(*cad_objs, names=names, colors=colors, alphas=alphas, **kwargs)
     send(data)
-
-
-def show_object(obj, **kwargs):
-    global OBJECTS
-    OBJECTS.append(Part(obj, name=f"obj_{len(OBJECTS)}"))
-    show(PartGroup(OBJECTS), **kwargs)
 
 
 def reset():
     global OBJECTS
 
-    OBJECTS = []
+    OBJECTS = {"objs": [], "names": [], "colors": [], "alphas": []}
+
+
+@timer_func
+def show_object(obj, name=None, options=None, clear=False, **kwargs):
+    global OBJECTS
+
+    if clear:
+        reset()
+
+    if options is None:
+        color = None
+        alpha = 1.0
+    else:
+        color = options.get("color")
+        alpha = options.get("alpha", 1.0)
+
+    OBJECTS["objs"].append(obj)
+    OBJECTS["names"].append(name)
+    OBJECTS["colors"].append(color)
+    OBJECTS["alphas"].append(alpha)
+
+    show(*OBJECTS["objs"], names=OBJECTS["names"], colors=OBJECTS["colors"], alphas=OBJECTS["alphas"], **kwargs)
