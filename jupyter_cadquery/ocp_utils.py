@@ -17,7 +17,7 @@ from .utils import distance
 from webcolors import hex_to_rgb
 
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_SOLID, TopAbs_WIRE, TopAbs_VERTEX
-from OCP.TopoDS import TopoDS_Compound, TopoDS_Shape
+from OCP.TopoDS import TopoDS_Compound, TopoDS_Shape, TopoDS_Edge
 from OCP.TopExp import TopExp_Explorer
 
 from OCP.StlAPI import StlAPI_Writer
@@ -37,6 +37,8 @@ from OCP.BRepTools import BRepTools
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
 
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_CompCurve
+from OCP.GCPnts import GCPnts_AbscissaPoint
 
 MAX_HASH_KEY = 2147483647
 
@@ -232,6 +234,14 @@ def np_bbox(p, t, q):
     bbmin = np.min(v, axis=0)
     bbmax = np.max(v, axis=0)
     return {"xmin": bbmin[0], "xmax": bbmax[0], "ymin": bbmin[1], "ymax": bbmax[1], "zmin": bbmin[2], "zmax": bbmax[2]}
+
+
+def length(edge_or_wire):
+    if isinstance(edge_or_wire, TopoDS_Edge):
+        c = BRepAdaptor_Curve(edge_or_wire)
+    else:
+        c = BRepAdaptor_CompCurve(edge_or_wire)
+    return GCPnts_AbscissaPoint.Length_s(c)
 
 
 # Export STL
