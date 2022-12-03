@@ -208,12 +208,13 @@ class _Edges(_CADObject):
             bb = bounding_box(self.shape, loc=wrapped_or_None(loc))
             quality = compute_quality(bb, deviation=deviation)
             deflection = quality / 100 if edge_accuracy is None else edge_accuracy
+            num = int(0.1 / deflection)
             t.info = str(bb)
 
         with Timer(timeit, self.name, "discretize:  ", 2):
             edges = []
             for edge in self.shape:
-                edges.extend(discretize_edge(edge, deflection))
+                edges.extend(discretize_edge(edge, num))
             edges = np.asarray(edges)
 
         if progress:
