@@ -24,6 +24,15 @@ except ImportError:
     HAS_BUILD123D = False
 
 try:
+    import alg123d as ad
+
+    print("Jupyter-CadQuery: found alg123d")
+    HAS_ALG123D = True
+
+except ImportError:
+    HAS_ALG123D = False
+
+try:
     from cadquery_massembly import MAssembly, Mate
     from cadquery_massembly.massembly import MateDef
 
@@ -97,6 +106,33 @@ def cq_wrap(obj):
     w = Workplane()
     w.objects = obj
     return w
+
+
+def convert_alg123d_massembly(obj, copy_mates=True):
+    if isinstance(obj, ad.MAssembly):
+        bma = obj
+        ma = MAssembly(
+            obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
+            name=bma.name,
+            color=None if bma.color is None else CqColor(*bma.color.to_tuple(percentage=True)),
+            loc=None if bma.loc is None else Location(bma.loc.wrapped),
+        )
+
+        for child in bma.children:
+            ma.add(convert_alg123d_massembly(child, False), name=child.name)
+
+        if copy_mates:
+            for name, mate_def in bma.mates.items():
+                ma.mates[name] = MateDef(
+                    convert_alg123d_massembly(mate_def.mate),
+                    ma.objects[mate_def.assembly.cq_name],
+                    mate_def.origin,
+                )
+
+        return ma
+    else:
+        if isinstance(obj, ad.Mate):
+            return Mate(obj.origin.to_tuple(), obj.x_dir.to_tuple(), obj.z_dir.to_tuple())
 
 
 def convert_build123d_massembly(obj, mate_defs=None):
@@ -671,6 +707,11 @@ def to_assembly(
             elif isinstance(cad_obj, (B_MAssembly, B_Mate)):
                 _debug(f"CAD Obj {obj_id}: build123d MAssembly or Mate")
                 cad_obj = convert_build123d_massembly(cad_obj)
+
+        if HAS_ALG123D:
+            if isinstance(cad_obj, (ad.MAssembly, ad.Mate)):
+                _debug(f"CAD Obj {obj_id}: alg123d MAssembly or Mate")
+                cad_obj = convert_alg123d_massembly(cad_obj)
 
         # Handle TopDS_Compound
 
