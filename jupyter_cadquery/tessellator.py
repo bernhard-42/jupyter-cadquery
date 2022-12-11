@@ -20,7 +20,7 @@ from OCP.TopExp import TopExp, TopExp_Explorer
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_SOLID
 from OCP.TopoDS import TopoDS
 from OCP.BRepAdaptor import BRepAdaptor_Curve
-from OCP.GCPnts import GCPnts_QuasiUniformDeflection
+from OCP.GCPnts import GCPnts_QuasiUniformDeflection, GCPnts_QuasiUniformAbscissa
 
 
 from cadquery.occ_impl.shapes import Compound
@@ -256,13 +256,17 @@ def tessellate(
     }
 
 
-def discretize_edge(edge, deflection=0.1):
+def discretize_edge(edge, deflection=0.1, num=None):
     curve_adaptator = BRepAdaptor_Curve(edge)
 
-    discretizer = GCPnts_QuasiUniformDeflection()
-    discretizer.Initialize(
-        curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
-    )
+    if num is not None:
+        discretizer = GCPnts_QuasiUniformAbscissa()
+        discretizer.Initialize(curve_adaptator, num)
+    else:
+        discretizer = GCPnts_QuasiUniformDeflection()
+        discretizer.Initialize(
+            curve_adaptator, deflection, curve_adaptator.FirstParameter(), curve_adaptator.LastParameter()
+        )
 
     if not discretizer.IsDone():
         raise AssertionError("Discretizer not done.")

@@ -22,7 +22,15 @@ from cad_viewer_widget import show as viewer_show, get_default_sidecar, _set_def
 
 from jupyter_cadquery.progress import Progress
 from jupyter_cadquery.utils import Color, Timer, warn
-from jupyter_cadquery.ocp_utils import bounding_box, get_point, loc_to_tq, BoundingBox, wrapped_or_None, np_bbox
+from jupyter_cadquery.ocp_utils import (
+    bounding_box,
+    get_point,
+    loc_to_tq,
+    BoundingBox,
+    wrapped_or_None,
+    np_bbox,
+    is_line,
+)
 from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality, bbox_edges
 from jupyter_cadquery.mp_tessellator import (
     is_apply_result,
@@ -208,13 +216,16 @@ class _Edges(_CADObject):
             bb = bounding_box(self.shape, loc=wrapped_or_None(loc))
             quality = compute_quality(bb, deviation=deviation)
             deflection = quality / 100 if edge_accuracy is None else edge_accuracy
-            # num = int(0.1 / deflection)
             t.info = str(bb)
 
         with Timer(timeit, self.name, "discretize:  ", 2):
             edges = []
             for edge in self.shape:
-                edges.extend(discretize_edge(edge, deflection))
+                d = discretize_edge(edge, deflection)
+                if len(d) == 1 and not is_line(edge):
+                    num = int(0.1 / deflection)
+                    d = discretize_edge(edge, num=num)
+                edges.extend(d)
             edges = np.asarray(edges)
 
         if progress:

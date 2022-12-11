@@ -40,6 +40,8 @@ from OCP.GProp import GProp_GProps
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_CompCurve
 from OCP.GCPnts import GCPnts_AbscissaPoint
 
+from OCP.GeomAbs import GeomAbs_CurveType
+
 MAX_HASH_KEY = 2147483647
 
 #
@@ -301,7 +303,10 @@ def deserialize(buffer):
 
 # OCP types and accessors
 
-
+def is_line(topods_edge):
+    c = BRepAdaptor_Curve(topods_edge)
+    return c.GetType() == GeomAbs_CurveType.GeomAbs_Line
+    
 def _get_topo(shape, topo):
     explorer = TopExp_Explorer(shape, topo)
     hashes = {}
