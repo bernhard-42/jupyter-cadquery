@@ -113,7 +113,7 @@ def convert_alg123d_massembly(obj, copy_mates=True):
         bma = obj
         ma = MAssembly(
             obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
-            name=bma.name,
+            name=bma.cq_name,
             color=None if bma.color is None else CqColor(*bma.color.to_tuple(percentage=True)),
             loc=None if bma.loc is None else Location(bma.loc.wrapped),
         )
@@ -123,9 +123,13 @@ def convert_alg123d_massembly(obj, copy_mates=True):
 
         if copy_mates:
             for name, mate_def in bma.mates.items():
+                assy_path = mate_def.assembly.split("/")
+                root = assy_path[1]
+                assy_path = assy_path[2:]
+                assy_name = "/".join(assy_path) if assy_path else root
                 ma.mates[name] = MateDef(
                     convert_alg123d_massembly(mate_def.mate),
-                    ma.objects[mate_def.assembly.cq_name],
+                    ma.objects[assy_name],
                     mate_def.origin,
                 )
 
