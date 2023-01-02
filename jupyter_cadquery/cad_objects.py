@@ -679,28 +679,25 @@ def to_assembly(
 
         if HAS_BUILD123D:
 
-            is_build123d = True
+            if hasattr(cad_obj, "_obj_name"):  # BuildPart, BuildSketch, BuildLine
+                _debug(f"CAD Obj {obj_id}: {type(cad_obj)}")
+                cad_obj = getattr(cad_obj, cad_obj._obj_name)
+                if not isinstance(cad_obj, bd.Compound):
+                    cad_obj = Shape.cast(cad_obj.wrapped)
 
-            if isinstance(cad_obj, bd.BuildPart):
-                _debug(f"CAD Obj {obj_id}: build123d.BuildPart")
-                cad_obj = cad_obj.part
-            elif isinstance(cad_obj, bd.BuildSketch):
-                _debug(f"CAD Obj {obj_id}: build123d.BuildSketch")
-                cad_obj = cad_obj.sketch
-            elif isinstance(cad_obj, bd.BuildLine):
-                _debug(f"CAD Obj {obj_id}: build123d.BuildLine")
-                cad_obj = cad_obj.line
-            elif isinstance(cad_obj, (bd.Compound, bd.ShapeList)):
-                _debug(f"CAD Obj {obj_id}: build123d.ShapeList")
-            else:
-                is_build123d = False
-
-            if is_build123d and isinstance(cad_obj, (bd.Compound, bd.ShapeList)):
-                cad_obj = cq_wrap([Shape.cast(obj.wrapped) for obj in cad_obj])
-
-            if isinstance(cad_obj, bd.direct_api.Shape):
+            elif isinstance(cad_obj, bd.Shape):
                 _debug(f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)")
-                cad_obj = Shape.cast(cad_obj.wrapped)
+                if isinstance(cad_obj, bd.Compound):
+                    t = type(list(cad_obj)[0])
+                    if all(isinstance(obj, t) for obj in cad_obj):
+                        cad_obj = cq_wrap([Shape.cast(obj.wrapped) for obj in cad_obj])
+                    else:
+                        cad_obj = Shape.cast(cad_obj.wrapped)
+                else:
+                    cad_obj = Shape.cast(cad_obj.wrapped)
+
+            elif isinstance(cad_obj, bd.ShapeList):
+                cad_obj = cq_wrap([Shape.cast(obj.wrapped) for obj in cad_obj])
 
         if HAS_BUILD123D_MASSEMBLY:
 
@@ -888,24 +885,27 @@ def to_assembly(
 
         elif isinstance(cad_obj, Compound):
             _debug(f"CAD Obj {obj_id}: Compound")
-            obj_name = "Part" if obj_name is None else obj_name
-            if isinstance(list(cad_obj)[0], (Wire, Edge, Vertex)):
-                _debug(f"CAD Obj {obj_id}: Compound of wire, edge, vertex")
-                new_obj = Workplane()
-                new_obj.objects = [cad_obj]
-            else:
-                new_obj = cad_obj
-            assembly.add(
-                _from_workplane(
-                    Workplane(new_obj),
-                    obj_id,
-                    obj_name,
-                    obj_color,
-                    obj_alpha,
-                    default_color=default_color,
-                    show_parent=show_parent,
-                )
-            )
+            obj_name = "Group" if obj_name is None else obj_name
+            show_parent = False
+            assembly2 = PartGroup([], name="%s_%s" % (obj_name, obj_id))
+            for i, obj in enumerate(cad_obj):
+                w = Workplane(obj)
+                if isinstance(obj, Vertex):
+                    assembly2.add_list(_from_vertexlist(w, i, "Vertices", obj_color, show_parent=show_parent))
+
+                elif isinstance(obj, Edge):
+                    assembly2.add_list(_from_edgelist(Workplane(obj), i, "Edges", obj_color, show_parent=show_parent))
+
+                elif isinstance(obj, Wire):
+                    assembly2.add_list(_from_wirelist(w, i, "Wires", obj_color, show_parent=show_parent))
+
+                elif isinstance(obj, Face):
+                    assembly2.add_list(_from_facelist(w, i, "Faces", obj_color, obj_alpha, show_parent=show_parent))
+
+                elif isinstance(obj, Solid):
+                    assembly2.add_list(_from_solidlist(w, i, "Solids", obj_color, obj_alpha, show_parent=show_parent))
+
+            assembly.add(assembly2)
 
         elif isinstance(cad_obj, Shape):
             _debug(f"CAD Obj {obj_id}: Shape")
