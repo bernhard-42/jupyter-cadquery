@@ -685,7 +685,10 @@ def to_assembly(
                 if not isinstance(cad_obj, bd.Compound):
                     cad_obj = Shape.cast(cad_obj.wrapped)
 
-            elif isinstance(cad_obj, bd.Shape):
+            elif isinstance(cad_obj, bd.ShapeList):
+                cad_obj = cq_wrap([Shape.cast(obj.wrapped) for obj in cad_obj])
+
+            if isinstance(cad_obj, bd.Shape):
                 _debug(f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)")
                 if isinstance(cad_obj, bd.Compound):
                     t = type(list(cad_obj)[0])
@@ -695,9 +698,6 @@ def to_assembly(
                         cad_obj = Shape.cast(cad_obj.wrapped)
                 else:
                     cad_obj = Shape.cast(cad_obj.wrapped)
-
-            elif isinstance(cad_obj, bd.ShapeList):
-                cad_obj = cq_wrap([Shape.cast(obj.wrapped) for obj in cad_obj])
 
         if HAS_BUILD123D_MASSEMBLY:
 
