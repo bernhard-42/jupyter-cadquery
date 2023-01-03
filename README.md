@@ -61,7 +61,6 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 - Add support for `Compound`s with mixed shape types
 - Aligned `show_object` with `CQ-Editor` (e.g. support `options` dict)
 - Improved [build123d](https://github.com/gumyr/build123d) support
-- Introduced `convert_build123d_massembly` to support `MAssembly` for `build123d` (experimental, might vanish when `build123d supports assemblies)
 - Add support for my private `Alg123d` library (a thin facade on top of `build123d` to remove all implicit behavior and give control back to the user)
 
 ### Fixes
