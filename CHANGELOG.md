@@ -1,5 +1,19 @@
 # Changelog
 
+## Release v3.5.0 (03.01.2023)
+
+### Changes
+- Default python now is 3.10
+- Add support for `Compound`s with mixed shape types
+- Aligned `show_object` with `CQ-Editor` (e.g. support `options` dict)
+- Improved [build123d](https://github.com/gumyr/build123d) support
+- Introduced `convert_build123d_massembly` to support `MAssembly` for `build123d` (experimental, might vanish when `build123d supports assemblies)
+- Add support for my private `Alg123d` library (a thin facade on top of `build123d` to remove all implicit behavior and give control back to the user)
+
+### Fixes
+- OCCT bug with helix: If height = 2 * pitch, `GCPnts_QuasiUniformDeflection` returns 2 points only. Jupyter CadQuery detects this and uses `GCPnts_QuasiUniformAbscissa` instead
+
+
 ## Release v3.4.0 (18.10.2022)
 
 Support for [build123d](https://github.com/gumyr/build123d) (experimental).

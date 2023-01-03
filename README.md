@@ -54,21 +54,19 @@ _Jupyter-CadQuery_ is now a 3 layer project:
     -   Double click on shapes shows bounding box info
     -   Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
 
-## Release v3.4.0 (18.10.2022)
+## Release v3.5.0 (03.01.2023)
 
-Support for [build123d](https://github.com/gumyr/build123d) (experimental).
+### Changes
+- Default python now is 3.10
+- Add support for `Compound`s with mixed shape types
+- Aligned `show_object` with `CQ-Editor` (e.g. support `options` dict)
+- Improved [build123d](https://github.com/gumyr/build123d) support
+- Introduced `convert_build123d_massembly` to support `MAssembly` for `build123d` (experimental, might vanish when `build123d supports assemblies)
+- Add support for my private `Alg123d` library (a thin facade on top of `build123d` to remove all implicit behavior and give control back to the user)
 
-### Changes:
+### Fixes
+- OCCT bug with helix: If height = 2 * pitch, `GCPnts_QuasiUniformDeflection` returns 2 points only. Jupyter CadQuery detects this and uses `GCPnts_QuasiUniformAbscissa` instead
 
--   Changed view button orientation behaviour:
-    -   up="Z" now works like FreeCAD, Onshape, ... with isometric view changed and buttons adapted (e.g. front is now defined differently!)
-    -   up="Y" works like "Fusion 360" in "y up" mode
-    -   up="L" works like the old z up mode of Jupyter CadQuery
--   Logo and hexapod example adapted to new view behaviour
-
-### Fixes:
-
--   Fixed default parameters of `exportSTL`
 
 ## Examples
 
@@ -114,7 +112,7 @@ Support for [build123d](https://github.com/gumyr/build123d) (experimental).
     - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
         ```bash
-        pip install jupyter-cadquery==3.4.0 cadquery-massembly==1.0.0rc0 matplotlib
+        pip install jupyter-cadquery==3.5.0 cadquery-massembly==1.0.0rc0 matplotlib
         ```
 
         Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -169,14 +167,14 @@ Support for [build123d](https://github.com/gumyr/build123d) (experimental).
         ```bash
         WORKDIR=/tmp/jupyter
         mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.4.0
+        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.5.0
         ```
 
         Jupyter in the container will start in directory `/home/cq`
 
     - To start with examples, you can
 
-        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.4.0` or
+        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.5.0` or
         - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
 
     - If you want to change the Dockerfile, `make docker` will create a new docker image
@@ -186,7 +184,7 @@ Support for [build123d](https://github.com/gumyr/build123d) (experimental).
     - Start the browser based viewer (eventually add cli options, see notes below):
 
         ```bash
-        docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.4.0 -v
+        docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.5.0 -v
         ```
 
     - In your code import the `show` or `show_object` function from the viewer:
