@@ -112,7 +112,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
     - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
         ```bash
-        pip install jupyter-cadquery==3.5.1 cadquery-massembly==1.0.0rc0 matplotlib
+        pip install jupyter-cadquery==3.5.1 cadquery-massembly==1.0.0 matplotlib
         ```
 
         Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
