@@ -9,4 +9,4 @@ dependencies:
   - pip
   - pip:
       - jupyter-cadquery==3.5.0
-      - cadquery-massembly==1.0.0rc0
+      - cadquery-massembly==1.0.0
