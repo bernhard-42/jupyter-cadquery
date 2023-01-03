@@ -5,8 +5,12 @@ RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
     apt-get install --no-install-recommends -y libgl1-mesa-glx libglu1-mesa && \
     apt-get clean
 
-RUN mamba create -n cq -y python=3.9 && \
-    mamba install -n cq -y -c conda-forge -c cadquery cadquery=master vtk=9.2 matplotlib=3.5 && \
+RUN mamba create -n cq -y python=3.10 && \
+    mamba install -n cq -y -c conda-forge -c cadquery OCP=7.6.3 vtk=9.2 matplotlib=3.5 && \
+    mamba clean --all && \
+    find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+
+RUN mamba install -n cq -y -c conda-forge -c cadquery cadquery=master && \
     mamba clean --all && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
