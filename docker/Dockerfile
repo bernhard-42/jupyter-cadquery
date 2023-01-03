@@ -6,17 +6,12 @@ RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
     apt-get clean
 
 RUN mamba create -n cq -y python=3.9 && \
-    mamba install -n cq -y -c conda-forge "hdf5=1.10.6=nompi_h6a2412b_1114" && \
-    mamba install -n cq -y -c conda-forge "OCP=7.5.3" "vtk=9.0.1" "matplotlib=3.5" && \
-    mamba clean --all && \
-    find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
-
-RUN mamba install -n cq -y -c conda-forge -c cadquery cadquery=master && \
+    mamba install -n cq -y -c conda-forge -c cadquery cadquery=master vtk=9.2 matplotlib=3.5 && \
     mamba clean --all && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 RUN . "/opt/conda/etc/profile.d/conda.sh" && conda activate cq && \
-    pip install jupyter-cadquery==3.5.2 cadquery-massembly~=1.0.0rc0 jupyterlab~=3.4 voila~=0.3.5 && \
+    pip install jupyter-cadquery==3.5.2 cadquery-massembly~=1.0.0 jupyterlab~=3.5 voila~=0.3.5 && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 VOLUME /home/cq/
