@@ -82,12 +82,14 @@ OBJECTS = {"objs": [], "names": [], "colors": [], "alphas": []}
 
 
 def plugins():
-    if HAS_BUILD123D:
-        print("- loaded build123d support")
-    if HAS_ALG123D:
-        print("- loaded alg123d support")
-    if HAS_MASSEMBLY:
-        print("- loaded massembly support")
+    if HAS_BUILD123D or HAS_ALG123D or HAS_MASSEMBLY:
+        print("Plugins loaded:")
+        if HAS_BUILD123D:
+            print("- build123d")
+        if HAS_ALG123D:
+            print("- alg123d")
+        if HAS_MASSEMBLY:
+            print("- cadquery-massembly")
 
 
 def web_color(name):
@@ -129,47 +131,6 @@ def convert_alg123d_massembly(obj, copy_mates=True):
         return ma
     else:
         if isinstance(obj, ad.Mate):
-            return Mate(obj.origin.to_tuple(), obj.x_dir.to_tuple(), obj.z_dir.to_tuple())
-
-
-def convert_build123d_massembly(obj, mate_defs=None):
-    if isinstance(obj, B_MAssembly):
-        bma = obj
-        ma = MAssembly(
-            obj=None if bma.obj is None else Shape.cast(bma.obj.wrapped),
-            name=bma.name,
-            color=None if bma.color is None else CqColor(*bma.color.to_tuple(percentage=True)),
-            loc=None if bma.loc is None else Location(bma.loc.wrapped),
-        )
-        ma.mates = {}
-
-        if mate_defs is None:
-            mate_defs = {}
-
-        # Collect mate defs and record the fully qualified path
-        for name, mate_def in bma.mates.items():
-            if mate_def.assembly == bma:
-                mate_defs[name] = bma.cq_name
-
-        for child in bma.children:
-            ma.add(convert_build123d_massembly(child, mate_defs), name=child.name)
-
-        # On the top element add the converted mate defs
-        if bma.parent is None:
-            for name, mate_def in bma.mates.items():
-                ma.mates[name] = MateDef(
-                    Mate(
-                        mate_def.mate.origin.to_tuple(),
-                        mate_def.mate.x_dir.to_tuple(),
-                        mate_def.mate.z_dir.to_tuple(),
-                    ),
-                    ma.objects[mate_defs[name]],
-                    mate_def.mate.is_origin,
-                )
-
-        return ma
-    else:
-        if isinstance(obj, B_Mate):
             return Mate(obj.origin.to_tuple(), obj.x_dir.to_tuple(), obj.z_dir.to_tuple())
 
 
