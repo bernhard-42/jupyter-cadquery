@@ -45,6 +45,7 @@ from .cad_objects import (
     show_object,
     web_color,
     get_pick,
+    plugins,
 )
 
 from .defaults import (
@@ -60,9 +61,12 @@ from .tools import auto_show
 
 
 def versions():
+    print()
     print("jupyter_cadquery ", jcq_version)
     print("cad_viewer_widget", cvw_version)
     print("open cascade     ", occt_version())
+    print()
+    plugins()
 
 
 def open_viewer(viewer=None, default=True, **kwargs):

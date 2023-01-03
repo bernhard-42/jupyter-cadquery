@@ -17,7 +17,6 @@
 try:
     import build123d as bd
 
-    print("Jupyter-CadQuery: found build123d")
     HAS_BUILD123D = True
 
 except ImportError:
@@ -26,7 +25,6 @@ except ImportError:
 try:
     import alg123d as ad
 
-    print("Jupyter-CadQuery: found alg123d")
     HAS_ALG123D = True
 
 except ImportError:
@@ -36,24 +34,10 @@ try:
     from cadquery_massembly import MAssembly, Mate
     from cadquery_massembly.massembly import MateDef
 
-    print("Jupyter-CadQuery: found cadquery-massembly")
     HAS_MASSEMBLY = True
 
 except ImportError:
     HAS_MASSEMBLY = False
-
-try:
-    from cadquery_massembly.build123d import (
-        BuildAssembly,
-        MAssembly as B_MAssembly,
-        Mate as B_Mate,
-    )
-
-    print("Jupyter-CadQuery: found build123d version of cadquery-massembly")
-    HAS_BUILD123D_MASSEMBLY = True
-
-except ImportError:
-    HAS_BUILD123D_MASSEMBLY = False
 
 
 from cadquery import (
@@ -95,6 +79,15 @@ VERTEX_COLOR = "MediumOrchid"
 FACE_COLOR = "Violet"
 
 OBJECTS = {"objs": [], "names": [], "colors": [], "alphas": []}
+
+
+def plugins():
+    if HAS_BUILD123D:
+        print("- loaded build123d support")
+    if HAS_ALG123D:
+        print("- loaded alg123d support")
+    if HAS_MASSEMBLY:
+        print("- loaded massembly support")
 
 
 def web_color(name):
@@ -701,16 +694,6 @@ def to_assembly(
             if isinstance(cad_obj, bd.direct_api.Shape):
                 _debug(f"CAD Obj {obj_id}: build123d.Shape (Solid, Face, Wire, Edge, Vertex)")
                 cad_obj = Shape.cast(cad_obj.wrapped)
-
-        if HAS_BUILD123D_MASSEMBLY:
-
-            if isinstance(cad_obj, BuildAssembly):
-                _debug(f"CAD Obj {obj_id}: build123d BuildAssembly")
-                cad_obj = convert_build123d_massembly(cad_obj.assembly)
-
-            elif isinstance(cad_obj, (B_MAssembly, B_Mate)):
-                _debug(f"CAD Obj {obj_id}: build123d MAssembly or Mate")
-                cad_obj = convert_build123d_massembly(cad_obj)
 
         if HAS_ALG123D:
             if isinstance(cad_obj, (ad.MAssembly, ad.Mate)):
