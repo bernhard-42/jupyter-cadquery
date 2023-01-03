@@ -931,7 +931,6 @@ def to_assembly(
                     obj_id,
                     obj_name,
                     obj_color,
-                    obj_alpha,
                     show_parent=show_parent,
                 )
             )
