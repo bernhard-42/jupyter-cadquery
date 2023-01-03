@@ -105,7 +105,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
     - If you don't have it already, create a new conda environment with the latest CadQuery (e.g. master)
 
         ```bash
-        conda create -n jcq3 -c conda-forge -c cadquery python=3.10 cadquery=master
+        conda create -n jcq3 -c conda-forge -c cadquery python=3.10 cadquery=master vtk=9.2.2
         conda activate jcq3
         ```
 
