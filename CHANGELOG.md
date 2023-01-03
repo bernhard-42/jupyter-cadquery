@@ -1,6 +1,6 @@
 # Changelog
 
-## Release v3.5.0 (03.01.2023)
+## Release v3.5.1 (03.01.2023)
 
 ### Changes
 - Default python now is 3.10
