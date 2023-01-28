@@ -14,455 +14,28 @@
 # limitations under the License.
 #
 
-import numpy as np
-
-from cadquery import Compound, __version__
-
-from cad_viewer_widget import show as viewer_show, get_default_sidecar, _set_default_sidecar, get_sidecar
-
-from jupyter_cadquery.progress import Progress
-from jupyter_cadquery.utils import Color, Timer, warn
-from jupyter_cadquery.ocp_utils import (
-    bounding_box,
-    get_point,
-    loc_to_tq,
-    BoundingBox,
-    wrapped_or_None,
-    np_bbox,
-    is_line,
-)
-from jupyter_cadquery.tessellator import discretize_edge, tessellate, compute_quality, bbox_edges
-from jupyter_cadquery.mp_tessellator import (
-    is_apply_result,
-    mp_tessellate,
-    get_mp_result,
-    keymap,
-    init_pool,
-    close_pool,
-)
-from jupyter_cadquery.defaults import (
-    get_default,
+from cad_viewer_widget import _set_default_sidecar, get_default_sidecar, get_sidecar
+from cad_viewer_widget import show as viewer_show
+from ocp_tessellate.convert import combined_bb, get_normal_len, mp_get_results, tessellate_group
+from ocp_tessellate.defaults import (
+    add_shape_args,
     apply_defaults,
     create_args,
-    add_shape_args,
+    get_default,
     get_defaults,
-    tessellation_args,
-    show_args,
     preset,
+    show_args,
+    tessellation_args,
 )
-
-
-UNSELECTED = 0
-SELECTED = 1
-EMPTY = 3
-
-#
-# Simple Part and PartGroup classes
-#
-
-
-class _CADObject(object):
-    def __init__(self):
-        self.color = Color(get_default("default_color"))
-
-    def to_state(self):
-        raise NotImplementedError("not implemented yet")
-
-    def collect_shapes(
-        self,
-        path,
-        loc,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        parallel,
-        progress,
-        timeit,
-    ):
-        raise NotImplementedError("not implemented yet")
-
-
-class _Part(_CADObject):
-    def __init__(self, shape, name="Part", color=None, show_faces=True, show_edges=True):
-        super().__init__()
-        self.name = name
-        self.id = None
-        self.color = Color(get_default("default_color") if color is None else color)
-
-        self.shape = shape
-        self.set_states(show_faces, show_edges)
-        self.renderback = False
-
-    def set_states(self, show_faces, show_edges):
-        self.state_faces = SELECTED if show_faces else UNSELECTED
-        self.state_edges = SELECTED if show_edges else UNSELECTED
-
-    def to_state(self):
-        return [self.state_faces, self.state_edges]
-
-    def collect_shapes(
-        self,
-        path,
-        loc,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        parallel=False,
-        progress=None,
-        timeit=False,
-    ):
-        self.id = f"{path}/{self.name}"
-
-        # A first rough estimate of the bounding box.
-        # Will be too large, but is sufficient for computing the quality
-        with Timer(timeit, self.name, "compute quality:", 2) as t:
-            bb = bounding_box(self.shape, loc=wrapped_or_None(loc), optimal=False)
-            quality = compute_quality(bb, deviation=deviation)
-            t.info = str(bb)
-
-        with Timer(timeit, self.name, "tessellate:     ", 2) as t:
-            func = mp_tessellate if parallel else tessellate
-            result = func(
-                self.shape,
-                deviation=deviation,
-                quality=quality,
-                angular_tolerance=angular_tolerance,
-                debug=timeit,
-                compute_edges=render_edges,
-            )
-
-            t.info = f"{{quality:{quality:.4f}, angular_tolerance:{angular_tolerance:.2f}}}"
-
-            t, q = loc_to_tq(wrapped_or_None(loc))
-            if parallel and is_apply_result(result):
-                mesh = {"result": result, "t": t, "q": q}
-                bb = {}
-            else:
-                mesh = result
-                bb = np_bbox(result["vertices"], t, q)
-
-        if progress is not None:
-            progress.update()
-
-        if isinstance(self.color, tuple):
-            color = [c.web_color for c in self.color]  # pylint: disable=not-an-iterable
-            alpha = 1.0
-        else:
-            color = self.color.web_color
-            alpha = self.color.a
-
-        return {
-            "id": self.id,
-            "type": "shapes",
-            "name": self.name,
-            "shape": mesh,
-            "color": color,
-            "alpha": alpha,
-            "renderback": self.renderback,
-            "accuracy": quality,
-            "bb": bb,
-        }
-
-    def compound(self):
-        return Compound._makeCompound(self.shape)
-
-    def compounds(self):
-        return [self.compound()]
-
-
-class _Faces(_Part):
-    def __init__(self, faces, name="Faces", color=None, show_faces=True, show_edges=True):
-        super().__init__(faces, name, color, show_faces, show_edges)
-        self.color = Color(color or (238, 130, 238))
-        self.renderback = True
-
-
-class _Edges(_CADObject):
-    def __init__(self, edges, name="Edges", color=None, width=1):
-        super().__init__()
-        self.shape = edges
-        self.name = name
-        self.id = None
-
-        if color is not None:
-            if isinstance(color, (list, tuple)) and isinstance(color[0], Color):
-                self.color = color
-            elif isinstance(color, Color):
-                self.color = color
-            else:
-                self.color = Color(color)
-        self.width = width
-
-    def to_state(self):
-        return [EMPTY, SELECTED]
-
-    def collect_shapes(
-        self,
-        path,
-        loc,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        parallel=False,
-        progress=None,
-        timeit=False,
-    ):
-        self.id = f"{path}/{self.name}"
-
-        with Timer(timeit, self.name, "bounding box:", 2) as t:
-            bb = bounding_box(self.shape, loc=wrapped_or_None(loc))
-            quality = compute_quality(bb, deviation=deviation)
-            deflection = quality / 100 if edge_accuracy is None else edge_accuracy
-            t.info = str(bb)
-
-        with Timer(timeit, self.name, "discretize:  ", 2):
-            edges = []
-            for edge in self.shape:
-                d = discretize_edge(edge, deflection)
-                if len(d) == 1 and not is_line(edge):
-                    num = int(0.1 / deflection)
-                    d = discretize_edge(edge, num=num)
-                edges.extend(d)
-            edges = np.asarray(edges)
-
-        if progress:
-            progress.update()
-
-        color = [c.web_color for c in self.color] if isinstance(self.color, tuple) else self.color.web_color
-
-        return {
-            "id": self.id,
-            "type": "edges",
-            "name": self.name,
-            "shape": edges,
-            "color": color,
-            "width": self.width,
-            "bb": bb.to_dict(),
-        }
-
-
-class _Vertices(_CADObject):
-    def __init__(self, vertices, name="Vertices", color=None, size=1):
-        super().__init__()
-        self.shape = vertices
-        self.name = name
-        self.id = None
-        self.color = Color(color or (148, 0, 211))
-        self.size = size
-
-    def to_state(self):
-        return [EMPTY, SELECTED]
-
-    def collect_shapes(
-        self,
-        path,
-        loc,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        parallel=False,
-        progress=None,
-        timeit=False,
-    ):
-        self.id = f"{path}/{self.name}"
-
-        bb = bounding_box(self.shape, loc=wrapped_or_None(loc))
-
-        if progress is not None:
-            progress.update()
-
-        return {
-            "id": self.id,
-            "type": "vertices",
-            "name": self.name,
-            "shape": [get_point(vertex) for vertex in self.shape],
-            "color": self.color.web_color,
-            "size": self.size,
-            "bb": bb.to_dict(),
-        }
-
-
-class _PartGroup(_CADObject):
-    def __init__(self, objects, name="Group", loc=None):
-        super().__init__()
-        self.objects = objects
-        self.name = name
-        self.loc = loc
-        self.id = None
-
-    def to_nav_dict(self):
-        return {
-            "type": "node",
-            "name": self.name,
-            "id": self.id,
-            "children": [obj.to_nav_dict() for obj in self.objects],
-        }
-
-    def collect_shapes(
-        self,
-        path,
-        loc,
-        deviation,
-        angular_tolerance,
-        edge_accuracy,
-        render_edges,
-        parallel=False,
-        progress=None,
-        timeit=False,
-    ):
-
-        self.id = f"{path}/{self.name}"
-
-        if loc is None and self.loc is None:
-            combined_loc = None
-        elif loc is None:
-            combined_loc = self.loc
-        else:
-            combined_loc = loc * self.loc
-
-        result = {
-            "parts": [],
-            "loc": None if self.loc is None else loc_to_tq(wrapped_or_None(self.loc)),
-            "name": self.name,
-        }
-        for obj in self.objects:
-            result["parts"].append(
-                obj.collect_shapes(
-                    self.id,
-                    combined_loc,
-                    deviation,
-                    angular_tolerance,
-                    edge_accuracy,
-                    render_edges,
-                    parallel,
-                    progress,
-                    timeit,
-                )
-            )
-        return result
-
-    def to_state(self, parents=None):  # pylint: disable=arguments-differ
-        parents = parents or ()
-        result = {}
-        for i, obj in enumerate(self.objects):
-            if isinstance(obj, _PartGroup):
-                for k, v in obj.to_state((*parents, i)).items():
-                    result[k] = v
-            else:
-                result[str(obj.id)] = obj.to_state()
-        return result
-
-    def count_shapes(self):
-        def c(pg):
-            count = 0
-            for p in pg.objects:
-                if isinstance(p, _PartGroup):
-                    count += c(p)
-                else:
-                    count += 1
-            return count
-
-        return c(self)
-
-    def compounds(self):
-        result = []
-        for obj in self.objects:
-            result += obj.compounds()
-        return result
-
-    def compound(self):
-        return Compound._makeCompound(self.compounds())  # pylint: disable=protected-access
-
-
-def _tessellate_group(group, kwargs=None, progress=None, timeit=False):
-    if kwargs is None:
-        kwargs = {}
-
-    shapes = group.collect_shapes(
-        "",
-        None,
-        deviation=preset("deviation", kwargs.get("deviation")),
-        angular_tolerance=preset("angular_tolerance", kwargs.get("angular_tolerance")),
-        edge_accuracy=preset("edge_accuracy", kwargs.get("edge_accuracy")),
-        render_edges=preset("render_edges", kwargs.get("render_edges")),
-        parallel=kwargs.get("parallel"),
-        progress=progress,
-        timeit=timeit,
-    )
-    states = group.to_state()
-
-    return shapes, states
-
-
-def _combined_bb(shapes):
-    def c_bb(shapes, bb):
-        for shape in shapes["parts"]:
-            if shape.get("parts") is None:
-                if bb is None:
-                    if shape["bb"] is None:
-                        bb = BoundingBox()
-                    else:
-                        bb = BoundingBox(shape["bb"])
-                else:
-                    if shape["bb"] is not None:
-                        bb.update(shape["bb"])
-
-                # after updating the global bounding box, remove the local
-                del shape["bb"]
-            else:
-                bb = c_bb(shape, bb)
-        return bb
-
-    bb = c_bb(shapes, None)
-    return bb
-
-
-def mp_get_results(shapes, progress):
-    def walk(shapes):
-        for shape in shapes["parts"]:
-            if shape.get("parts") is None:
-                if shape.get("type") == "shapes":
-                    if is_apply_result(shape["shape"].get("result")):
-                        mesh = get_mp_result(shape["shape"]["result"])
-                        t = shape["shape"]["t"]
-                        q = shape["shape"]["q"]
-                        shape["shape"] = mesh
-                        shape["bb"] = np_bbox(mesh["vertices"], t, q)
-
-                    if progress is not None:
-                        progress.update()
-            else:
-                walk(shape)
-
-    walk(shapes)
-    return shapes
-
-
-def get_accuracies(shapes):
-    def _get_accuracies(shapes, lengths):
-        if shapes.get("parts"):
-            for shape in shapes["parts"]:
-                _get_accuracies(shape, lengths)
-        elif shapes.get("type") == "shapes":
-            accuracies[shapes["id"]] = shapes["accuracy"]
-
-    accuracies = {}
-    _get_accuracies(shapes, accuracies)
-    return accuracies
-
-
-def get_normal_len(render_normals, shapes, deviation):
-    if render_normals:
-        accuracies = get_accuracies(shapes)
-        normal_len = max(accuracies.values()) / deviation * 4
-    else:
-        normal_len = 0
-
-    return normal_len
+from ocp_tessellate.mp_tessellator import close_pool, get_mp_result, init_pool, is_apply_result, keymap, mp_tessellate
+from ocp_tessellate.tessellator import bbox_edges, compute_quality, discretize_edge, tessellate
+from ocp_tessellate.utils import Timer, warn
+
+from jupyter_cadquery.progress import Progress
+
+# UNSELECTED = 0
+# SELECTED = 1
+# EMPTY = 3
 
 
 def insert_bbox(bbox, shapes, states):
@@ -520,6 +93,7 @@ def _show(part_group, **kwargs):
 
             import base64  # pylint:disable=import-outside-toplevel
             import pickle  # pylint:disable=import-outside-toplevel
+
             from jupyter_cadquery.logo import LOGO_DATA  # pylint:disable=import-outside-toplevel
 
             logo = pickle.loads(base64.b64decode(LOGO_DATA))
@@ -577,13 +151,13 @@ def _show(part_group, **kwargs):
                     init_pool()
                     keymap.reset()
 
-                shapes, states = _tessellate_group(part_group, tessellation_args(config), progress, timeit)
+                shapes, states = tessellate_group(part_group, tessellation_args(config), progress, timeit)
 
                 if parallel:
                     mp_get_results(shapes, progress)
                     close_pool()
 
-                bb = _combined_bb(shapes).to_dict()
+                bb = combined_bb(shapes).to_dict()
                 # add global bounding box
                 shapes["bb"] = bb
 

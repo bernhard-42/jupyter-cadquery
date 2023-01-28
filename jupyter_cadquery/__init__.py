@@ -16,47 +16,32 @@
 
 import warnings
 
-from cad_viewer_widget import (
-    open_viewer as cvw_open_viewer,
-    AnimationTrack,
-)
-
-from cad_viewer_widget.sidecar import (
-    get_sidecar as get_viewer,
-    get_sidecars as get_viewers,
-    close_sidecar as close_viewer,
-    close_sidecars as close_viewers,
-    set_default as set_default_viewer,
-)
-
+from cad_viewer_widget import AnimationTrack
+from cad_viewer_widget import open_viewer as cvw_open_viewer
 from cad_viewer_widget._version import __version__ as cvw_version
-from ._version import __version_info__ as jcq_version_info, __version__ as jcq_version
-from .ocp_utils import occt_version
-from .stepreader import StepReader
-
-from .cad_objects import (
-    Assembly,
-    PartGroup,
-    Part,
-    Faces,
-    Edges,
-    Vertices,
-    show,
-    show_object,
-    web_color,
-    get_pick,
-    plugins,
-)
-
-from .defaults import (
+from cad_viewer_widget.sidecar import close_sidecar as close_viewer
+from cad_viewer_widget.sidecar import close_sidecars as close_viewers
+from cad_viewer_widget.sidecar import get_sidecar as get_viewer
+from cad_viewer_widget.sidecar import get_sidecars as get_viewers
+from cad_viewer_widget.sidecar import set_default as set_default_viewer
+from ocp_tessellate import (
+    create_args,
     get_default,
     get_defaults,
-    set_defaults,
     reset_defaults,
-    create_args,
+    set_defaults,
+    Color,
+    warn,
+    serialize,
+    web_color,
 )
 
-from .utils import warn
+from ._version import __version__ as jcq_version
+from ._version import __version_info__ as jcq_version_info
+from .cad_objects import Edges, Faces, Part, PartGroup, Vertices, show, show_object
+
+# from .ocp_utils import occt_version
+from .stepreader import StepReader
 from .tools import auto_show
 
 
@@ -65,9 +50,45 @@ def versions():
     print("Versions:")
     print("- jupyter_cadquery ", jcq_version)
     print("- cad_viewer_widget", cvw_version)
-    print("- open cascade     ", occt_version())
-    print()
-    plugins()
+    # print("- open cascade     ", occt_version())
+    # print()
+    # plugins()
+
+
+def _partgroup_get_pick(self, pick):
+    if pick == {}:
+        print("First double click on an object in the CAD viewer")
+    else:
+        objs = [o for o in self.objects if o.id == f'{pick["path"]}/{pick["name"]}']
+        if objs:
+            return objs[0].cq_shape
+        else:
+            print(f"no object found for pick {pick}")
+    return None
+
+
+PartGroup.get_pick = _partgroup_get_pick
+
+
+def get_pick(partgroup, pick):
+    if pick == {}:
+        print("First double click on an object in the CAD viewer")
+        return None
+    if isinstance(partgroup, PartGroup):
+        return partgroup.get_pick(pick)
+    else:
+        path = pick["path"]
+        name = pick["name"]
+        id_ = "/".join([path, name])
+
+        short_path = "/".join(id_.split("/")[2:])
+        if partgroup.objects.get(short_path) is not None:
+            return partgroup.objects[short_path]
+        else:
+            short_path = "/".join(id_.split("/")[2:-1])
+            if partgroup.objects.get(short_path) is not None:
+                return partgroup.objects[short_path]
+        return None
 
 
 def open_viewer(viewer=None, default=True, **kwargs):

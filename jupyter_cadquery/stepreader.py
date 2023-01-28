@@ -3,22 +3,19 @@ import pickle
 import time
 import unicodedata
 
-from OCP.STEPCAFControl import STEPCAFControl_Reader
-from OCP.TDF import TDF_LabelSequence, TDF_Label, TDF_ChildIterator
-from OCP.TCollection import TCollection_ExtendedString
-from OCP.TDocStd import TDocStd_Document
-from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorSurf, XCAFDoc_ColorGen, XCAFDoc_ColorCurv
-from OCP.TDataStd import TDataStd_Name
-from OCP.TCollection import TCollection_AsciiString
-from OCP.Quantity import Quantity_ColorRGBA
-from OCP.TopLoc import TopLoc_Location
-from OCP.TopAbs import TopAbs_SOLID, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_FACE
-from OCP.TopExp import TopExp_Explorer
-
-from .ocp_utils import serialize, deserialize, loc_to_tq, tq_to_loc
-from .utils import warn
-
 import cadquery as cq
+from OCP.Quantity import Quantity_ColorRGBA
+from OCP.STEPCAFControl import STEPCAFControl_Reader
+from OCP.TCollection import TCollection_AsciiString, TCollection_ExtendedString
+from OCP.TDataStd import TDataStd_Name
+from OCP.TDF import TDF_ChildIterator, TDF_Label, TDF_LabelSequence
+from OCP.TDocStd import TDocStd_Document
+from OCP.TopAbs import TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_FACE, TopAbs_SOLID
+from OCP.TopExp import TopExp_Explorer
+from OCP.TopLoc import TopLoc_Location
+from OCP.XCAFDoc import XCAFDoc_ColorCurv, XCAFDoc_ColorGen, XCAFDoc_ColorSurf, XCAFDoc_DocumentTool
+from ocp_tessellate.ocp_utils import deserialize, loc_to_tq, serialize, tq_to_loc
+from ocp_tessellate.utils import warn
 
 DEFAULT_COLOR = (0.8, 0.8, 0.8, 1)
 

@@ -16,17 +16,16 @@
 
 import traceback
 from dataclasses import dataclass, field
-from typing import Any, List, Dict
-
-from IPython.display import display
-from IPython import get_ipython
-
-from ipywidgets import HBox, Output, SelectMultiple, Layout
+from typing import Any, Dict, List
 
 import cadquery as cq
+from IPython import get_ipython
+from IPython.display import display
+from ipywidgets import HBox, Layout, Output, SelectMultiple
+from ocp_tessellate.convert import combined_bb, to_assembly
 
-from .cad_objects import to_assembly, PartGroup, Part, show
-from .base import _combined_bb
+from .cad_objects import show
+from . import PartGroup
 
 #
 # The Runtime part
@@ -284,7 +283,15 @@ class Step:
 
 class Replay(object):
     def __init__(
-        self, deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar=None, show_result=True,
+        self,
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        debug,
+        cad_width,
+        height,
+        sidecar=None,
+        show_result=True,
     ):
         self.debug_output = Output()
         self.deviation = deviation
@@ -447,33 +454,40 @@ class Replay(object):
             self.indexes = indexes
             steps = [(i, self.stack[i][1]) for i in self.indexes]
             try:
-                cad_objs = [to_assembly(step[1], name="Step[%02d]" % step[0], show_parent=False) for step in steps]
+                cad_objs = []
+                for step in steps:
+                    obj = step[1]
+                    if hasattr(step[1], "objects") and len(step[1].objects) == 0:  # handle workplane()
+                        obj = step[1].plane.origin
+                    pg = to_assembly(obj, names=["Step[%02d]" % step[0]], show_parent=False)
+                    if len(pg.objects) == 1:
+                        pg = pg.objects[0]
+                    cad_objs.append(pg)
             except Exception as ex:  # pylint:disable=broad-except
                 print(ex)
                 traceback.print_exc()
-
         # Add hidden result to start with final size and allow for comparison
 
         if self.show_result and (
             isinstance(self.stack[-1][1], cq.Sketch) or not isinstance(self.stack[-1][1].val(), cq.Vector)
         ):
-            # result = Part(self.stack[-1][1], "Result", show_faces=False, show_edges=False)
-            objs = PartGroup([self.result] + cad_objs, name="Replay")
+            result = to_assembly(self.stack[-1][1], names=["Result"])
+            cad_objs = [result] + cad_objs
             show_bbox = False
         else:
-            objs = PartGroup(cad_objs, name="Replay")
             show_bbox = self.bbox
+
         with self.debug_output:
             try:
                 show(
-                    objs,
+                    PartGroup(cad_objs, name="Replay"),
                     deviation=self.deviation,
                     angular_tolerance=self.angular_tolerance,
                     edge_accuracy=self.edge_accuracy,
                     reset_camera=self.reset_camera,
                     show_parent=False,
                     show_bbox=show_bbox,
-                    viewer=""
+                    viewer="",
                 )
                 self.reset_camera = False
             except Exception:  # pylint:disable=broad-except
@@ -501,7 +515,16 @@ def replay(
     else:
         print("Use the multi select box below to select one or more steps you want to examine")
 
-    r = Replay(deviation, angular_tolerance, edge_accuracy, debug, cad_width, height, sidecar, show_result,)
+    r = Replay(
+        deviation,
+        angular_tolerance,
+        edge_accuracy,
+        debug,
+        cad_width,
+        height,
+        sidecar,
+        show_result,
+    )
 
     if isinstance(cad_obj, (cq.Workplane, cq.Sketch)):
         workplane = cad_obj
@@ -512,14 +535,25 @@ def replay(
     r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
 
     # save overall result
-    r.result = Part(r.stack[-1][1], "Result", show_faces=True, show_edges=False)
+
+    pg = to_assembly(r.stack[-1][1], names=["Result"])
+    pg.objects[0].set_states(False, True)
+    pg.loc = cq.Location().wrapped
+
+    # r.result = Part([v.wrapped for v in r.stack[-1][1].vals()], "Result", show_faces=True, show_edges=False)
 
     # tessellate and get bounding box
-    shapes = PartGroup([r.result], loc=cq.Location()).collect_shapes(
-        "", cq.Location(), deviation=0.1, angular_tolerance=0.2, edge_accuracy=0.01, render_edges=False,
+    # shapes = PartGroup([r.result], loc=cq.Location().wrapped).collect_shapes(
+    shapes = pg.collect_shapes(
+        "",
+        cq.Location().wrapped,
+        deviation=0.1,
+        angular_tolerance=0.2,
+        edge_accuracy=0.01,
+        render_edges=False,
     )
     # save bounding box of overall result
-    r.bbox = _combined_bb(shapes).to_dict()
+    r.bbox = combined_bb(shapes).to_dict()
 
     if index == -1:
         r.indexes = [len(r.stack) - 1]

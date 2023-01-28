@@ -14,26 +14,18 @@
 # limitations under the License.
 #
 
-import cadquery as cq
-from .cad_objects import _PartGroup, _Part
-from .ocp_utils import write_stl_file, is_compound
+from ocp_tessellate.convert import to_assembly
+from ocp_tessellate.ocp_utils import write_stl_file
+
+# write_stl_file
 
 
-def exportSTL(cadObj, filename, tolerance=0.01, angular_tolerance=0.2):
-    compound = None
-    if isinstance(cadObj, (_PartGroup, _Part)):
-        compound = cadObj.compound()
-    elif is_compound(cadObj):
-        compound = cadObj
-    elif isinstance(cadObj, (cq.Shape, cq.Workplane)):
-        compound = _Part(cadObj).compound()
-    else:
-        print("Unsupported CAD object %s, convert to PartGroup or Part" % type(cadObj))
+def exportSTL(*cad_objs, filename="export.stl", tolerance=0.01, angular_tolerance=0.2):
+    pg = to_assembly(*cad_objs)
 
-    if compound is not None:
-        write_stl_file(
-            compound,
-            filename,
-            tolerance=tolerance,
-            angular_tolerance=angular_tolerance,
-        )
+    write_stl_file(
+        pg.compound(),
+        filename,
+        tolerance=tolerance,
+        angular_tolerance=angular_tolerance,
+    )

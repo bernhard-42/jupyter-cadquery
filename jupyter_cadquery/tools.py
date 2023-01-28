@@ -1,12 +1,12 @@
 import html
 
-import numpy as np
 import cadquery as cq
+import numpy as np
+from ocp_tessellate.cad_objects import Edges, Faces, Part, PartGroup, Vertices
+from ocp_tessellate.convert import tessellate_group, to_assembly
+from ocp_tessellate.utils import numpy_to_json
 
-from jupyter_cadquery import Part, PartGroup, Faces, Edges, Vertices, show
-from jupyter_cadquery.cad_objects import to_assembly
-from jupyter_cadquery.base import _tessellate_group
-from .utils import numpy_to_json
+from .cad_objects import show
 
 try:
     import build123d as bd
@@ -184,5 +184,5 @@ def show_accuracy(assy, cs):
 
 
 def cq_to_json(obj, indent=None):
-    shapes, states = _tessellate_group(to_assembly(obj), {}, None, False)
+    shapes, states = tessellate_group(to_assembly(obj), {}, None, False)
     return [numpy_to_json(shapes, indent=indent), states]

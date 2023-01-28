@@ -15,9 +15,8 @@
 #
 
 from jupyter_cadquery import PartGroup, Part
-from jupyter_cadquery.cad_objects import to_assembly
-from jupyter_cadquery.base import _tessellate_group, get_normal_len, _combined_bb
-from jupyter_cadquery.defaults import get_default, get_defaults, preset
+from ocp_tessellate.convert import tessellate_group, get_normal_len, combined_bb, to_assembly
+from ocp_tessellate.defaults import get_default, get_defaults, preset
 
 import pickle
 import zmq
