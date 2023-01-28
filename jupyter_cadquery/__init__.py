@@ -25,20 +25,25 @@ from cad_viewer_widget.sidecar import get_sidecar as get_viewer
 from cad_viewer_widget.sidecar import get_sidecars as get_viewers
 from cad_viewer_widget.sidecar import set_default as set_default_viewer
 from ocp_tessellate import (
+    Color,
+    Edges,
+    Faces,
+    Part,
+    PartGroup,
+    Vertices,
     create_args,
     get_default,
     get_defaults,
     reset_defaults,
-    set_defaults,
-    Color,
-    warn,
     serialize,
+    set_defaults,
+    warn,
     web_color,
 )
 
 from ._version import __version__ as jcq_version
 from ._version import __version_info__ as jcq_version_info
-from .cad_objects import Edges, Faces, Part, PartGroup, Vertices, show, show_object
+from .cad_objects import show, show_object
 
 # from .ocp_utils import occt_version
 from .stepreader import StepReader
