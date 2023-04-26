@@ -10,3 +10,5 @@ dependencies:
   - pip:
       - jupyter-cadquery==3.5.2
       - cadquery-massembly==1.0.0
+      - ipykernel==6
+      
