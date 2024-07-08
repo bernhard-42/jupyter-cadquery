@@ -30,7 +30,7 @@ setup_args = {
     ],
     "extras_require": {
         "dev": {"jupyter-packaging", "cookiecutter", "twine", "bumpversion", "black", "pylint", "pyYaml"},
-        "prod": {"cadquery==master"},
+        "prod": {"cadquery @ git+https://github.com/CadQuery/cadquery@master"},
     },
     "packages": find_packages(),
     "scripts": ["jcv", "jcv.cmd"],
