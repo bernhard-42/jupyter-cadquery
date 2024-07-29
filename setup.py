@@ -20,11 +20,11 @@ setup_args = {
     "description": "An extension to render cadquery objects in JupyterLab via pythreejs",
     "long_description": LONG_DESCRIPTION,
     "include_package_data": True,
-    "python_requires": ">=3.6",
+    "python_requires": ">=3.8",
     "install_requires": [
         "webcolors~=1.12",
         "voila~=0.3.5",
-        "numpy-quaternion==2022.4.1",
+        "numpy-quaternion>=2022.4.1",
         "cad-viewer-widget~=1.4.0",
         "cachetools~=5.2.0",
     ],
@@ -46,9 +46,10 @@ setup_args = {
         "Intended Audience :: Science/Research",
         "Topic :: Multimedia :: Graphics",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
 }
 
