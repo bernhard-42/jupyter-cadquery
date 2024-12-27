@@ -1,0 +1,103 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jupyter_cadquery"
+version = "3.5.2"
+description = "An extension to render cadquery objects in JupyterLab via pythreejs"
+readme = "README.md"
+authors = [
+    { name = "Bernhard Walter", email = "b_walter@arcor.de" },
+]
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+keywords = ["ipython", "jupyter", "widgets", "CAD", "cadquery"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: IPython",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Multimedia :: Graphics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "webcolors~=1.12",
+    "voila~=0.3.5",
+    "numpy-quaternion>=2022.4.1",
+    "cad-viewer-widget~=1.4.0",
+    "cachetools~=5.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/bernhard-42/jupyter-cadquery"
+Issues = "https://github.com/bernhard-42/jupyter-cadquery/issues"
+
+[project.optional-dependencies]
+dev = [
+    "jupyter-packaging",
+    "cookiecutter",
+    "twine",
+    "bumpversion",
+    "black",
+    "pylint",
+    "pyYaml",
+]
+prod = [
+    "cadquery @ git+https://github.com/CadQuery/cadquery@master",
+]
+
+[project.scripts]
+jcv = "jupyter_cadquery.scripts:main"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build]
+include = [
+    "jupyter_cadquery/**/*.py",
+    "jcv",
+    "jcv.cmd",
+]
+
+[tool.bumpversion]
+current_version = "3.5.2"
+commit = false
+tag = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\D*)(?P<build>\\d*)"
+serialize = [
+    "{major}.{minor}.{patch}{release}{build}",
+    "{major}.{minor}.{patch}",
+]
+
+[tool.bumpversion.parts.release]
+optional_value = "final"
+values = [
+    "beta",
+    "rc",
+    "final",
+]
+
+[tool.bumpversion.files.setup_py]
+parse = "version = (?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\D*)(?P<build>\\d*)"
+
+[tool.bumpversion.files.version_py]
+filename = "jupyter_cadquery/_version.py"
+parse = "__version__ = (?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\D*)(?P<build>\\d*)"
+
+[tool.bumpversion.files.readme]
+filename = "README.md"
+parse = "jupyter-cadquery.{1:2}(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\D*)(?P<build>\\d*)"
+
+[tool.bumpversion.files.dockerfile]
+filename = "docker/Dockerfile"
+parse = "jupyter-cadquery=(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\D*)(?P<build>\\d*)"
+
+[tool.bumpversion.files.environment]
+filename = "environment.yml"
+parse = "jupyter-cadquery==(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\D*)(?P<build>\\d*)"
