@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "webcolors~=1.12",
-    "voila~=0.3.5",
+    "voila~=0.4.0",
     "numpy-quaternion>=2022.4.1",
     "cad-viewer-widget~=1.4.0",
     "cachetools~=5.2.0",
