@@ -166,7 +166,9 @@ class Tessellator:
                         prop.Normal(u, v, p_buf, n_buf)
                         if n_buf.SquareMagnitude() > 0:
                             n_buf.Normalize()
-                        flat.extend(n_buf.Reverse().Coord() if internal else n_buf.Coord())
+                        if internal:
+                            n_buf.Reverse()
+                        flat.extend(n_buf.Coord())
                     self.normals.extend(flat)
 
                 offset += poly.NbNodes()
