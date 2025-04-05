@@ -25,7 +25,7 @@ from OCP.GCPnts import GCPnts_QuasiUniformDeflection, GCPnts_QuasiUniformAbsciss
 
 from cadquery.occ_impl.shapes import Compound
 from jupyter_cadquery.utils import Timer, round_sig
-from jupyter_cadquery.ocp_utils import get_faces, np_bbox, loc_to_tq
+from jupyter_cadquery.ocp_utils import _hash, get_faces, np_bbox, loc_to_tq
 
 MAX_HASH_KEY = 2147483647
 
@@ -44,7 +44,7 @@ def make_key(
         shape = [shape]
 
     key = (
-        tuple((s.HashCode(MAX_HASH_KEY) for s in shape)),
+        tuple((_hash(s) for s in shape)),
         deviation,
         angular_tolerance,
         compute_edges,

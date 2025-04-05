@@ -19,6 +19,7 @@ from webcolors import hex_to_rgb
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_SOLID, TopAbs_WIRE, TopAbs_VERTEX
 from OCP.TopoDS import TopoDS_Compound, TopoDS_Shape, TopoDS_Edge
 from OCP.TopExp import TopExp_Explorer
+from OCP import __version__ as _occt_version
 
 from OCP.StlAPI import StlAPI_Writer
 
@@ -48,13 +49,15 @@ MAX_HASH_KEY = 2147483647
 # Caching helpers
 #
 
+_hash = (lambda obj : obj.HashCode(MAX_HASH_KEY)) if int(_occt_version.split(".")[1]) < 8 else (lambda obj : hash(obj))
+
 
 def make_key(objs, loc=None, optimal=False):  # pylint: disable=unused-argument
     # optimal is not used and as such ignored
     if not isinstance(objs, (tuple, list)):
         objs = [objs]
 
-    key = (tuple((s.HashCode(MAX_HASH_KEY) for s in objs)), loc_to_tq(loc))
+    key = (tuple((_hash(s) for s in objs)), loc_to_tq(loc))
     return key
 
 
@@ -74,13 +77,8 @@ cache = LRUCache(maxsize=16 * 1024 * 1024, getsizeof=get_size)
 #
 
 
-def occt_version():
-    try:
-        lib = glob(f"{os.environ['CONDA_PREFIX']}/lib/libTKBRep.*.*.*")[0]
-        return lib.split(".so.")[-1]
-    except:
-        return "(cannot retrieve Open CASCADE version)"
-
+def occt_version() -> str:
+    return _occt_version
 
 #
 # Bounding Box
@@ -312,7 +310,7 @@ def _get_topo(shape, topo):
     hashes = {}
     while explorer.More():
         item = explorer.Current()
-        hash_value = item.HashCode(MAX_HASH_KEY)
+        hash_value = _hash(item)
         if hashes.get(hash_value) is None:
             hashes[hash_value] = True
             yield downcast(item)
