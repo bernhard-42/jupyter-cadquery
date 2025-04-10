@@ -1,5 +1,5 @@
 #
-# Copyright 2019 Bernhard Walter
+# Copyright 2025 Bernhard Walter
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,17 @@
 # limitations under the License.
 #
 
-from collections import namedtuple
+
 import re
+from collections import namedtuple
 
 VersionInfo = namedtuple("VersionInfo", ["major", "minor", "patch", "release", "build"])
 
 
 def get_version(version):
-    r = re.compile(r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)\-{0,1}(?P<release>\D*)(?P<build>\d*)")
+    r = re.compile(
+        r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)\-{0,1}(?P<release>\D*)(?P<build>\d*)"
+    )
     major, minor, patch, release, build = r.match(version).groups()
     return VersionInfo(major, minor, patch, release, build)
 

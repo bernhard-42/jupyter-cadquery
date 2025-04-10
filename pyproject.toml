@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-jupyter-builder"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,9 +7,7 @@ name = "jupyter_cadquery"
 version = "3.5.2"
 description = "An extension to render cadquery objects in JupyterLab via pythreejs"
 readme = "README.md"
-authors = [
-    { name = "Bernhard Walter", email = "b_walter@arcor.de" },
-]
+authors = [{ name = "Bernhard Walter", email = "b_walter@arcor.de" }]
 license = { file = "LICENSE" }
 requires-python = ">=3.8"
 keywords = ["ipython", "jupyter", "widgets", "CAD", "cadquery"]
@@ -27,16 +25,11 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "webcolors~=1.12",
-    "voila~=0.3.5",
-    "numpy-quaternion>=2022.4.1",
-    "cad-viewer-widget~=1.4.0",
-    "cachetools~=5.2.0",
+    "jupyterlab>=4.3.6,<5",
+    "webcolors~=24.8.0",
+    "cad-viewer-widget~=3.0.0",
+    "cachetools~=5.5.0",
 ]
-
-[project.urls]
-Homepage = "https://github.com/bernhard-42/jupyter-cadquery"
-Issues = "https://github.com/bernhard-42/jupyter-cadquery/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -48,22 +41,26 @@ dev = [
     "pylint",
     "pyYaml",
 ]
-prod = [
-    "cadquery @ git+https://github.com/CadQuery/cadquery@master",
-]
-
-[project.scripts]
-jcv = "jupyter_cadquery.scripts:main"
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[tool.hatch.build]
+[tool.hatch.build.targets.wheel]
 include = [
-    "jupyter_cadquery/**/*.py",
-    "jcv",
-    "jcv.cmd",
+    "jupyter_cadquery/*.py", 
+    "jupyter-config/jupyter_server_config.d/jupyter_cadquery.json",
 ]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"jupyter-config/jupyter_server_config.d" = "etc/jupyter/jupyter_server_config.d"
+
+[tool.hatch.envs.default.scripts]
+jupyter-cadquery = "jupyter_cadquery.app:JupyterCadqueryBackend.launch_instance"
+
+
+# = = = = = = = = = = = = = = 
+# bump version
+# = = = = = = = = = = = = = = 
 
 [tool.bumpversion]
 current_version = "3.5.2"
@@ -77,11 +74,7 @@ serialize = [
 
 [tool.bumpversion.parts.release]
 optional_value = "final"
-values = [
-    "beta",
-    "rc",
-    "final",
-]
+values = ["beta", "rc", "final"]
 
 [tool.bumpversion.files.setup_py]
 parse = "version = (?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\D*)(?P<build>\\d*)"

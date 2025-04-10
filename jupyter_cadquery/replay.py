@@ -1,5 +1,5 @@
 #
-# Copyright 2019 Bernhard Walter
+# Copyright 2025 Bernhard Walter
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,11 @@ import cadquery as cq
 from IPython import get_ipython
 from IPython.display import display
 from ipywidgets import HBox, Layout, Output, SelectMultiple
-from ocp_tessellate.convert import combined_bb, to_assembly
+from ocp_tessellate.convert import to_ocpgroup, OcpGroup, OcpObject, OcpInstancesGroup
+from ocp_tessellate.ocp_utils import make_compound, BoundingBox
 
-from .cad_objects import show
-from . import PartGroup
+from ocp_vscode.show import show, show_object, _tessellate
+from cad_viewer_widget import open_viewer
 
 #
 # The Runtime part
@@ -105,7 +106,9 @@ class Context(object):
         self.stack.append(self._to_dict(func, args, kwargs, obj, children, shadow_obj))
 
     def append(self, func, args, kwargs, obj, children, shadow_obj=None):
-        self.stack[-1].append(self._to_dict(func, args, kwargs, obj, children, shadow_obj))
+        self.stack[-1].append(
+            self._to_dict(func, args, kwargs, obj, children, shadow_obj)
+        )
 
     def update(self, func, args, kwargs, obj=None, children=None, shadow_obj=None):
         self.func = func
@@ -137,7 +140,11 @@ class Context(object):
             result = ""
             for i, e in enumerate(self.stack):
                 args = "" if e["args"] is None else f'{e["args"]}'[1:-1]
-                kwargs = "" if e["kwargs"] is None else ", ".join([f"{k}={v}" for k, v in e["kwargs"].items()])
+                kwargs = (
+                    ""
+                    if e["kwargs"] is None
+                    else ", ".join([f"{k}={v}" for k, v in e["kwargs"].items()])
+                )
                 result += f'{prefix} >> {i}: {e["func"]}({join(args, kwargs)}) -> {e["obj"]}, {e["shadow_obj"]}/ {e["children"]}\n'
         return result
 
@@ -145,6 +152,7 @@ class Context(object):
 _CTX = Context()
 DEBUG = False
 REPLAY = False
+HELPER = {"show_bbox": True, "show_result": False}
 
 
 def _trace(*objs):
@@ -210,10 +218,15 @@ def _add_context(self, name):
                     new_obj = cq.Sketch()
                     new_obj._faces = context["obj"]._faces.copy()
                     new_obj._edges = [edge.copy() for edge in context["obj"]._edges]
-                    new_obj._selection = [
-                        (sel if isinstance(sel, cq.Location) else sel.copy()) for sel in context["obj"]._selection
-                    ]
-                    new_obj.locs = [loc for loc in context["obj"].locs]
+                    if context["obj"]._selection is None:
+                        new_obj._selection = None
+                        new_obj.locs = [cq.Location()]
+                    else:
+                        new_obj._selection = [
+                            (sel if isinstance(sel, cq.Location) else sel.copy())
+                            for sel in context["obj"]._selection
+                        ]
+                        new_obj.locs = [loc for loc in context["obj"].locs]
                     context["shadow_obj"] = new_obj
 
                     # for copy, moved, located, which create a copy of the object, copy the _caller stack
@@ -233,7 +246,10 @@ def _add_context(self, name):
                     else:
                         result._caller = context
 
-                    _trace(prefix, f"<== finished {func.__name__}, _caller={result._caller}")
+                    _trace(
+                        prefix,
+                        f"<== finished {func.__name__}, _caller={result._caller}",
+                    )
                 else:
                     if context["func"] != "sketch":
                         _CTX.append_child(context)
@@ -292,6 +308,7 @@ class Replay(object):
         height,
         sidecar=None,
         show_result=True,
+        show_bbox=False,
     ):
         self.debug_output = Output()
         self.deviation = deviation
@@ -302,12 +319,14 @@ class Replay(object):
         self.height = height
         self.sidecar = sidecar
         self.show_result = show_result
-        self.reset_camera = True
+        self.show_bbox = show_bbox
+        self.reset_camera = "reset"
         self.indexes = []
         self.stack = None
         self.result = None
         self.bbox = None
         self.select_box = None
+        self.viewer = open_viewer("Replay")
 
     def format_steps(self, raw_steps):
         def to_code(step, results):
@@ -328,7 +347,9 @@ class Replay(object):
                 if len(step.args) > 0 and len(step.kwargs) > 0:
                     code += ","
                 if step.kwargs != {}:
-                    code += ", ".join(["%s=%s" % (k, v) for k, v in step.kwargs.items()])
+                    code += ", ".join(
+                        ["%s=%s" % (k, v) for k, v in step.kwargs.items()]
+                    )
                 code += ")"
                 if step.result_name != "":
                     code += " => %s" % step.result_name
@@ -380,7 +401,11 @@ class Replay(object):
             if step.level < last_level:
                 last_level = 1000000
                 entries.insert(
-                    0, (to_code(step, results), step.result_obj if step.shadow_obj is None else step.shadow_obj)
+                    0,
+                    (
+                        to_code(step, results),
+                        step.result_obj if step.shadow_obj is None else step.shadow_obj,
+                    ),
                 )
                 if step.var != "":
                     last_level = step.level
@@ -405,7 +430,10 @@ class Replay(object):
                 for arg in child["args"]:
                     if isinstance(arg, cq.Workplane):
                         result_name = getattr(arg, "name", None)
-                        stack = self.to_array(arg, level=level + 2, result_name=result_name) + stack
+                        stack = (
+                            self.to_array(arg, level=level + 2, result_name=result_name)
+                            + stack
+                        )
             return stack
 
         stack = []
@@ -433,7 +461,12 @@ class Replay(object):
                     for arg in caller["args"]:
                         if isinstance(arg, (cq.Workplane, cq.Sketch)):
                             result_name = getattr(arg, "name", "")
-                            stack = self.to_array(arg, level=level + 1, result_name=result_name) + stack
+                            stack = (
+                                self.to_array(
+                                    arg, level=level + 1, result_name=result_name
+                                )
+                                + stack
+                            )
 
             obj = obj.parent
 
@@ -453,45 +486,59 @@ class Replay(object):
         with self.debug_output:
             self.indexes = indexes
             steps = [(i, self.stack[i][1]) for i in self.indexes]
+
             try:
                 cad_objs = []
                 for step in steps:
                     obj = step[1]
-                    if hasattr(step[1], "objects") and len(step[1].objects) == 0:  # handle workplane()
+                    if (
+                        hasattr(step[1], "objects") and len(step[1].objects) == 0
+                    ):  # handle workplane()
                         obj = step[1].plane.origin
-                    pg = to_assembly(obj, names=["Step[%02d]" % step[0]], show_parent=False)
+                    pg, instance = to_ocpgroup(
+                        obj, names=["Step %02d" % step[0]], show_parent=False
+                    )
                     if len(pg.objects) == 1:
                         pg = pg.objects[0]
-                    cad_objs.append(pg)
+                    cad_objs.append(OcpInstancesGroup(instance, pg))
+
             except Exception as ex:  # pylint:disable=broad-except
                 print(ex)
                 traceback.print_exc()
         # Add hidden result to start with final size and allow for comparison
 
         if self.show_result and (
-            isinstance(self.stack[-1][1], cq.Sketch) or not isinstance(self.stack[-1][1].val(), cq.Vector)
+            isinstance(self.stack[-1][1], cq.Sketch)
+            or not isinstance(self.stack[-1][1].val().edges(), cq.Vector)
         ):
-            result = to_assembly(self.stack[-1][1], names=["Result"])
-            cad_objs = [result] + cad_objs
-            show_bbox = False
-        else:
-            show_bbox = self.bbox
+
+            result, instance = to_ocpgroup(
+                self.stack[-1][1].edges(), names=["Result"], colors=["#808080"]
+            )
+            cad_objs.insert(0, OcpInstancesGroup(instance, result.objects[0]))
+        elif self.show_bbox:
+            result, instance = to_ocpgroup(
+                self.bbox, names=["Bounding box"], colors=["#808080"]
+            )
+            cad_objs.insert(0, OcpInstancesGroup(instance, result.objects[0]))
 
         with self.debug_output:
             try:
-                show(
-                    PartGroup(cad_objs, name="Replay"),
+                cv = show(
+                    *cad_objs,
                     deviation=self.deviation,
                     angular_tolerance=self.angular_tolerance,
                     edge_accuracy=self.edge_accuracy,
                     reset_camera=self.reset_camera,
-                    show_parent=False,
-                    show_bbox=show_bbox,
-                    viewer="",
+                    debug=False,
                 )
-                self.reset_camera = False
-            except Exception:  # pylint:disable=broad-except
+
+                self.reset_camera = "keep"
+            except Exception as ex:  # pylint:disable=broad-except
                 print("\nWarning: object cannot be shown")
+                if self.debug:
+                    print(ex)
+                    traceback.print_exc()
 
 
 def replay(
@@ -501,19 +548,37 @@ def replay(
     angular_tolerance=0.2,
     edge_accuracy=None,
     debug=False,
-    cad_width=600,
+    cad_width=800,
     height=600,
     sidecar=None,
-    show_result=False,
+    show_result=None,
+    show_bbox=None,
 ):
+    if not hasattr(cad_obj, "_caller"):
+        print(
+            "Replay wasn't enabled when creating the object. Call 'enable_replay()' before object creation. Falling back to 'show()'"
+        )
+        return show(cad_obj, cad_width=cad_width, height=height)
+
     while not _CTX.is_top_level:
         _CTX.pop()
 
     if not REPLAY:
-        print("Replay is not enabled. To do so call 'enable_replay()'. Falling back to 'show()'")
+        print(
+            "Replay is not enabled. To do so call 'enable_replay()'. Falling back to 'show()'"
+        )
         return show(cad_obj, cad_width=cad_width, height=height)
     else:
-        print("Use the multi select box below to select one or more steps you want to examine")
+        print(
+            "Use the multi select box below to select one or more steps you want to examine"
+        )
+
+    if show_bbox is None and show_result is None:
+        show_bbox = HELPER["show_bbox"]
+        show_result = HELPER["show_result"]
+    if show_bbox and show_result:
+        print("Choose either show_bbox or show_result, falling back to bbox only")
+        show_result = False
 
     r = Replay(
         deviation,
@@ -524,6 +589,7 @@ def replay(
         height,
         sidecar,
         show_result,
+        show_bbox,
     )
 
     if isinstance(cad_obj, (cq.Workplane, cq.Sketch)):
@@ -532,28 +598,20 @@ def replay(
         print("Cannot replay", cad_obj)
         return None
 
-    r.stack = r.format_steps(r.to_array(workplane, result_name=getattr(workplane, "name", None)))
+    r.stack = r.format_steps(
+        r.to_array(workplane, result_name=getattr(workplane, "name", None))
+    )
 
     # save overall result
 
-    pg = to_assembly(r.stack[-1][1], names=["Result"])
-    pg.objects[0].set_states(False, True)
-    pg.loc = cq.Location().wrapped
-
-    # r.result = Part([v.wrapped for v in r.stack[-1][1].vals()], "Result", show_faces=True, show_edges=False)
-
-    # tessellate and get bounding box
-    # shapes = PartGroup([r.result], loc=cq.Location().wrapped).collect_shapes(
-    shapes = pg.collect_shapes(
-        "",
-        cq.Location().wrapped,
-        deviation=0.1,
-        angular_tolerance=0.2,
-        edge_accuracy=0.01,
-        render_edges=False,
+    instances, shapes, _, _, _ = _tessellate(r.stack[-1][1], names=["Result"])
+    bbox = BoundingBox(shapes["bb"])
+    r.bbox = (
+        cq.Workplane()
+        .box(bbox.xsize, bbox.ysize, bbox.zsize)
+        .translate(bbox.center)
+        .edges()
     )
-    # save bounding box of overall result
-    r.bbox = combined_bb(shapes).to_dict()
 
     if index == -1:
         r.indexes = [len(r.stack) - 1]
@@ -561,7 +619,7 @@ def replay(
         r.indexes = [index]
 
     r.select_box = SelectMultiple(
-        options=["[%02d] %s" % (i, code) for i, (code, obj) in enumerate(r.stack)],
+        options=["%02d  %s" % (i, code) for i, (code, obj) in enumerate(r.stack)],
         index=r.indexes,
         rows=len(r.stack),
         description="",
@@ -581,13 +639,13 @@ def replay(
 #
 
 
-def reset_replay():
+def reset_replay(event=None):
     _CTX.clear()
     _CTX.new()
 
 
-def enable_replay(warning=True, debug=False):
-    global DEBUG, REPLAY  # pylint:disable=global-statement
+def enable_replay(show_bbox=True, show_result=False, warning=True, debug=False):
+    global DEBUG, REPLAY, HELPER  # pylint:disable=global-statement
 
     DEBUG = debug
 
@@ -596,16 +654,20 @@ def enable_replay(warning=True, debug=False):
     cq.Sketch.__getattribute__ = _add_context
 
     if warning:
-        print("Note: To get rid of this warning, use 'enable_replay(False)'")
         ip = get_ipython()
-        if not "reset_replay" in [f.__name__ for f in ip.events.callbacks["pre_run_cell"]]:
+        if not "reset_replay" in [
+            f.__name__ for f in ip.events.callbacks["pre_run_cell"]
+        ]:
             ip.events.register("pre_run_cell", reset_replay)
     REPLAY = True
+    HELPER = {"show_bbox": show_bbox, "show_result": show_result}
 
 
 def disable_replay():
     global REPLAY  # pylint:disable=global-statement
-    print("Removing replay from cadquery.Workplane (will show a final RuntimeWarning if not suppressed)")
+    print(
+        "Removing replay from cadquery.Workplane (will show a final RuntimeWarning if not suppressed)"
+    )
     cq.Workplane.__getattribute__ = object.__getattribute__
 
     ip = get_ipython()
