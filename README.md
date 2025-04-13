@@ -111,7 +111,7 @@ _Jupyter-CadQuery_ is now a 3 layer project:
     - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
 
         ```bash
-        pip install jupyter-cadquery==3.5.2 cadquery-massembly==1.0.0 matplotlib
+        pip install jupyter-cadquery==4.0.0 cadquery-massembly==1.0.0 matplotlib
         ```
 
         Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
@@ -157,57 +157,6 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
         `show` works as in JupyterLab, while `show_object` views objects incrementally as in CQ-Editor
 
-### Using a docker image
-
-1. For using _Jupyter-CadQuery_ **in Jupyterlab**
-
-    - Start _Jupyter-Cadquery_
-
-        ```bash
-        WORKDIR=/tmp/jupyter
-        mkdir -p "$WORKDIR"  # this has to exist, otherwise an access error will be thrown
-        docker run -it --rm -v $WORKDIR:/home/cq -p 8888:8888 bwalter42/jupyter_cadquery:3.5.2
-        ```
-
-        Jupyter in the container will start in directory `/home/cq`
-
-    - To start with examples, you can
-
-        - omit the volume mapping and just run `docker run -it --rm -p 8888:8888 bwalter42/jupyter_cadquery:3.5.2` or
-        - copy the example notebooks to your `$WORKDIR`. They will be available for _Jupyter-CadQuery_ in the container.
-
-    - If you want to change the Dockerfile, `make docker` will create a new docker image
-
-2. For running _Jupyter-CadQuery_ as **standalone viewer**
-
-    - Start the browser based viewer (eventually add cli options, see notes below):
-
-        ```bash
-        docker run -it --rm -p 8888:8888 --name jcq -p 5555:5555 bwalter42/jupyter_cadquery:3.5.2 -v
-        ```
-
-    - In your code import the `show` or `show_object` function from the viewer:
-
-        ```python
-        import cadquery as cq
-        from jupyter_cadquery.viewer.client import show, show_object
-        obj = cq. ...
-        show(obj) # or show_object(obj)
-        ```
-
-        `show` works as in JupyterLab, while `show_object` views objects incrementally as in CQ-Editor
-
-    - Execute your code using the Python interpreter located in the container:
-
-        ```bash
-        docker exec -i jcq bash -c ". /opt/conda/bin/activate cq; python" < my_project.py
-        ```
-
-Notes:
-
--   To simplify port forwarding, the viewer in the docker container also starts with port 8888 (and not with voila's default port 8866)
--   Port 5555 (the zmq port) needs to be forwarded. The `show` of the viewer client will send cad objects to this port
--   Use `-d` for dark mode and `-w`, `-h` to set dimensions of the CAD viewer
 
 ## Demo Notebooks
 

@@ -74,7 +74,6 @@ def get_user_defaults():
         path = Path("~/.jcq_config").expanduser()
         if path.exists():
             with open(path, "r") as fd:
-                print(f"Reading config from {path}")
                 WORKSPACE_DEFAULTS = workspace_defaults()
                 try:
                     config = safe_load(fd)

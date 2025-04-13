@@ -15,7 +15,6 @@
 #
 
 
-__version__ = "3.5.2"
 import os
 
 os.environ["JUPYTER_CADQUERY"] = "1"
@@ -50,6 +49,7 @@ from ocp_vscode.show import _show, _show_object, show_all, reset_show, show_clea
 
 from .app import JupyterCadqueryBackend
 from .config import get_user_defaults, save_user_defaults
+from ._version import __version__
 from .tools import auto_show, get_pick
 
 try:
