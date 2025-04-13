@@ -108,7 +108,18 @@ def send_command(data, port=None, title=None, timeit=False):
     With data == "status" called by called by ocp_vscode.config.status()
     """
     if data == "config":
-        return get_user_defaults()
+        config = get_user_defaults()
+        viewer = None
+        if title is None:
+            title = get_default_sidecar()
+            if title is not None:
+                viewer = get_sidecar(title)
+        else:
+            viewer = get_sidecar(title)
+
+        if viewer is not None:
+            config["_splash"] = viewer._splash
+        return config
 
     elif data == "status":
         viewer = get_sidecar(title)
