@@ -15,10 +15,10 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 _Jupyter-CadQuery_  release 4 is a complete rewrite of _Jupyter-CadQuery_: 
 
 It is now based on:
-- the show logic provided by [OCP CAD Viewer for VS Code](https://github.com/bernhard-42/vscode-ocp-cad-viewer),
+- the show logic provided by [ocp_vscode](https://github.com/bernhard-42/vscode-ocp-cad-viewer) (_OCP CAD Viewer for VS Code_),
 - the tessellation logic provided by [ocp-tessellate](https://github.com/bernhard-42/ocp-tessellate),
 - the communication between Python and Javascript provided by [cad-viewer-widget](https://github.com/bernhard-42/cad-viewer-widget), a custom [ipywidget](https://github.com/jupyter-widgets/ipywidgets),
-- and the measurement feature (NEW!) provided again by [OCP CAD Viewer for VS Code](https://github.com/bernhard-42/vscode-ocp-cad-viewer)
+- and the measurement feature (NEW!) provided again by [ocp_vscode](https://github.com/bernhard-42/vscode-ocp-cad-viewer)
 
 **Note:** For changes see the migration section at the end of this page.
 
