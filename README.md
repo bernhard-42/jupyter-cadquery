@@ -1,6 +1,8 @@
-# Jupyter-CadQuery
+# Jupyter-CadQuery / Build123d / OCP
 
-View [CadQuery](https://github.com/cadquery/cadquery) objects in JupyterLab or in a standalone viewer for any IDE
+**!!! The README is work in progess !!!**
+
+View [CadQuery](https://github.com/cadquery/cadquery), [Build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
@@ -10,37 +12,29 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 ## Overview
 
-Release 3 is a complete rewrite of _Jupyter-CadQuery_: While the selection of _[pythreejs](https://github.com/jupyter-widgets/pythreejs)_ and JupyterLab's _[sidecar](https://github.com/jupyter-widgets/jupyterlab-sidecar)_ looked reasonable in 2019, it turned out they had too many limitations. _pythreejs_ is stuck with an outdated version of _[threejs](https://github.com/mrdoob/three.js/)_ and the _sidecar_ project did not improve usability to a level I would have liked to have.
+_Jupyter-CadQuery_  release 4 is a complete rewrite of _Jupyter-CadQuery_: 
 
-_Jupyter-CadQuery_ is now a 3 layer project:
+It is now based on:
+- the show logic provided by [OCP CAD Viewer for VS Code](https://github.com/bernhard-42/vscode-ocp-cad-viewer),
+- the tessellation logic provided by [ocp-tessellate](https://github.com/bernhard-42/ocp-tessellate),
+- the communication between Python and Javascript provided by [cad-viewer-widget](https://github.com/bernhard-42/cad-viewer-widget), a custom [ipywidget](https://github.com/jupyter-widgets/ipywidgets),
+- and the measurement feature (NEW!) provided again by [OCP CAD Viewer for VS Code](https://github.com/bernhard-42/vscode-ocp-cad-viewer)
 
-1. **[three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)**
-   This is the complete CAD viewer written in Javascript with _[threejs](https://github.com/mrdoob/three.js/)_ being the only dependency. There is are a bunch of [live examples](https://bernhard-42.github.io/three-cad-viewer/example.html) and an [API documentation](https://bernhard-42.github.io/three-cad-viewer/Viewer.html).
-
-2. **[cad-view-widget](https://github.com/bernhard-42/cad-viewer-widget)**
-   A thin layer on top of _cad-viewer-widget_ that wraps the CAD viewer into an [ipywidget](https://github.com/jupyter-widgets/ipywidgets). The API documentation can be found [here](https://bernhard-42.github.io/cad-viewer-widget/cad_viewer_widget/index.html)
-
-3. **jupyter-cadquery** (this repository)
-   The actual CadQuery viewer, collecting and tessellating CadQuery objects, using _cad-view-widget_ to visualize the objects. It was written with the intent to be as compatible with Jupyter-CadQuery 2.x as reasonable.
-
-    **Note:** For changes see the migration section at the end of this page.
+**Note:** For changes see the migration section at the end of this page.
 
 ## Key Features
 
 -   CadQuery support
-    -   _CadQuery >= 2.1_ including _master_ (as of 2021-04)
-    -   [CadQuery Assemblies](https://cadquery.readthedocs.io/en/latest/assy.html)
-    -   [CadQuery Sketch](https://cadquery.readthedocs.io/en/latest/sketch.html) class for both `show` and `replay`
-    -   Auto display of _CadQuery_ shapes
--   STEP files
-    -   A STEP reader to load STEP files into _CadQuery_ Assemblies preserving hierarchy, names and colors
+    -   _CadQuery >= 2.5_ including _master_ (as of 2025-04)
+    -   _Build123d_ >=0.9 including _master_ (as of 2025-04)
+    -   Replay mode for CadQuery objects
+    -   Auto display of _CadQuery_ and _Build123d_ shapes
 -   Viewing options:
     -   Directly in the JupyterLab output cell
     -   In a central Jupyterlab sidecar for any JupyterLab cell
-    -   As a standalone viewer for use from any IDE
 -   Animations (see examples below)
     -   Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of model
-    -   Animated explode mode for _CadQuery_ assemblies
+    -   Animated explode mode for _CadQuery_ and _build123d_ assemblies
 -   Debugging
     -   Step-by-step in an IDE with the standalone viewer (see example below)
     -   Visually
@@ -49,22 +43,22 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 -   Viewer features
     -   Toggle visibility of shapes and edges
     -   Orthographic and perspective view
-    -   Clipping with max 3 clipping planes (of free orientation)
+    -   Clipping with max 3 clipping planes (of free orientation) and cap facesa properly shown
+    -   Material editor (light intensity, metalness and roughness)
     -   Transparency mode
     -   Double click on shapes shows bounding box info
     -   Click on tree labels shows bounding box info and optionally hides or isolates the sub tree
+    -   
 
-## Release v3.5.2 (03.01.2023)
+## Release v4.0.0 (2025-04-...)
 
 ### Changes
-- Default python now is 3.10
-- Add support for `Compound`s with mixed shape types
-- Aligned `show_object` with `CQ-Editor` (e.g. support `options` dict)
-- Improved [build123d](https://github.com/gumyr/build123d) support
-- Add support for my private `Alg123d` library (a thin facade on top of `build123d` to remove all implicit behavior and give control back to the user)
+
+tbd.
 
 ### Fixes
-- OCCT bug with helix: If height = 2 * pitch, `GCPnts_QuasiUniformDeflection` returns 2 points only. Jupyter CadQuery detects this and uses `GCPnts_QuasiUniformAbscissa` instead
+
+tbd.
 
 
 ## Examples
@@ -77,85 +71,90 @@ _Jupyter-CadQuery_ is now a 3 layer project:
 
 -   Explode objects animation
 
-    Source of STEP file: https://print.grabcad.com/library/quadruped-robot-w-code-1#!
-
     ![Exploded Quadruped](screenshots/explode.gif)
 
-### Debugging
+-   Measurement mode
 
--   In VS Code with Standalone Viewer
-
-    -   The top half is the CadQuery code being debugged in VS Code
-    -   The bottom half is the standalone viewer in a browser window
-    -   The `show` command in the code will tessellate the objects and send them via [zmq](https://pyzmq.readthedocs.io/en/latest/) to the standalone viewer
-
-        ![Debugging in IDE](screenshots/debugging.gif)
-
--   By replaying in the notebook
-
-    ![Replaying](screenshots/replay.gif)
+    ![Exploded Quadruped](screenshots/measure.gif)
 
 ## Installation
 
-### Using conda
+### Jupyter Lab
+The preferred way of installing _Juypter CadQuery_ now is `pip`
 
-1. For using _Jupyter-CadQuery_ **in Jupyterlab**
+1. Create a virtual environment (as you like, conda, mamba, pyenv-virtualenv, ...)
+2. Activate your environment
+3. `pip install jupyter-cadqery`
 
-    - If you don't have it already, create a new conda environment with the latest CadQuery (e.g. master)
+Verfiy the installation
 
-        ```bash
-        conda create -n jcq3 -c conda-forge -c cadquery python=3.10 cadquery=master vtk=9.2.2
-        conda activate jcq3
-        ```
+1. Jupyter server extension
 
-    - Install _Jupyter-CadQuery_ (note, matplotlib is only used for the examples)
+    ```bash
+    $ jupyter server extension list
 
-        ```bash
-        pip install jupyter-cadquery==4.0.0 cadquery-massembly==1.0.0 matplotlib
-        ```
+    Config dir: /Users/bernhard/.jupyter
 
-        Windows users should also install `pywin32` again with `conda` to ensure it is configured correctly
+    Config dir: /Users/bernhard/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
+        jupyter_lsp enabled
+        - Validating jupyter_lsp...
+        jupyter_lsp 2.2.5 OK
+        jupyter_cadquery enabled
+        - Validating jupyter_cadquery...
+    Extension package jupyter_cadquery took 1.6050s to import
+        jupyter_cadquery 4.0.0 OK
+        jupyter_server_terminals enabled
+        - Validating jupyter_server_terminals...
+        jupyter_server_terminals 0.5.3 OK
+        jupyterlab enabled
+        - Validating jupyterlab...
+        jupyterlab 4.4.0 OK
+        notebook_shim enabled
+        - Validating notebook_shim...
+        notebook_shim  OK
 
-        ```bash
-        conda install pywin32
-        ```
+    Config dir: /usr/local/etc/jupyter
+    ```
 
-    - Start _Jupyter-CadQuery_
+    You should see `jupyter_cadquery 4.0.0 OK`. This ensures that the measurement backend is properly installed
 
-        ```bash
-        conda activate jcq3
-        jupyter lab
-        ```
+2. Jupyter lab extension
 
-    - If you use the dark theme of JuypterLab, add the following code in the first cell of your notebook:
+    ```bash
+    $ jupyter lab extension list
 
-        ```python
-        [1]: from jupyter_cadquery import set_defaults, open_viewer
-             set_defaults(theme="dark")
-             open_viewer("CadQuery")
-        ```
+    Config dir: /Users/bernhard/.jupyter
 
-2. For running _Jupyter-CadQuery_ as **standalone viewer**
+    Config dir: /Users/bernhard/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
+        jupyter_lsp enabled
+        - Validating jupyter_lsp...
+        jupyter_lsp 2.2.5 OK
+        jupyter_cadquery enabled
+        - Validating jupyter_cadquery...
+        jupyter_cadquery 4.0.0 OK
+        jupyter_server_terminals enabled
+        - Validating jupyter_server_terminals...
+        jupyter_server_terminals 0.5.3 OK
+        jupyterlab enabled
+        - Validating jupyterlab...
+        jupyterlab 4.4.0 OK
+        notebook_shim enabled
+        - Validating notebook_shim...
+        notebook_shim  OK
 
-    - Start the browser based viewer
+    Config dir: /usr/local/etc/jupyter
+    ```
 
-        ```bash
-        conda activate jcq3
-        jcv [-w width] [-h height]     # light theme
-        jcv [-w width] [-h height] -d  # dark theme
-        ```
+    You should see `jupyter_cadquery 4.0.0 OK`. This ensures that the frontend is properly installed
 
-    - Use it from an IDE:
-      In your code import the `show` or `show_object` function from the viewer:
+### Standalone
 
-        ```python
-        import cadquery as cq
-        from jupyter_cadquery.viewer.client import show, show_object
-        obj = cq. ...
-        show(obj) # or show_object(obj)
-        ```
+The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of OCP CAD Viewer for VS Code. To start it:
 
-        `show` works as in JupyterLab, while `show_object` views objects incrementally as in CQ-Editor
+1. Activate your python environment
+2. Execute `python -m ocp_vscode [--port 3939]
+
+3939 is the standard port that will be used automatically by the `show` commands
 
 
 ## Demo Notebooks
@@ -322,83 +321,18 @@ Note, this is not supported in the standalone viewer for the time being.
 
     Smaller `linear_deflection` and `angular_deflection` means more details.
 
-## Jupyter-CadQuery classes
-
--   `Part`: A CadQuery shape plus some attributes for it:
-
-    -   `shape`: CadQuery shape
-    -   `name`: Part name in the view
-    -   `color`: Part color in the view
-    -   `show_faces`: show the faces of this particular part
-    -   `show_edges`: show the edges of this particular part
-
--   `Faces`: CadQuery faces plus some attributes
-
-    -   `faces`: List of CadQuery faces (`shape.faces(selector))`)
-    -   `name`: Part name in the view
-    -   `color`: Part color in the view
-    -   `show_faces`: show the faces for these particular faces
-    -   `show_edges`: show the edges for these particular faces
-
--   `Edges`:
-
-    -   `edges`: List of CadQuery edges (`shape.edges(selector))`)
-    -   `name`: Part name in the view
-    -   `color`: Part color in the view
-
--   `Vertices`:
-
-    -   `vertices`: List of CadQuery vertices (`shape.vertices(selector))`)
-    -   `name`: Part name in the view
-    -   `color`: Part color in the view
-
--   `PartGroup`: Basically a list of parts and some attributes for the view:
-    -   `name`: PartGroup name in the view
-    -   `objects`: all parts and assemblies included in the assembly as a list
-
-## Migration from 2.x
+## Migration from 3.x
 
 **Deprecations:**
 
--   Import structure changed:
-    -   `from jupyter_cadquery.cadquery import show, ...` will raise a deprecation error:
-        Use `from jupyter_cadquery import show, ...` instead.
-    -   `from jupyter_cadquery.occ import show, ...` will raise a deprecation error:
-        Use `from jupyter_cadquery import show, ...` instead.
-    -   `from jupyter_cadquery.animation import Animation` will raise a deprecation error:
-        Use `from jupyter_cadquery.cad_animation import Animation` instead.
--   Sidecar handling changed
-    -   `set_sidecar(title, init=True)` will raise a deprecation error:
-        Use `open_viewer(title)` instead.
-    -   `close_sidecar()` will raise a deprecation error:
-        Use `close_viewer(title)` instead.
-    -   `close_sidecars()` will raise a deprecation error:
-        Use `close_viewers(title)` instead.
--   Change parameters:
-    -   Parameter `grid` is now a tuple `(xy-grid, xz-grid, yz-grid)` instead of a boolean. A deprecation warning will be shown and the tuple `(grid, False, False)` used to invoke the old behavior.
+tbd.
 
 **Changed behavior:**
 
--   The replay mode now shows the result's bounding box as top level step by default instead of the result. Use `show_result=True` for the old behavior.
--   New parameters `viewer` and `anchor` of function `show` set a sidecar (with title <viewer>) and `anchor` to determine location of the sidecar (`right`, `split-right`, `split-left`, `split-top`, `split-bottom`).
--   The parameter `rotation` of function `show` has been replaced by `quaternion`, since the new viewer uses quaternions instead of Euler angles.
--   The parameter `quality` is ignored. Use `deviation` to control smoothness of rendered edges.
--   In 7.5 of opencascade something changed with color handling, so some colors might be different.
--   The default view does not render the back material, making transparent views brighter. When switching to clipping view, the back material will set to the edge color to give the impression of cut planes. This means that transparent object look darker.
+tbd.
 
-**Parameters of function `show` and `set_defaults` not supported any more:**
-
--   `mac_scrollbar`: This is used as default now.
--   `bb_factor`: Not necessary any more.
--   `display`: For sidecar display use `viewer="<viewer title>"` and for cell display use `viewer=None`.
-
-## Credits
-
--   Thomas Paviot for [python-occ](https://github.com/tpaviot/pythonocc-core). Ideas are derived/taken from his `jupyter_renderer.py`
--   Dave Cowden for [CadQuery](https://github.com/dcowden/cadquery)
--   Adam Urbańczyk for the OCP version of [CadQuery](https://github.com/CadQuery/cadquery/tree/master)
 
 ## Known issues
 
 -   [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
--   Using more than one clip plane will lead to cut surfaces not being shown as solid. (very hard to solve in general)
+
