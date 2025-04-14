@@ -60,6 +60,7 @@ create-release:
 	@github-release release -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter-cadquery-$(CURRENT_VERSION)
 	@sleep 2
 	@github-release upload  -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter_cadquery-$(CURRENT_VERSION).tar.gz -f dist/jupyter_cadquery-$(CURRENT_VERSION).tar.gz
+	@github-release upload  -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter_cadquery-$(CURRENT_VERSION)-py3-none-any.whl -f dist/jupyter_cadquery-$(CURRENT_VERSION)-py3-none-any.whl
 
 install: dist
 	@echo "=> Installing jupyter_cadquery"
