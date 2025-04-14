@@ -2,7 +2,7 @@
 
 PYCACHE := $(shell find . -name '__pycache__')
 EGGS := $(wildcard *.egg-info)
-CURRENT_VERSION := $(shell awk '/current_version/ {print $$3}' setup.cfg)
+CURRENT_VERSION := $(shell awk '/current_version = / {print $$3}' pyproject.toml)
 
 # https://github.com/jupyter/nbconvert/issues/637
 
