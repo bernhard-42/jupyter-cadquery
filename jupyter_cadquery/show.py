@@ -70,6 +70,8 @@ def open_viewer(
     send_backend({"model": b_logo}, jcv_id=viewer.widget.id)
     viewer.widget.measure_callback = send_measure_request
 
+    return viewer
+
 
 def show(
     *cad_objs,
