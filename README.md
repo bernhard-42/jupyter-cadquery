@@ -1,4 +1,4 @@
-# Jupyter-CadQuery / Build123d / OCP
+# Jupyter-CadQuery / Build123d / OCP v4.0.0 (2025-04-...)
 
 **!!! The README is work in progess !!!**
 
@@ -29,7 +29,7 @@ It is now based on:
 - Code CAD support
   - _CadQuery >= 2.5_ including _master_ (as of 2025-04)
   - _Build123d_ >=0.9 including _master_ (as of 2025-04)
-  - _OCP_ == 7.8 (as of 2025-04)
+  - _OCP_ == 7.8.X (as of 2025-04)
   - Auto display of _CadQuery_ and _Build123d_ shapes
   - Replay mode for CadQuery objects
 
@@ -51,17 +51,6 @@ It is now based on:
   - Click on tree labels shows bounding box info and optionally hides or isolates the elements
   - 
 
-## Release v4.0.0 (2025-04-...)
-
-### Changes
-
-tbd.
-
-### Fixes
-
-tbd.
-
-
 ## Examples
 
 ### Animation system in JupyterLab
@@ -80,16 +69,52 @@ tbd.
 
 ## Installation
 
-### Jupyter Lab
-The preferred way of installing _Juypter CadQuery_ now is `pip`
+### CadQuery
 
-1. Create a virtual environment (as you like, conda, mamba, pyenv-virtualenv, ...)
-2. Activate your environment
-3. `pip install jupyter-cadqery`
+1. Create and activate a virtual conda environment
 
-Verfiy the installation
+    ```python
+    mamba create -n jcq4 python=3.12.9
+    mamba activate jcq4
+    ```
 
-1. Jupyter server extension
+2. Install latest cadquery master
+
+    ```python
+    mamba install -c conda-forge -c cadquery cadquery=master
+    ```
+
+3. Install and run jupyter-cadquery
+
+    ```python
+    pip install jupyter-cadquery
+
+    jupyter lab
+    ```
+
+### Build123d
+
+1. Create and activate virtual environment (conda, pyenv-virtualenv, ...)
+
+2. Install build123d
+
+    ```python
+    pip install build123d
+    ```
+
+3. Install and run jupyter-cadquery
+
+    ```python
+    pip install jupyter-cadquery
+
+    jupyter lab
+    ```
+
+### Verfiy the installation
+
+Note: On a Mac the first run of the below commands can take minutes until the native libraries OCP and vtk are initialized. Afterwards it takes seconds only.
+
+1. Check Jupyter server extension
 
     ```bash
     $ jupyter server extension list
@@ -119,7 +144,7 @@ Verfiy the installation
 
     You should see `jupyter_cadquery 4.0.0 OK`. This ensures that the measurement backend is properly installed
 
-2. Jupyter lab extension
+2. Check Jupyter lab extension
 
     ```bash
     $ jupyter lab extension list
@@ -150,7 +175,7 @@ Verfiy the installation
 
 ### Standalone
 
-The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of OCP CAD Viewer for VS Code. To start it:
+The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _OCP CAD Viewer for VS Code_. To start it:
 
 1. Activate your python environment
 2. Execute `python -m ocp_vscode [--port 3939]
@@ -160,16 +185,21 @@ The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of O
 
 ## Demo Notebooks
 
-- [A run through of all features](./examples/1-cadquery.ipynb)
+Standard examples
+
+- [A run through of many features](./examples/1-cadquery.ipynb)
 - [Standard CadQuery examples in Jupyter CadQuery](./examples/2-cadquery-examples.ipynb)
 - [An OCP example (the OCC bottle)](./examples/3-occ.ipynb)
 - [CadQuery Sketch support](./examples/4-sketches.ipynb)
-- Animated `MAssembly` examples:
-  - [Rotating disk arm](./examples/assemblies/1-disk-arm.ipynb)
-  - [Hexapod](./examples/assemblies/2-hexapod.ipynb)
-  - [Jansen Linkage](./examples/assemblies/3-jansen-linkage.ipynb)
-  - [CadQuery's door assembly example](./examples/assemblies/5-door.ipynb)
-  - [A nested Assembly](./examples/assemblies/6-nested-assemblies.ipynb)
+- [Build123d examples](./examples/5-build123d.ipynb)
+
+Animated examples (requires `pip install cadquery-massembly matplotlib`):
+
+- [Rotating disk arm](./examples/assemblies/1-disk-arm.ipynb)
+- [Hexapod](./examples/assemblies/2-hexapod.ipynb)
+- [Jansen Linkage](./examples/assemblies/3-jansen-linkage.ipynb)
+- [CadQuery's door assembly example](./examples/assemblies/5-door.ipynb)
+- [A nested Assembly](./examples/assemblies/6-nested-assemblies.ipynb)
 
 
 ## Usage
@@ -190,6 +220,7 @@ _Keywork arguments `kwargs`:_
   - `anchor`: How to open sidecar: "right", "split-right", "split-bottom", ... (default="right")
   - `cad_width`: Width of CAD view part of the view (default=800)
   - `tree_width`: Width of navigation tree part of the view (default=250)
+  - `aspect_ratio`: The ratio of height to width (for all non cell viewers)
   - `height`: Height of the CAD view (default=600)
   - `theme`: Theme "light" or "dark" (default="light")
   - `pinning`: Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
@@ -205,7 +236,7 @@ _Keywork arguments `kwargs`:_
   - `render_normals`: Render the vertex normals (default=False)
   - `render_edges`: Render edges (default=True)
   - `render_mates`: Render mates (for MAssemblies, default=False)
-  - `mate_scale`: Scale of rendered mates (for MAssemblies, default=1)
+  - `helper_scale`: Scale of rendered mates (for MAssemblies, default=1)
 
 - Viewer options
 
@@ -232,13 +263,6 @@ _Keywork arguments `kwargs`:_
   - `tools`: Show the viewer tools like the object tree (default=True)
   - `timeit`: Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
   - `js_debug`: Enable debug output in browser console (default=False)
-
-- Not supported any more:
-
-  - `mac_scrollbar`: The default now
-  - `bb_factor`: Removed
-  - `display`: Use 'viewer="<viewer title>"' (for sidecar display) or 'viewer=None' (for cell display)
-  - `quality`: Use 'deviation'to control smoothness of rendered edges
 
 ### b) Manage default values
 
@@ -302,19 +326,17 @@ Note, this is not supported in the standalone viewer for the time being.
 
     Note: This does not work with viewers in sidecars!
 
-- **Export as STL:**
 
-    For CadQuery objects use CadQuery export functions. For `PartGroup`s the following code can be used:
+## Release v4.0.0 (2025-04-...)
 
-    ```python
-    from jupyter_cadquery.export import exportSTL
+### Changes
 
-    exportSTL(
-      part_group, "pg.stl", tolerance=quality, angular_tolerance=angular_tolerance
-    )
-    ```
+tbd.
 
-    Smaller `linear_deflection` and `angular_deflection` means more details.
+### Fixes
+
+tbd.
+
 
 ## Migration from 3.x
 
