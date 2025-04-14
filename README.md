@@ -67,7 +67,22 @@ It is now based on:
 
     ![Exploded Quadruped](screenshots/measure.gif)
 
-## Installation
+
+## Preview installation (until it is available on pypi)
+
+```python
+mamba create -n jcq4 python=3.12.9
+mamba activate jcq4
+
+pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.0/cad_viewer_widget-3.0.0-py3-none-any.whl
+pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.0/jupyter_cadquery-4.0.0-py3-none-any.whl
+
+# verification, see below
+jupyter server extension list
+jupyter lab extension list
+```
+
+## Installation (will not work yet, since packages are not on pypi yet)
 
 ### CadQuery
 
