@@ -55,6 +55,7 @@ def open_viewer(
         anchor=anchor,
         cad_width=cad_width,
         tree_width=tree_width,
+        aspect_ratio=aspect_ratio,
         height=height,
         theme=theme,
         glass=glass,
