@@ -82,6 +82,17 @@ jupyter server extension list
 jupyter lab extension list
 ```
 
+Note: The measurement feature requires the `show` command to talk to jupyter server. If you do not run Jupyter Lab under port 8888, you need to add
+
+```python
+from jupyter_cadquery.comms import set_jupyter_port
+
+set_jupyter_port(8889)
+```
+
+Replace 8889 with your port
+
+
 ## Installation (will not work yet, since packages are not on pypi yet)
 
 ### CadQuery
