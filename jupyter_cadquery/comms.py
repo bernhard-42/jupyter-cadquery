@@ -18,6 +18,7 @@
 
 
 from enum import Enum
+import os
 
 import orjson
 import requests
@@ -39,17 +40,6 @@ __all__ = [
 ]
 
 SESSION = None
-
-JUPYTER_PORT = 8888
-
-
-def set_jupyter_port(port):
-    global JUPYTER_PORT
-    JUPYTER_PORT = port
-
-
-def get_jupyter_port():
-    return JUPYTER_PORT
 
 
 def init_session(url):
@@ -135,13 +125,15 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
 
     Called by ocp_vscode.show.show() to send model to backend
     """
-    url = f"http://localhost:{JUPYTER_PORT}"
+    port = os.environ.get("JUPYTER_PORT", "8888")
+    url = f"http://localhost:{port}"
 
     if SESSION is None:
         init_session(url)
 
     message = {
         "_xsrf": SESSION.cookies.get("_xsrf"),
+        "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(data, default=json_default).decode("utf-8"),
     }
@@ -156,13 +148,15 @@ def send_measure_request(jcv_id, shape_ids):
     Called as callbacks by cad_viewer_widget.widget.CadViewerWidget.active_tool and
     cad_viewer_widget.widget.CadViewerWidget.selected_shape_ids to retrieve measurements
     """
-    url = f"http://localhost:{JUPYTER_PORT}"
+    port = os.environ.get("JUPYTER_PORT", "8888")
+    url = f"http://localhost:{port}"
 
     if SESSION is None:
         init_session(url)
 
     message = {
         "_xsrf": SESSION.cookies.get("_xsrf"),
+        "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(shape_ids).decode("utf-8"),
     }

@@ -15,6 +15,7 @@
 #
 
 import os
+import secrets
 
 import orjson
 from jupyter_server.base.handlers import JupyterHandler
@@ -28,11 +29,20 @@ from ocp_vscode.comms import MessageType
 
 BACKENDS = {}
 
+API_KEY = secrets.token_urlsafe(32)
+
 
 class MeasureHandler(ExtensionHandlerMixin, JupyterHandler):
     def post(self):
         viewer = self.get_body_argument("viewer")
         message = orjson.loads(self.get_body_argument("data"))
+
+        apikey = self.get_body_argument("apikey")
+        if apikey != API_KEY:
+            self.log.error("Invalid API key")
+            self.set_status(401, reason="Invalid API key")
+            self.finish(orjson.dumps({"error": "Invalid API key"}))
+            return
 
         if viewer is None:
             self.log.error("Unknown viewer")
@@ -56,6 +66,13 @@ class ObjectsHandler(ExtensionHandlerMixin, JupyterHandler):
         viewer = self.get_body_argument("viewer")
         data = orjson.loads(self.get_body_argument("data"))
 
+        apikey = self.get_body_argument("apikey")
+        if apikey != API_KEY:
+            self.log.error("Invalid API key")
+            self.set_status(401, reason="Invalid API key")
+            self.finish(orjson.dumps({"error": "Invalid API key"}))
+            return
+
         if viewer is None:
             self.log.error("Unknown viewer")
             self.finish(orjson.dumps({"error": "Unknown viewer"}))
@@ -71,6 +88,18 @@ class ObjectsHandler(ExtensionHandlerMixin, JupyterHandler):
             )
 
 
+def wrapper(self, init_http):
+    def init_httpserver():
+        init_http()
+        port = self.port
+        os.environ["JUPYTER_PORT"] = str(port)
+        os.environ["JUPYTER_CADQUERY_API_KEY"] = API_KEY
+        self.log.info(f"JUPYTER_PORT={port}")
+        self.log.info(f"JUPYTER_CADQUERY_API_KEY={API_KEY}")
+
+    return init_httpserver
+
+
 class JupyterCadqueryBackend(ExtensionApp):
     name = "jupyter_cadquery"
     static_paths = []
@@ -79,6 +108,9 @@ class JupyterCadqueryBackend(ExtensionApp):
     def initialize_handlers(self):
         self.handlers.append((r"/measure", MeasureHandler))
         self.handlers.append((r"/objects", ObjectsHandler))
+
+        init_http = self.serverapp.init_httpserver
+        self.serverapp.init_httpserver = wrapper(self.serverapp, init_http)
 
     def initialize_settings(self):
         pass
