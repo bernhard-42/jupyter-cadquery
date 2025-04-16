@@ -1,4 +1,6 @@
-# Jupyter-CadQuery / Build123d / OCP v4.0.0 (2025-04-...)
+# Jupyter-CadQuery / Build123d / OCP 
+
+**v4.0.0 (2025-04-...)**
 
 **!!! The README is work in progess !!!**
 
