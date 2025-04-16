@@ -35,7 +35,9 @@ It is now based on:
 
 - Viewing options:
   - Directly in the JupyterLab output cell
-  - In a central Jupyterlab sidecar for any JupyterLab cell
+  - In a central Jupyterlab sidecar
+  - In separate windows in Jupyter lab
+  - For sidecar and windows based viewers, the viewer scales with the size of the container window. I can have a fixed aspexct ratio (hight to wodth ratio) or fill the complete container window.
 
 - Animations (see examples below)
   - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of model
@@ -49,23 +51,32 @@ It is now based on:
   - Transparency mode
   - Double click on shapes shows bounding box info
   - Click on tree labels shows bounding box info and optionally hides or isolates the elements
-  - 
+
 
 ## Examples
 
-### Animation system in JupyterLab
+### The viewer
 
-- Self programmed animation
+It allows to view CAD objects with or without grid, using orthographic or perspective camera and many more viewing features.
 
-    ![Animated Hexapod](screenshots/hexapod-crawling.gif)
+![Hexapod](screenshots/hexapod.png)
 
-- Explode objects animation
+### Measurement mode
+I allows to measure distance of objects, angle beween edges and faces and show propertis like center, are volume for objects selected
 
-    ![Exploded Quadruped](screenshots/explode.gif)
+![Exploded Quadruped](screenshots/measure.gif)
 
-- Measurement mode
+### Animation System - explode assemblies
 
-    ![Exploded Quadruped](screenshots/measure.gif)
+The animation system allows to explode CadQuery and Build123d assemblies or group of CAD objects. The epxplosion center is (0,0,0).
+
+![Exploded Quadruped](screenshots/explode.gif)
+
+### Animation System - Self defined animation
+
+The animation system also allows to create custom defined animations like this animated hexapod.
+
+  ![Animated Hexapod](screenshots/hexapod-crawling.gif)
 
 
 ## Preview installation (until it is available on pypi)
@@ -130,21 +141,50 @@ jupyter lab extension list
 
 Note: On a Mac the first run of the below commands can take minutes until the native libraries OCP and vtk are initialized. Afterwards it takes seconds only.
 
-1. Check Jupyter server extension
+1. Check the Jupyter lab extension, the viewer frontend: `jupyter lab extension list`
 
     ```bash
-    $ jupyter server extension list
+    Config dir: /Users/<username>/.jupyter
 
-    Config dir: /Users/bernhard/.jupyter
-
-    Config dir: /Users/bernhard/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
+    Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
         jupyter_lsp enabled
         - Validating jupyter_lsp...
         jupyter_lsp 2.2.5 OK
         jupyter_cadquery enabled
+
+        - Validating jupyter_cadquery...
+        jupyter_cadquery 4.0.0 OK
+
+        jupyter_server_terminals enabled
+        - Validating jupyter_server_terminals...
+        jupyter_server_terminals 0.5.3 OK
+        jupyterlab enabled
+        - Validating jupyterlab...
+        jupyterlab 4.4.0 OK
+        notebook_shim enabled
+        - Validating notebook_shim...
+        notebook_shim  OK
+
+    Config dir: /usr/local/etc/jupyter
+    ```
+
+    You should again see `jupyter_cadquery 4.0.0 OK`. This ensures that the **viewer frontend** is properly installed
+
+2. Check the Jupyter server extension, the measurement backend: `jupyter server extension list`
+
+    ```bash
+    Config dir: /Users/<username>/.jupyter
+
+    Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
+        jupyter_lsp enabled
+        - Validating jupyter_lsp...
+        jupyter_lsp 2.2.5 OK
+        jupyter_cadquery enabled
+
         - Validating jupyter_cadquery...
     Extension package jupyter_cadquery took 1.6050s to import
         jupyter_cadquery 4.0.0 OK
+
         jupyter_server_terminals enabled
         - Validating jupyter_server_terminals...
         jupyter_server_terminals 0.5.3 OK
@@ -158,38 +198,11 @@ Note: On a Mac the first run of the below commands can take minutes until the na
     Config dir: /usr/local/etc/jupyter
     ```
 
-    You should see `jupyter_cadquery 4.0.0 OK`. This ensures that the measurement backend is properly installed
+    You should see `jupyter_cadquery 4.0.0 OK`. This ensures that the **measurement backend** is properly installed.
 
-2. Check Jupyter lab extension
+    If you see "Extension package jupyter_cadquery took ...", this is basically OCP and VTK loading time (this test import OCP and with that VTK).
 
-    ```bash
-    $ jupyter lab extension list
-
-    Config dir: /Users/bernhard/.jupyter
-
-    Config dir: /Users/bernhard/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
-        jupyter_lsp enabled
-        - Validating jupyter_lsp...
-        jupyter_lsp 2.2.5 OK
-        jupyter_cadquery enabled
-        - Validating jupyter_cadquery...
-        jupyter_cadquery 4.0.0 OK
-        jupyter_server_terminals enabled
-        - Validating jupyter_server_terminals...
-        jupyter_server_terminals 0.5.3 OK
-        jupyterlab enabled
-        - Validating jupyterlab...
-        jupyterlab 4.4.0 OK
-        notebook_shim enabled
-        - Validating notebook_shim...
-        notebook_shim  OK
-
-    Config dir: /usr/local/etc/jupyter
-    ```
-
-    You should see `jupyter_cadquery 4.0.0 OK`. This ensures that the frontend is properly installed
-
-### Standalone
+## Standalone version
 
 The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _OCP CAD Viewer for VS Code_. To start it:
 
@@ -220,7 +233,45 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
 ## Usage
 
-### a) Show objects
+### a) Viewer locations
+
+- Have the viewer in a Jupyter Sidcar, i.e. it can be shown/hidden easily
+
+  ```python
+  t = Text("SideCar", 20)
+  cv_s = show(t, viewer="SideCar", anchor="right")
+  ```
+
+- Have the viewer in a separate Jupyter lab window placed at the right or left
+
+  ```python
+  t = Text("Right", 20)
+  cv_r = show(t, viewer="Right", anchor="split-right")
+
+  t = Text("Left", 20)
+  cv_l = show(t, viewer="Left", anchor="split-left")
+  ```
+
+- Have the viewer in a separate Jupyter lab window placed at the top or bottom, this time using `open_viewer`
+
+  ```python
+  t = Text("Top", 20)
+  cv_t = open_viewer("Top", anchor="split-top", aspect_ratio=0)
+  show(t)
+
+  t = Text("Bottom", 20)
+  cv_b = open_viewer("Bottom", anchor="split-bottom", aspect_ratio=0)
+  show(t)
+  ```
+
+  **Notes:**
+
+  - With `aspect_ratio = 0` the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window.
+  - Both `show(obj, viewer="<Viewer name>", anchor="<location>")` and `open_viewer("<Viewer name>", anchor="<location>"); show(obj)` achieve the same.
+
+  ![Viewer locations](./screenshots/viewer-locations.png)
+
+### b) Show objects
 
 **`show(cad_objs, **kwargs)`\*\*
 
@@ -280,7 +331,7 @@ _Keywork arguments `kwargs`:_
   - `timeit`: Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
   - `js_debug`: Enable debug output in browser console (default=False)
 
-### b) Manage default values
+### c) Manage default values
 
 - **`set_defaults(**kwargs)`:** allows to globally set the defaults value so they do not need to be provided with every `show` call
 
@@ -292,7 +343,7 @@ _Keywork arguments `kwargs`:_
 - **`get_defaults()`:** Get all global defaults
 - **`reset_defaults()`**: Reset all defaults back to its initial value
 
-### c) Replay objects
+### d) Replay objects
 
 Note, this is not supported in the standalone viewer for the time being.
 
@@ -306,7 +357,7 @@ Note, this is not supported in the standalone viewer for the time being.
   - `cad_width` (`default=600`): Width of the CAD view
   - `height` (`default=600`): Height of the CAD view
 
-### d) Exports:
+### e) Exports:
 
 - **Export as PNG:**
 
