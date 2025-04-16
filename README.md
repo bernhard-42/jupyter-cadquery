@@ -8,9 +8,11 @@ View [CadQuery](https://github.com/cadquery/cadquery), [Build123d](https://githu
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
+<!-- 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb) 
+-->
 
 ## Overview
 
@@ -466,14 +468,28 @@ tbd.
 
 ## Migration from 3.x
 
-**Deprecations:**
-
-tbd.
-
 **Changed behavior:**
 
-tbd.
+- In order to align Jupyter CadQuery with OCP Viewer for VS Code, the following changes have nbeen implemented:
+  - After `openviewer(...)` the default viewer location is set. Force to a cell based viewer by `viewer=""` instead of `viewer=None`
+  - `show` keyword changes
+    - `mate_scale` is replaced by `helper_scale`
+    - `control = "orbit"` and `control = "Trackball"` are replaced by `orbit_control = True` or `orbit_control = False`
+    - `reset_camera` does not take boolean any more. Use the enum `Camera` (`from jupyter_cadquery import Camera`)
+    - `collapse` does not take strings any more. Use the enum `Collapse` (`from jupyter_cadquery import Collapse`)
+    - `default_edge_color` needs to be changed to `default_edgecolor`.
+    - `PartGroup`, `Part`, `Faces`, `Edges`, `Vertices` classes do not exist any more. Use CadQuery or Build123d assemblies instead.
+    - `optimal_bb` does not exist any more. The system now determines the right bounding box itself.
+    - `js_debug` does not exist any more. Use `debug`instead.
 
+- Change functions and methods
+  - The function `webcol_to_cq` does not exist any more. Use web color strings (`#80ff80`) or CadQuery / Build123d Color classes.
+  - The method `select_clipping` is replaces by `viewer.tab = "clip" (other alternatives are "tree" and "material")
+  - The method `select_tree` is replaces by `viewer.tab = "tree" (other alternatives are "clip" and "material")
+
+- Removed functionality
+  - The `voila` base standalone viewer is removed. Use `python -m ocp_vscode` now, using th4e same `show` commands
+  - The docker support is reduced to providing a Docker file
 
 ## Known issues
 
