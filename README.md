@@ -24,7 +24,7 @@ It is now based on:
 - the viewer is [three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)
 - the tessellation logic provided by [ocp-tessellate](https://github.com/bernhard-42/ocp-tessellate),
 - the communication between Python and Javascript provided by [cad-viewer-widget](https://github.com/bernhard-42/cad-viewer-widget), a custom [ipywidget](https://github.com/jupyter-widgets/ipywidgets),
-- and the measurement feature (NEW!) provided again by [ocp_vscode](https://github.com/bernhard-42/vscode-ocp-cad-viewer)
+- and the new (!) measurement feature provided again by [ocp_vscode](https://github.com/bernhard-42/vscode-ocp-cad-viewer)
 
 **Note:** For changes see the migration section at the end of this page.
 
@@ -41,7 +41,7 @@ It is now based on:
   - Directly in the JupyterLab output cell
   - In a central Jupyterlab sidecar
   - In separate windows in Jupyter lab
-  - For sidecar and windows based viewers, the viewer scales with the size of the container window. I can have a fixed aspexct ratio (hight to wodth ratio) or fill the complete container window.
+  - For sidecar and windows based viewers, the viewers resize with the size of the container window. You can have a fixed aspect ratio (height to width ratio) or fill the complete container window.
 
 - Animations (see examples below)
   - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of model
@@ -51,10 +51,10 @@ It is now based on:
   - Clipping with max 3 clipping planes (of free orientation) with cap faces being properly shown
   - Toggle visibility of shapes and edges
   - Orthographic and perspective view
-  - Material editor (light intensity, metalness and roughness)
+  - Simple material editor (light intensity, metalness and roughness)
   - Transparency mode
   - Double click on shapes shows bounding box info
-  - Click on tree labels shows bounding box info and optionally hides or isolates the elements
+  - Click on tree labels shows bounding box info and optionally hides or isolates the elements (use the modifier keys described in online help)
 
 
 ## Examples
@@ -470,8 +470,8 @@ tbd.
 
 **Changed behavior:**
 
-- In order to align Jupyter CadQuery with OCP Viewer for VS Code, the following changes have nbeen implemented:
-  - After `openviewer(...)` the default viewer location is set. Force to a cell based viewer by `viewer=""` instead of `viewer=None`
+- In order to align Jupyter CadQuery with OCP Viewer for VS Code, the following changes have been implemented:
+  - After `openviewer(...)` the default viewer location is set. Force to a cell based viewer by using the keyword parameter `viewer=""` instead of `viewer=None`
   - `show` keyword changes
     - `mate_scale` is replaced by `helper_scale`
     - `control = "orbit"` and `control = "Trackball"` are replaced by `orbit_control = True` or `orbit_control = False`
@@ -484,11 +484,11 @@ tbd.
 
 - Change functions and methods
   - The function `webcol_to_cq` does not exist any more. Use web color strings (`#80ff80`) or CadQuery / Build123d Color classes.
-  - The method `select_clipping` is replaces by `viewer.tab = "clip" (other alternatives are "tree" and "material")
-  - The method `select_tree` is replaces by `viewer.tab = "tree" (other alternatives are "clip" and "material")
+  - The method `select_clipping` is replaced by `viewer.tab = "clip"` (other alternatives are "tree" and "material")
+  - The method `select_tree` is replaced by `viewer.tab = "tree"` (other alternatives are "clip" and "material")
 
 - Removed functionality
-  - The `voila` base standalone viewer is removed. Use `python -m ocp_vscode` now, using th4e same `show` commands
+  - The `voila` base standalone viewer is removed. Use `python -m ocp_vscode` now, using the same `show` commands
   - The docker support is reduced to providing a Docker file
 
 ## Known issues
