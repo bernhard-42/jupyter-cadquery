@@ -1,12 +1,11 @@
 channels:
-  - defaults
   - cadquery
   - conda-forge
 dependencies:
-  - python=3.10
-  - cadquery=master
-  - matplotlib=3.6
-  - pip
+  - python=3.12
+  - matplotlib=3.10.1
+  - pip=25.0.1
   - pip:
+      - 
       - jupyter-cadquery==4.0.1
       - cadquery-massembly==1.0.0

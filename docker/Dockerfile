@@ -1,4 +1,4 @@
-FROM condaforge/mambaforge:4.12.0-0
+FROM condaforge/mambaforge:24.9.2-0
 
 RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
     apt-get update -y && \
@@ -6,16 +6,15 @@ RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
     apt-get clean
 
 RUN mamba create -n cq -y python=3.10 && \
-    mamba install -n cq -y -c conda-forge -c cadquery OCP=7.8.1 vtk=9.3.1 matplotlib && \
+    env -u CONDA_PREFIX pip install git+https://github.com/cadquery/cadquery && \
     mamba clean --all && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
-RUN mamba install -n cq -y -c conda-forge -c cadquery cadquery=master && \
-    mamba clean --all && \
+RUN pip install build123d && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 RUN . "/opt/conda/etc/profile.d/conda.sh" && conda activate cq && \
-    pip install jupyter-cadquery==4.0.1 cadquery-massembly~=1.0.0 jupyterlab~=4.3 && \
+    pip install jupyter-cadquery==4.0.1 cadquery-massembly~=1.0.0 jupyterlab~=4.4.0 && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 VOLUME /home/cq/
