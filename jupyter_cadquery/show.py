@@ -149,28 +149,25 @@ def show(
     Parameters
         cad_objs:                All cad objects that should be shown as positional parameters
 
-    Keywords for show:
+    Valid keywords for the CAD object attributes:
         names:                   List of names for the cad_objs. Needs to have the same length as cad_objs
         colors:                  List of colors for the cad_objs. Needs to have the same length as cad_objs
         alphas:                  List of alpha values for the cad_objs. Needs to have the same length as cad_objs
-        progress:                Show progress of tessellation with None is no progress indicator. (default="-+*c")
-                                 for object: "-": is reference,
-                                             "+": gets tessellated with Python code,
-                                             "*": gets tessellated with native code,
-                                             "c": from cache
+
+    Valid keywords for the viewer location:
         viewer                   The name of the viewer. If None or "", then the viewer will be opened in the cell output
         anchor:                  The location where to open the viewer
                                  (sidecar: "right", split windows: "split-right", "split-left", "split-top", "split-bottom")
         cad_width:               The width of the viewer canvas for cell based viewers (viewer is None or "") (default=800)
         height:                  The height of the viewer canvas for cell based viewers (viewer is None or "") (default=600)
-        theme:                   The theme of the viewer ("light" or "dark")
-        pinning:                 Whether cell based viewers (viewer is None or "") can be pinned as png
 
-    Valid keywords to configure the viewer (**kwargs):
+    Valid keywords to configure the viewer:
     - UI
         glass:                   Use glass mode where tree is an overlay over the cad object (default=False)
         tools:                   Show tools (default=True)
         tree_width:              Width of the object tree (default=240)
+        theme:                   The theme of the viewer ("light" or "dark")
+        pinning:                 Whether cell based viewers (viewer is None or "") can be pinned as png
 
     - Viewer
         axes:                    Show axes (default=False)
@@ -236,6 +233,11 @@ def show(
         show_parent:             Render parent of faces, edges or vertices as wireframe (default=False)
         show_sketch_local:       In build123d show local sketch in addition to relocate sketch (default=True)
         helper_scale:            Scale of rendered helpers (locations, axis, mates for MAssemblies) (default=1)
+        progress:                Show progress of tessellation with None is no progress indicator. (default="-+*c")
+                                 for object: "-": is reference,
+                                             "+": gets tessellated with Python code,
+                                             "*": gets tessellated with native code,
+                                             "c": from cache
 
     - Debug
         debug:                   Show debug statements to the VS Code browser console (default=False)
@@ -321,32 +323,27 @@ def show_object(
     Parameters:
         obj:                     The CAD object to be shown
 
-    Keywords for show_object:
+    Valid keywords for the CAD object attributes:
         name:                    The name of the CAD object
         options:                 A dict of color and alpha value: {"alpha":0.5, "color": (64, 164, 223)}
                                  0 <= alpha <= 1.0 and color is a 3-tuple of values between 0 and 255
+        clear:                   In interactice mode, clear the stack of objects to be shown (typically used for the first object)
         parent:                  Add another object, usually the parent of e.g. edges or vertices with alpha=0.25
-        clear:                   In interactice mode, clear the stack of objects to be shown
-                                 (typically used for the first object)
+
+    Valid keywords for the viewer location:
         viewer                   The name of the viewer. If None or "", then the viewer will be opened in the cell output
         anchor:                  The location where to open the viewer
                                  (sidecar: "right", split windows: "split-right", "split-left", "split-top", "split-bottom")
         cad_width:               The width of the viewer canvas for cell based viewers (viewer is None or "") (default=800)
         height:                  The height of the viewer canvas for cell based viewers (viewer is None or "") (default=600)
-        theme:                   The theme of the viewer ("light" or "dark")
-        pinning:                 Whether cell based viewers (viewer is None or "") can be pinned as png
-        progress:                Show progress of tessellation with None is no progress indicator. (default="-+*c")
-                                 for object: "-": is reference,
-                                             "+": gets tessellated with Python code,
-                                             "*": gets tessellated with native code,
-                                             "c": from cache
-
 
     Valid keywords to configure the viewer (**kwargs):
     - UI
         glass:                   Use glass mode where tree is an overlay over the cad object (default=False)
         tools:                   Show tools (default=True)
         tree_width:              Width of the object tree (default=240)
+        theme:                   The theme of the viewer ("light" or "dark")
+        pinning:                 Whether cell based viewers (viewer is None or "") can be pinned as png
 
     - Viewer
         axes:                    Show axes (default=False)
@@ -412,6 +409,11 @@ def show_object(
         show_parent:             Render parent of faces, edges or vertices as wireframe (default=False)
         show_sketch_local:       In build123d show local sketch in addition to relocate sketch (default=True)
         helper_scale:            Scale of rendered helpers (locations, axis, mates for MAssemblies) (default=1)
+        progress:                Show progress of tessellation with None is no progress indicator. (default="-+*c")
+                                 for object: "-": is reference,
+                                             "+": gets tessellated with Python code,
+                                             "*": gets tessellated with native code,
+                                             "c": from cache
 
     - Debug
         debug:                   Show debug statements to the VS Code browser console (default=False)

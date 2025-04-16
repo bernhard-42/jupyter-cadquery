@@ -268,70 +268,127 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
   **Notes:**
 
-  - With `aspect_ratio = 0` the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window.
+  - With `aspect_ratio = 0` the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window. It currently only works with `open_viewer`, not with `show`
   - Both `show(obj, viewer="<Viewer name>", anchor="<location>")` and `open_viewer("<Viewer name>", anchor="<location>"); show(obj)` achieve the same.
 
   ![Viewer locations](./screenshots/viewer-locations.png)
 
 ### b) Show objects
 
-**`show(cad_objs, **kwargs)`\*\*
+- **Command**
 
-_Positional arguments `args`:_
+  ```python
+  show(cad_objs, **kwargs)
+  ```
 
-- `cad_objs`: Comma separated list of cadquery objects;
+- **Parameters:**
 
-_Keywork arguments `kwargs`:_
+    ```text
+    cad_objs:                All cad objects that should be shown as positional parameters
+    ```
 
-- Display options
+- **Valid keywords for the CAD object attributes:**
 
-  - `viewer`: Name of the sidecar viewer (default=None)
-  - `anchor`: How to open sidecar: "right", "split-right", "split-bottom", ... (default="right")
-  - `cad_width`: Width of CAD view part of the view (default=800)
-  - `tree_width`: Width of navigation tree part of the view (default=250)
-  - `aspect_ratio`: The ratio of height to width (for all non cell viewers)
-  - `height`: Height of the CAD view (default=600)
-  - `theme`: Theme "light" or "dark" (default="light")
-  - `pinning`: Allow replacing the CAD View by a canvas screenshot (default=True in cells, else False)
+  ```text
+  names:                     List of names for the cad_objs. Needs to have the same length as cad_objs
+  colors:                    List of colors for the cad_objs. Needs to have the same length as cad_objs
+  alphas:                    List of alpha values for the cad_objs. Needs to have the same length as cad_objs
+  ```
 
-- Tessellation options
+- **Valid keywords for the viewer location:**
 
-  - `angular_tolerance`: Shapes: Angular deflection in radians for tessellation (default=0.2)
-  - `deviation`: Shapes: Deviation from linear deflection value (default=0.1)
-  - `edge_accuracy`: Edges: Precision of edge discretization (default=None, i.e. mesh quality / 100)
-  - `default_color`: Default face color (default=(232, 176, 36))
-  - `default_edge_color`: Default edge color (default="#707070")
-  - `optimal_bb`: Use optimal bounding box (default=False)
-  - `render_normals`: Render the vertex normals (default=False)
-  - `render_edges`: Render edges (default=True)
-  - `render_mates`: Render mates (for MAssemblies, default=False)
-  - `helper_scale`: Scale of rendered mates (for MAssemblies, default=1)
+  ```text
+  viewer                     The name of the viewer. If None or "", then the viewer will be opened in the cell output
+  anchor:                    The location where to open the viewer
+                             (sidecar: "right", split windows: "split-right", "split-left", "split-top", "split-bottom")
+  cad_width:                 The width of the viewer canvas for cell based viewers (viewer is None or "") (default=800)
+  height:                    The height of the viewer canvas for cell based viewers (viewer is None or "") (default=600)
+  ```
 
-- Viewer options
+- **Valid keywords to configure the viewer:**
 
-  - `control`: Use trackball controls ('trackball') or orbit controls ('orbit') (default='trackball')
-  - `up`: Use z-axis ('Z') or y-axis ('Z') as up direction for the camera, legacy behaviour: 'L' (default='Z')
-  - `axes`: Show axes (default=False)
-  - `axes0`: Show axes at (0,0,0) (default=False)
-  - `grid`: Show grid (default=[False, False, False])
-  - `ticks`: Hint for the number of ticks in both directions (default=10)
-  - `ortho`: Use orthographic projections (default=True)
-  - `transparent`: Show objects transparent (default=False)
-  - `black_edges`: Show edges in black (default=False)
-  - `position`: Absolute camera position that will be scaled (default=None)
-  - `quaternion`: Camera rotation as quaternion (x, y, z, w) (default=None)
-  - `target`: Camera target to look at (default=None)
-  - `zoom`: Zoom factor of view (default=2.5)
-  - `reset_camera`: Reset camera position, rotation and zoom to default (default=True)
-  - `zoom_speed`: Mouse zoom speed (default=1.0)
-  - `pan_speed`: Mouse pan speed (default=1.0)
-  - `rotate_speed`: Mouse rotate speed (default=1.0)
-  - `ambient_intensity`: Intensity of ambient light (default=0.75)
-  - `direct_intensity`: Intensity of direct lights (default=0.15)
-  - `show_parent`: Show the parent for edges, faces and vertices objects
-  - `tools`: Show the viewer tools like the object tree (default=True)
-  - `timeit`: Show rendering times, levels = False, 0,1,2,3,4,5 (default=False)
-  - `js_debug`: Enable debug output in browser console (default=False)
+  ```text
+  - UI
+    glass:                   Use glass mode where tree is an overlay over the cad object (default=False)
+    tools:                   Show tools (default=True)
+    tree_width:              Width of the object tree (default=240)
+    theme:                   The theme of the viewer ("light" or "dark")
+    pinning:                 Whether cell based viewers (viewer is None or "") can be pinned as png
+
+  - Viewer
+    axes:                    Show axes (default=False)
+    axes0:                   Show axes at (0,0,0) (default=False)
+    grid:                    Show grid (default=False)
+    ortho:                   Use orthographic projections (default=True)
+    transparent:             Show objects transparent (default=False)
+    default_opacity:         Opacity value for transparent objects (default=0.5)
+    black_edges:             Show edges in black color (default=False)
+    orbit_control:           Mouse control use "orbit" control instead of "trackball" control (default=False)
+    collapse:                Collapse.LEAVES: collapse all single leaf nodes,
+                             Collapse.ROOT: expand root only,
+                             Collapse.ALL: collapse all nodes,
+                             Collapse.NONE: expand all nodes
+                             (default=Collapse.ROOT)
+    ticks:                   Hint for the number of ticks in both directions (default=10)
+    center_grid:             Center the grid at the origin or center of mass (default=False)
+    up:                      Use z-axis ('Z') or y-axis ('Y') as up direction for the camera (default="Z")
+    explode:                 Turn on explode mode (default=False)
+
+    zoom:                    Zoom factor of view (default=1.0)
+    position:                Camera position
+    quaternion:              Camera orientation as quaternion
+    target:                  Camera look at target
+    reset_camera:            Camera.RESET: Reset camera position, rotation, zoom and target
+                             Camera.CENTER: Keep camera position, rotation, zoom, but look at center
+                             Camera.KEEP: Keep camera position, rotation, zoom, and target
+                             (default=Camera.RESET)
+
+    clip_slider_0:           Setting of clipping slider 0 (default=None)
+    clip_slider_1:           Setting of clipping slider 1 (default=None)
+    clip_slider_2:           Setting of clipping slider 2 (default=None)
+    clip_normal_0:           Setting of clipping normal 0 (default=None)
+    clip_normal_1:           Setting of clipping normal 1 (default=None)
+    clip_normal_2:           Setting of clipping normal 2 (default=None)
+    clip_intersection:       Use clipping intersection mode (default=False)
+    clip_planes:             Show clipping plane helpers (default=False)
+    clip_object_colors:      Use object color for clipping caps (default=False)
+
+    pan_speed:               Speed of mouse panning (default=1)
+    rotate_speed:            Speed of mouse rotate (default=1)
+    zoom_speed:              Speed of mouse zoom (default=1)
+
+  - Renderer
+    deviation:               Shapes: Deviation from linear deflection value (default=0.1)
+    angular_tolerance:       Shapes: Angular deflection in radians for tessellation (default=0.2)
+    edge_accuracy:           Edges: Precision of edge discretization (default: mesh quality / 100)
+
+    default_color:           Default mesh color (default=(232, 176, 36))
+    default_edgecolor:       Default color of the edges of a mesh (default=#707070)
+    default_facecolor:       Default color of the edges of a mesh (default=#ee82ee)
+    default_thickedgecolor:  Default color of the edges of a mesh (default=#ba55d3)
+    default_vertexcolor:     Default color of the edges of a mesh (default=#ba55d3)
+    ambient_intensity:       Intensity of ambient light (default=1.00)
+    direct_intensity:        Intensity of direct light (default=1.10)
+    metalness:               Metalness property of the default material (default=0.30)
+    roughness:               Roughness property of the default material (default=0.65)
+
+    render_edges:            Render edges  (default=True)
+    render_normals:          Render normals (default=False)
+    render_mates:            Render mates for MAssemblies (default=False)
+    render_joints:           Render build123d joints (default=False)
+    show_parent:             Render parent of faces, edges or vertices as wireframe (default=False)
+    show_sketch_local:       In build123d show local sketch in addition to relocate sketch (default=True)
+    helper_scale:            Scale of rendered helpers (locations, axis, mates for MAssemblies) (default=1)
+    progress:                Show progress of tessellation with None is no progress indicator. (default="-+*c")
+                             for object: "-": is reference,
+                                         "+": gets tessellated with Python code,
+                                         "*": gets tessellated with native code,
+                                         "c": from cache
+
+  - Debug
+    debug:                   Show debug statements to the VS Code browser console (default=False)
+    timeit:                  Show timing information from level 0-3 (default=False)
+  ```
 
 ### c) Manage default values
 
@@ -359,7 +416,7 @@ Note, this is not supported in the standalone viewer for the time being.
   - `cad_width` (`default=600`): Width of the CAD view
   - `height` (`default=600`): Height of the CAD view
 
-### e) Exports:
+### e) Exports
 
 - **Export as PNG:**
 
