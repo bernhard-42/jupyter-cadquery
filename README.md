@@ -211,9 +211,9 @@ Note: On a Mac the first run of the below commands can take minutes until the na
 The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _OCP CAD Viewer for VS Code_. To start it:
 
 1. Activate your python environment
-2. Execute `python -m ocp_vscode [--port 3939]
+2. Execute `python -m ocp_vscode [--port <port number>]`
 
-3939 is the standard port that will be used automatically by the `show` commands
+3939 is the standard port that will be used automatically by the `show` commands.
 
 
 ## Demo Notebooks
