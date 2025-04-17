@@ -1,8 +1,6 @@
-# Jupyter-CadQuery / Build123d / OCP 
+# Jupyter-CadQuery / Build123d
 
-**v4.0.0 (2025-04-...)**
-
-**!!! The README is work in progess !!!**
+**v4.0.0 (2025-04-17)**
 
 View [CadQuery](https://github.com/cadquery/cadquery), [Build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
@@ -13,6 +11,21 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb) 
 -->
+
+## Table of contents
+
+- [Overview](#overview])
+- [Key Features](#key-features])
+- [Examples](#examples])
+- [Preview installation (until it is available on pypi)](#preview-installation-until-it-is-available-on-pypi)
+- [Installation (will not work yet, since packages are not on pypi yet)](#installation-will-not-work-yet-since-packages-are-not-on-pypi-yet)
+- [Standalone version](#standalone-version])
+- [Demo Notebooks](#demo-notebooks])
+- [Usage](#usage])
+- [Release v4](release-v4)
+- [Migration from 3.x](#migration-from-3x)
+- [Known issues](#known-issues)
+
 
 ## Overview
 
@@ -455,15 +468,18 @@ Note, this is not supported in the standalone viewer for the time being.
     Note: This does not work with viewers in sidecars!
 
 
-## Release v4.0.0 (2025-04-...)
+## Release v4
+
+Current release: **v4.0.0** (2025-04-17)
 
 ### Changes
 
-tbd.
+v4 is now based on _OCP CAD Viewer for VS Code_, but keeps the behavior very similar to v3.
+For the introduced changes, see Migration below
 
 ### Fixes
 
-tbd.
+Not tracked for v3 => v4 due to using a new base (_OCP CAD Viewer for VS Code_)
 
 
 ## Migration from 3.x
