@@ -1,8 +1,8 @@
-# Jupyter-CadQuery / build123d
+# Jupyter for CadQuery / build123d
 
-**v4.0.1 (2025-04-17)**
+The Python package provides a Jupyterlab extension and a JupyterServer extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
-View [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
+Current version: **v4.0.1 (2025-04-17)**
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
