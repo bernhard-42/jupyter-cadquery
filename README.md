@@ -2,7 +2,7 @@
 
 The Python package provides a Jupyterlab extension and a JupyterServer extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
-Current version: **v4.0.1 (2025-04-17)**
+Current version: **v4.0.2** (2025-04-17)
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
@@ -122,7 +122,7 @@ The animation system also allows to create custom defined animations like this a
       # pip install jupyter-cadquery
       # Preview installation
       pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.2/cad_viewer_widget-3.0.2-py3-none-any.whl
-      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.1/jupyter_cadquery-4.0.1-py3-none-any.whl
+      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.2/jupyter_cadquery-4.0.2-py3-none-any.whl
       ```
 
   4. Run Jupyter CadQuery
@@ -147,7 +147,7 @@ The animation system also allows to create custom defined animations like this a
       # pip install jupyter-cadquery
       # Preview installation
       pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.2/cad_viewer_widget-3.0.2-py3-none-any.whl
-      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.1/jupyter_cadquery-4.0.1-py3-none-any.whl
+      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.2/jupyter_cadquery-4.0.2-py3-none-any.whl
       ```
 
   4. Run Jupyter CadQuery
@@ -172,7 +172,7 @@ Note: On a Mac the first run of the below commands can take minutes until the na
         jupyter_cadquery enabled
 
         - Validating jupyter_cadquery...
-        jupyter_cadquery 4.0.1 OK
+        jupyter_cadquery 4.0.2 OK
 
         jupyter_server_terminals enabled
         - Validating jupyter_server_terminals...
@@ -187,7 +187,7 @@ Note: On a Mac the first run of the below commands can take minutes until the na
     Config dir: /usr/local/etc/jupyter
     ```
 
-    You should again see `jupyter_cadquery 4.0.1 OK`. This ensures that the **viewer frontend** is properly installed
+    You should again see `jupyter_cadquery 4.0.2 OK`. This ensures that the **viewer frontend** is properly installed
 
 2. Check the Jupyter server extension, the measurement backend: `jupyter server extension list`
 
@@ -202,7 +202,7 @@ Note: On a Mac the first run of the below commands can take minutes until the na
 
         - Validating jupyter_cadquery...
     Extension package jupyter_cadquery took 1.6050s to import
-        jupyter_cadquery 4.0.1 OK
+        jupyter_cadquery 4.0.2 OK
 
         jupyter_server_terminals enabled
         - Validating jupyter_server_terminals...
@@ -217,7 +217,7 @@ Note: On a Mac the first run of the below commands can take minutes until the na
     Config dir: /usr/local/etc/jupyter
     ```
 
-    You should see `jupyter_cadquery 4.0.1 OK`. This ensures that the **measurement backend** is properly installed.
+    You should see `jupyter_cadquery 4.0.2 OK`. This ensures that the **measurement backend** is properly installed.
 
     If you see "Extension package jupyter_cadquery took ...", this is basically OCP and VTK loading time (this test import OCP and with that VTK).
 
@@ -472,7 +472,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
 ## Release v4
 
-Current release: **v4.0.1** (2025-04-17)
+Current version: **v4.0.2** (2025-04-17)
 
 ### Changes
 

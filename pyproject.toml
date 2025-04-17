@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jupyter_cadquery"
-version = "4.0.1"
+version = "4.0.2"
 description = "An extension to render cadquery objects in JupyterLab via pythreejs"
 readme = "README.md"
 authors = [{ name = "Bernhard Walter", email = "b_walter@arcor.de" }]
@@ -66,7 +66,7 @@ jupyter-cadquery = "jupyter_cadquery.app:JupyterCadqueryBackend.launch_instance"
 
 
 [tool.bumpversion]
-current_version = "4.0.1"
+current_version = "4.0.2"
 commit = false
 tag = false
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\d*)(?P<build>\\d*)"
@@ -93,6 +93,11 @@ replace = '__version__ = "{new_version}"'
 filename = "README.md"
 search = 'jupyter-cadquery=={current_version}'
 replace = 'jupyter-cadquery=={new_version}'
+
+[[tool.bumpversion.files]]
+filename = "README.md"
+search = 'Current version: **v{current_version}**'
+replace = 'Current version: **v{new_version}**'
 
 [[tool.bumpversion.files]]
 filename = "README.md"

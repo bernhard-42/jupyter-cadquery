@@ -14,7 +14,7 @@ RUN pip install build123d && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 RUN . "/opt/conda/etc/profile.d/conda.sh" && conda activate cq && \
-    pip install jupyter-cadquery==4.0.1 cadquery-massembly~=1.0.0 jupyterlab~=4.4.0 && \
+    pip install jupyter-cadquery==4.0.2 cadquery-massembly~=1.0.0 jupyterlab~=4.4.0 && \
     find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 
 VOLUME /home/cq/
