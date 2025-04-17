@@ -45,6 +45,15 @@ from ocp_vscode.config import (
     status,
     workspace_config,
 )
+
+# Inject Collapse enum. Import in cad_viewer_widget would lead to circular import
+from cad_viewer_widget.widget import _set_collapse
+
+_set_collapse(
+    {"R": Collapse.ROOT, "C": Collapse.ALL, "E": Collapse.NONE, "1": Collapse.LEAVES}
+)
+del _set_collapse
+
 from ocp_vscode.show import show_all, reset_show, show_clear
 
 
