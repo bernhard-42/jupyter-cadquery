@@ -121,8 +121,8 @@ The animation system also allows to create custom defined animations like this a
       ```bash
       # pip install jupyter-cadquery
       # Preview installation
-      pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.0/cad_viewer_widget-3.0.0-py3-none-any.whl
-      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.0/jupyter_cadquery-4.0.0-py3-none-any.whl
+      pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.1/cad_viewer_widget-3.0.1-py3-none-any.whl
+      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.1/jupyter_cadquery-4.0.1-py3-none-any.whl
       ```
 
   4. Run Jupyter CadQuery
@@ -146,8 +146,8 @@ The animation system also allows to create custom defined animations like this a
       ```bash
       # pip install jupyter-cadquery
       # Preview installation
-      pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.0/cad_viewer_widget-3.0.0-py3-none-any.whl
-      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.0/jupyter_cadquery-4.0.0-py3-none-any.whl
+      pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.1/cad_viewer_widget-3.0.1-py3-none-any.whl
+      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.1/jupyter_cadquery-4.0.1-py3-none-any.whl
       ```
 
   4. Run Jupyter CadQuery
