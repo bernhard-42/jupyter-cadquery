@@ -17,7 +17,6 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [Examples](#examples)
-- [Preview installation (until it is available on pypi)](#preview-installation-until-it-is-available-on-pypi)
 - [Installation](#installation)
 - [Standalone version](#standalone-version)
 - [Demo Notebooks](#demo-notebooks)
