@@ -1,11 +1,12 @@
 channels:
-  - cadquery
   - conda-forge
+  - cadquery
 dependencies:
   - python=3.12
   - matplotlib=3.10.1
   - pip=25.0.1
+  - cadquery=master
   - pip:
-      - 
+      - build123d
       - jupyter-cadquery==4.0.2
       - cadquery-massembly==1.0.0
