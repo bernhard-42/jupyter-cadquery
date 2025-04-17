@@ -1,8 +1,8 @@
-# Jupyter-CadQuery / Build123d
+# Jupyter-CadQuery / build123d
 
 **v4.0.0 (2025-04-17)**
 
-View [CadQuery](https://github.com/cadquery/cadquery), [Build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
+View [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
@@ -45,9 +45,9 @@ It is now based on:
 
 - Code CAD support
   - _CadQuery >= 2.5_ including _master_ (as of 2025-04)
-  - _Build123d_ >=0.9 including _master_ (as of 2025-04)
+  - _build123d_ >=0.9 including _master_ (as of 2025-04)
   - _OCP_ == 7.8.X (as of 2025-04)
-  - Auto display of _CadQuery_ and _Build123d_ shapes
+  - Auto display of _CadQuery_ and _build123d_ shapes
   - Replay mode for CadQuery objects
 
 - Viewing options:
@@ -57,7 +57,8 @@ It is now based on:
   - For sidecar and windows based viewers, the viewers resize with the size of the container window. You can have a fixed aspect ratio (height to width ratio) or fill the complete container window.
 
 - Animations (see examples below)
-  - Support [Manual Assemblies](https://github.com/bernhard-42/cadquery-massembly) with animation of model
+  - Support [animated CadQuery assemblies](https://github.com/bernhard-42/cadquery-massembly)
+  - Support [animated build123d assemblies](https://github.com/bernhard-42/bd_animation)
   - Animated explode mode for _CadQuery_ and _build123d_ assemblies
 
 - Viewer features
@@ -85,7 +86,7 @@ I allows to measure distance of objects, angle beween edges and faces and show p
 
 ### Animation System - explode assemblies
 
-The animation system allows to explode CadQuery and Build123d assemblies or group of CAD objects. The epxplosion center is (0,0,0).
+The animation system allows to explode CadQuery and build123d assemblies or group of CAD objects. The epxplosion center is (0,0,0).
 
 ![Exploded Quadruped](screenshots/explode.gif)
 
@@ -136,7 +137,7 @@ jupyter lab extension list
     jupyter lab
     ```
 
-### Build123d
+### build123d
 
 1. Create and activate virtual environment (conda, pyenv-virtualenv, ...)
 
@@ -237,7 +238,7 @@ Standard examples
 - [Standard CadQuery examples in Jupyter CadQuery](./examples/2-cadquery-examples.ipynb)
 - [An OCP example (the OCC bottle)](./examples/3-occ.ipynb)
 - [CadQuery Sketch support](./examples/4-sketches.ipynb)
-- [Build123d examples](./examples/5-build123d.ipynb)
+- [build123d examples](./examples/5-build123d.ipynb)
 
 Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
@@ -494,12 +495,12 @@ Not tracked for v3 => v4 due to using a new base (_OCP CAD Viewer for VS Code_)
     - `reset_camera` does not take boolean any more. Use the enum `Camera` (`from jupyter_cadquery import Camera`)
     - `collapse` does not take strings any more. Use the enum `Collapse` (`from jupyter_cadquery import Collapse`)
     - `default_edge_color` needs to be changed to `default_edgecolor`.
-    - `PartGroup`, `Part`, `Faces`, `Edges`, `Vertices` classes do not exist any more. Use CadQuery or Build123d assemblies instead.
+    - `PartGroup`, `Part`, `Faces`, `Edges`, `Vertices` classes do not exist any more. Use CadQuery or build123d assemblies instead.
     - `optimal_bb` does not exist any more. The system now determines the right bounding box itself.
     - `js_debug` does not exist any more. Use `debug`instead.
 
 - Change functions and methods
-  - The function `webcol_to_cq` does not exist any more. Use web color strings (`#80ff80`) or CadQuery / Build123d Color classes.
+  - The function `webcol_to_cq` does not exist any more. Use web color strings (`#80ff80`) or CadQuery / build123d Color classes.
   - The method `select_clipping` is replaced by `viewer.tab = "clip"` (other alternatives are "tree" and "material")
   - The method `select_tree` is replaced by `viewer.tab = "tree"` (other alternatives are "clip" and "material")
 
