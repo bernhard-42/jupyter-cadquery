@@ -46,14 +46,14 @@ It is now based on:
   - _CadQuery >= 2.5_ including _master_ (as of 2025-04)
   - _build123d_ >=0.9 including _master_ (as of 2025-04)
   - _OCP_ == 7.8.X (as of 2025-04)
-  - Auto display of _CadQuery_ and _build123d_ shapes
-  - Replay mode for CadQuery objects
 
 - Viewing options:
   - Directly in the JupyterLab output cell
   - In a central Jupyterlab sidecar
   - In separate windows in Jupyter lab
   - For sidecar and windows based viewers, the viewers resize with the size of the container window. You can have a fixed aspect ratio (height to width ratio) or fill the complete container window.
+  - Auto display of _CadQuery_ and _build123d_ shapes
+  - Replay mode for CadQuery objects
 
 - Animations (see examples below)
   - Support [animated CadQuery assemblies](https://github.com/bernhard-42/cadquery-massembly)
