@@ -116,13 +116,10 @@ The animation system also allows to create custom defined animations like this a
       mamba install -c conda-forge -c cadquery cadquery=master
       ```
 
-  3. Install Jupyter CadQuery  **(use preview installation approach for now)**
+  3. Install Jupyter CadQuery
 
       ```bash
-      # pip install jupyter-cadquery
-      # Preview installation
-      pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.2/cad_viewer_widget-3.0.2-py3-none-any.whl
-      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.2/jupyter_cadquery-4.0.2-py3-none-any.whl
+      pip install jupyter-cadquery
       ```
 
   4. Run Jupyter CadQuery
@@ -141,13 +138,10 @@ The animation system also allows to create custom defined animations like this a
       pip install build123d
       ```
 
-  3. Install Jupyter CadQuery  **(use preview installation approach for now)**
+  3. Install Jupyter CadQuery
 
       ```bash
-      # pip install jupyter-cadquery
-      # Preview installation
-      pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.2/cad_viewer_widget-3.0.2-py3-none-any.whl
-      pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.2/jupyter_cadquery-4.0.2-py3-none-any.whl
+      pip install jupyter-cadquery
       ```
 
   4. Run Jupyter CadQuery
@@ -158,7 +152,7 @@ The animation system also allows to create custom defined animations like this a
 
 ### Verfiy the installation
 
-Note: On a Mac the first run of the below commands can take minutes until the native libraries OCP and vtk are initialized. Afterwards it takes seconds only.
+**Note**: On a Mac the first run of the below commands can take minutes until the native libraries OCP and vtk are initialized. Afterwards it takes seconds only.
 
 1. Check the Jupyter lab extension, the viewer frontend: `jupyter lab extension list`
 
