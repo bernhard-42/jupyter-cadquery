@@ -1,6 +1,6 @@
 # Jupyter-CadQuery / build123d
 
-**v4.0.0 (2025-04-17)**
+**v4.0.1 (2025-04-17)**
 
 View [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
@@ -18,7 +18,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 - [Key Features](#key-features)
 - [Examples](#examples)
 - [Preview installation (until it is available on pypi)](#preview-installation-until-it-is-available-on-pypi)
-- [Installation (will not work yet, since packages are not on pypi yet)](#installation-will-not-work-yet-since-packages-are-not-on-pypi-yet)
+- [Installation](#installation)
 - [Standalone version](#standalone-version)
 - [Demo Notebooks](#demo-notebooks)
 - [Usage](#usage)
@@ -80,6 +80,7 @@ It allows to view CAD objects with or without grid, using orthographic or perspe
 ![Hexapod](screenshots/hexapod.png)
 
 ### Measurement mode
+
 I allows to measure distance of objects, angle beween edges and faces and show propertis like center, are volume for objects selected
 
 ![Exploded Quadruped](screenshots/measure.gif)
@@ -97,63 +98,65 @@ The animation system also allows to create custom defined animations like this a
   ![Animated Hexapod](screenshots/hexapod-crawling.gif)
 
 
-## Preview installation (until it is available on pypi)
+## Installation
 
-```python
-mamba create -n jcq4 python=3.12.9
-mamba activate jcq4
+### Installation
 
-pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.0/cad_viewer_widget-3.0.0-py3-none-any.whl
-pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.0/jupyter_cadquery-4.0.0-py3-none-any.whl
+- **Preview installation of Jupyter CadQuery** (until it is available on pypi)
 
-# verification, see below
-jupyter server extension list
-jupyter lab extension list
-```
+  ```bash
+  pip install https://github.com/bernhard-42/cad-viewer-widget/releases/download/v3.0.0/cad_viewer_widget-3.0.0-py3-none-any.whl
+  pip install https://github.com/bernhard-42/jupyter-cadquery/releases/download/v4.0.0/jupyter_cadquery-4.0.0-py3-none-any.whl
+  ```
 
+- **CadQuery**
 
-## Installation (will not work yet, since packages are not on pypi yet)
+  1. Create and activate a virtual conda environment
 
-### CadQuery
+      ```bash
+      mamba create -n jcq4 python=3.12.9
+      mamba activate jcq4
+      ```
 
-1. Create and activate a virtual conda environment
+  2. Install latest cadquery master
 
-    ```python
-    mamba create -n jcq4 python=3.12.9
-    mamba activate jcq4
-    ```
+      ```bash
+      mamba install -c conda-forge -c cadquery cadquery=master
+      ```
 
-2. Install latest cadquery master
+  3. Install Jupyter CadQuery  **(use preview installation approach for now)**
 
-    ```python
-    mamba install -c conda-forge -c cadquery cadquery=master
-    ```
+      ```bash
+      pip install jupyter-cadquery
+      ```
 
-3. Install and run jupyter-cadquery
+  4. Run Jupyter CadQuery
+  
+      ```bash
+      jupyter lab
+      ```
 
-    ```python
-    pip install jupyter-cadquery
+- **build123d**
 
-    jupyter lab
-    ```
+  1. Create and activate a virtual environment (conda, pyenv-virtualenv, ...)
 
-### build123d
+  2. Install build123d
 
-1. Create and activate virtual environment (conda, pyenv-virtualenv, ...)
+      ```bash
+      pip install build123d
+      ```
 
-2. Install build123d
+  3. Install Jupyter CadQuery  **(use preview installation approach for now)**
 
-    ```python
-    pip install build123d
-    ```
+      ```bash
+      pip install jupyter-cadquery
+      ```
 
-3. Install and run jupyter-cadquery
+  4. Run Jupyter CadQuery
 
-    ```python
-    pip install jupyter-cadquery
-
-    jupyter lab
-    ```
+      ```bash
+      jupyter lab
+      ```
 
 ### Verfiy the installation
 
@@ -471,7 +474,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
 ## Release v4
 
-Current release: **v4.0.0** (2025-04-17)
+Current release: **v4.0.1** (2025-04-17)
 
 ### Changes
 
