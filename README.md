@@ -6,11 +6,11 @@ Current version: **v4.0.2** (2025-04-17)
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
-<!-- 
+
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab&filepath=examples%2Fassemblies%2F1-disk-arm.ipynb) 
--->
+
 
 ## Table of contents
 
