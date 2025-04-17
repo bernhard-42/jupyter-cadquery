@@ -95,6 +95,11 @@ search = 'jupyter-cadquery=={current_version}'
 replace = 'jupyter-cadquery=={new_version}'
 
 [[tool.bumpversion.files]]
+filename = "README.md"
+search = 'jupyter_cadquery {current_version} OK'
+replace = 'jupyter_cadquery {new_version} OK'
+
+[[tool.bumpversion.files]]
 filename = "environment.yml"
 search = 'jupyter-cadquery=={current_version}'
 replace = 'jupyter-cadquery=={new_version}'
