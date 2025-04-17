@@ -14,14 +14,14 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 ## Table of contents
 
-- [Overview](#overview])
-- [Key Features](#key-features])
-- [Examples](#examples])
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Examples](#examples)
 - [Preview installation (until it is available on pypi)](#preview-installation-until-it-is-available-on-pypi)
 - [Installation (will not work yet, since packages are not on pypi yet)](#installation-will-not-work-yet-since-packages-are-not-on-pypi-yet)
-- [Standalone version](#standalone-version])
-- [Demo Notebooks](#demo-notebooks])
-- [Usage](#usage])
+- [Standalone version](#standalone-version)
+- [Demo Notebooks](#demo-notebooks)
+- [Usage](#usage)
 - [Release v4](release-v4)
 - [Migration from 3.x](#migration-from-3x)
 - [Known issues](#known-issues)
