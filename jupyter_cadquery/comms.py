@@ -119,7 +119,13 @@ def send_command(data, port=None, title=None, timeit=False):
     else:
         raise ValueError("Unknown data for send_data")
 
-
+def get_xsrf(url):
+    """
+    Get the XSRF token from the session
+    """
+    response = requests.get("http://localhost:8888")
+    return response.cookies.get("_xsrf")
+    
 def send_backend(data, port=None, jcv_id=None, timeit=False):
     """
     Send data to the viewer
@@ -129,9 +135,11 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     port = os.environ.get("JUPYTER_PORT", "8888")
     url = f"http://localhost:{port}"
 
-    if SESSION is None:
-        init_session(f"{url}/objects")
-
+    # if SESSION is None:
+    #     init_session(f"{url}/objects")
+    
+    XSRF =get_xsrf(url)
+    
     headers = {
         "X-XSRFToken": XSRF
     }   
@@ -157,8 +165,10 @@ def send_measure_request(jcv_id, shape_ids):
     port = os.environ.get("JUPYTER_PORT", "8888")
     url = f"http://localhost:{port}"
 
-    if SESSION is None:
-        init_session(url)
+    # if SESSION is None:
+    #     init_session(url)
+
+    XSRF =get_xsrf(url)
 
     headers = {
         "X-XSRFToken": XSRF,
