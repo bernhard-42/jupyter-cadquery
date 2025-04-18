@@ -514,6 +514,7 @@ Not tracked for v3 => v4 due to using a new base (_OCP CAD Viewer for VS Code_)
 - Removed functionality
   - The `voila` base standalone viewer is removed. Use `python -m ocp_vscode` now, using the same `show` commands
   - The docker support is reduced to providing a Docker file
+  - Export as HTML file is not supported any more
 
 ## Known issues
 
