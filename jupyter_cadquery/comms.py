@@ -119,13 +119,7 @@ def send_command(data, port=None, title=None, timeit=False):
     else:
         raise ValueError("Unknown data for send_data")
 
-def get_xsrf(url):
-    """
-    Get the XSRF token from the session
-    """
-    response = requests.get("http://localhost:8888")
-    return response.cookies.get("_xsrf")
-    
+
 def send_backend(data, port=None, jcv_id=None, timeit=False):
     """
     Send data to the viewer
@@ -135,23 +129,20 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     port = os.environ.get("JUPYTER_PORT", "8888")
     url = f"http://localhost:{port}"
 
-    # if SESSION is None:
-    #     init_session(f"{url}/objects")
-    
-    XSRF =get_xsrf(url)
+    if SESSION is None:
+        init_session(f"{url}/objects")
 
     headers = {
-        "X-XSRFToken": XSRF
+        "X-XSRFToken": XSRF,
     }   
-
+    print(port, headers)
     message = {
         "_xsrf": XSRF,
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(data, default=json_default).decode("utf-8"),
     }
-    print(message, headers)
-    response = requests.post(f"{url}/objects", data=message, headers=headers)
+    response = SESSION.post(f"{url}/objects", data=message, headers=headers)
     return response.status_code
 
 
@@ -165,23 +156,20 @@ def send_measure_request(jcv_id, shape_ids):
     port = os.environ.get("JUPYTER_PORT", "8888")
     url = f"http://localhost:{port}"
 
-    # if SESSION is None:
-    #     init_session(url)
-
-    XSRF =get_xsrf(url)
+    if SESSION is None:
+        init_session(url)
 
     headers = {
         "X-XSRFToken": XSRF,
     }   
-
+    print(port, headers)
     message = {
         "_xsrf": XSRF,
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(shape_ids).decode("utf-8"),
     }
-    print(message, headers)
-    response = requests.post(f"{url}/measure", data=message, headers=headers)
+    response = SESSION.post(f"{url}/measure", data=message, headers=headers)
     return response.status_code, response.text
 
 
