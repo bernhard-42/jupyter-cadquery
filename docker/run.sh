@@ -21,5 +21,4 @@ while getopts "dvgw:h:" o; do
 done
 
 echo "Starting in JupyterLab mode: http://localhost:8888/lab"
-. /opt/conda/bin/activate cq && \
 jupyter lab --ip=0.0.0.0 --no-browser --NotebookApp.token='' --NotebookApp.allow_origin='*'

@@ -72,14 +72,11 @@ check_dist:
 upload:
 	@twine upload dist/*
 
-
 docker:
-	@rm -fr docker/examples
-	@cp -R examples docker/
-	@cp jupyter_cadquery/viewer/viewer.ipynb docker/
+	@rm -fr docker/examples docker/requirements.txt
+	@cp -R examples requirements.txt docker/
 	@cd docker && docker build -t bwalter42/jupyter_cadquery:$(CURRENT_VERSION) .
-	@rm -fr docker/examples
-	@rm -fr docker/viewer.ipynb
-
+	@rm -fr docker/examples docker/requirements.txt
+	
 upload_docker: 
 	@docker push bwalter42/jupyter_cadquery:$(CURRENT_VERSION)

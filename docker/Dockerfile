@@ -1,22 +1,24 @@
-FROM condaforge/mambaforge:24.9.2-0
+FROM python:3.12-slim
 
-RUN adduser --disabled-password --gecos "Default user" --uid 1000 cq && \
-    apt-get update -y && \
-    apt-get install --no-install-recommends -y libgl1-mesa-glx libglu1-mesa && \
-    apt-get clean
+RUN apt-get -qq update && \
+    apt-get -qq install --yes --no-install-recommends libgl1-mesa-glx libglu1-mesa libxrender-dev gettext-base less unzip git > /dev/null && \
+    apt-get -qq purge && \
+    apt-get -qq clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN mamba env create -n cq -y -f /tmp/environment.yml && \
-    mamba clean --all && \
-    find / -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+COPY requirements.txt /tmp
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-VOLUME /home/cq/
-WORKDIR /home/cq
+RUN useradd -d /home/workdir -s /bin/bash cq
+RUN mkdir /home/examples-read-only
+
+VOLUME /home/workdir/
+WORKDIR /home/
 EXPOSE 8888
 
 USER cq 
 
-ADD --chown=cq:cq examples /home/cq
-ADD --chown=cq:cq viewer.ipynb /home/cq
+ADD --chown=cq:cq examples /home/examples-read-only
 ADD --chown=cq:cq run.sh /tmp
 RUN chmod +x /tmp/run.sh
 

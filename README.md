@@ -98,7 +98,7 @@ The animation system also allows to create custom defined animations like this a
 
 ## Installation
 
-### Installation
+### Install Juypter-CadQuery
 
 - **CadQuery**
 
@@ -223,6 +223,18 @@ The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _
 
 3939 is the standard port that will be used automatically by the `show` commands.
 
+## Docker image
+
+The docker image is not uploaded to docker hub any more. To build it, clone the repo and call `make docker`
+
+The resulting image is called `bwalter42/jupyter_cadquery:4.0.2` and can be started with 
+
+```bash
+WORKDIR=./jupyter-cadquery
+docker run -it --rm -v $WORKDIR:/home/workdir -p 8888:8888 bwalter42/jupyter_cadquery:4.0.2
+```
+
+Everything stored in `/home/workdir` in the container will be actually stored on the local machine in `$WORKDIR`. The examples are copied into the container in a read-only folder `/home/examples-read-only`
 
 ## Demo Notebooks
 
