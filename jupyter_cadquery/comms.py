@@ -139,7 +139,7 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     #     init_session(f"{url}/objects")
     
     XSRF =get_xsrf(url)
-    
+
     headers = {
         "X-XSRFToken": XSRF
     }   
@@ -151,7 +151,7 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
         "data": orjson.dumps(data, default=json_default).decode("utf-8"),
     }
     print(message, headers)
-    response = SESSION.post(f"{url}/objects", data=message, headers=headers)
+    response = requests.post(f"{url}/objects", data=message, headers=headers)
     return response.status_code
 
 
@@ -181,7 +181,7 @@ def send_measure_request(jcv_id, shape_ids):
         "data": orjson.dumps(shape_ids).decode("utf-8"),
     }
     print(message, headers)
-    response = SESSION.post(f"{url}/measure", data=message, headers=headers)
+    response = requests.post(f"{url}/measure", data=message, headers=headers)
     return response.status_code, response.text
 
 
