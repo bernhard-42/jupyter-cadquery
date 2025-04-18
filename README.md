@@ -18,6 +18,7 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 - [Examples](#examples)
 - [Installation](#installation)
 - [Standalone version](#standalone-version)
+- [Create and use the docker image](#create-and-use-the-docker-image)
 - [Demo Notebooks](#demo-notebooks)
 - [Usage](#usage)
 - [Release v4](release-v4)
@@ -223,7 +224,7 @@ The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _
 
 3939 is the standard port that will be used automatically by the `show` commands.
 
-## Docker image
+## Create and use the docker image
 
 The docker image is not uploaded to docker hub any more. To build it, clone the repo and call `make docker`
 
