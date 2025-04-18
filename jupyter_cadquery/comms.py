@@ -131,13 +131,16 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     if SESSION is None:
         init_session(url)
 
+    headers = {
+        "X-XSRFToken": SESSION.cookies.get("_xsrf"),
+    }   
+
     message = {
-        "_xsrf": SESSION.cookies.get("_xsrf"),
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(data, default=json_default).decode("utf-8"),
     }
-    response = SESSION.post(f"{url}/objects", data=message)
+    response = SESSION.post(f"{url}/objects", data=message, headers=headers)
     return response.status_code
 
 
@@ -154,13 +157,16 @@ def send_measure_request(jcv_id, shape_ids):
     if SESSION is None:
         init_session(url)
 
+    headers = {
+        "X-XSRFToken": SESSION.cookies.get("_xsrf"),
+    }   
+
     message = {
-        "_xsrf": SESSION.cookies.get("_xsrf"),
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(shape_ids).decode("utf-8"),
     }
-    response = SESSION.post(f"{url}/measure", data=message)
+    response = SESSION.post(f"{url}/measure", data=message, headers=headers)
     return response.status_code, response.text
 
 
