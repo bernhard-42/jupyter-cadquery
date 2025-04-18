@@ -9,7 +9,7 @@ Current version: **v4.0.2** (2025-04-17)
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab) (*Due to security restrictions, the measurement feature does not work on binder**)
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab) (**Due to security restrictions, the measurement feature does not work on binder**)
 
 ## Table of contents
 
