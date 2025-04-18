@@ -1,6 +1,6 @@
-cadquery @ git+https://github.com/cadquery/cadquery
-build123d @ git+https://github.com/gumyr/build123d
 notebook~=7.4.0
 matplotlib~=3.10.1
+cadquery @ git+https://github.com/cadquery/cadquery
+build123d @ git+https://github.com/gumyr/build123d
 cadquery-massembly==1.0.0
 jupyter-cadquery @ git+https://github.com/bernhard-42/jupyter-cadquery
