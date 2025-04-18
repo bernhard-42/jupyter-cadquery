@@ -129,13 +129,14 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     url = f"http://localhost:{port}"
 
     if SESSION is None:
-        init_session(url)
+        init_session(f"{url}/objects")
 
     headers = {
         "X-XSRFToken": SESSION.cookies.get("_xsrf"),
     }   
 
     message = {
+        "_xsrf": SESSION.cookies.get("_xsrf"),
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(data, default=json_default).decode("utf-8"),
@@ -162,6 +163,7 @@ def send_measure_request(jcv_id, shape_ids):
     }   
 
     message = {
+        "_xsrf": SESSION.cookies.get("_xsrf"),
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(shape_ids).decode("utf-8"),
