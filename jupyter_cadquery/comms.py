@@ -40,12 +40,13 @@ __all__ = [
 ]
 
 SESSION = None
-
+XSRF = None
 
 def init_session(url):
-    global SESSION
+    global SESSION, XSRF
     session = requests.Session()
     session.get(url)
+    XSRF = session.cookies.get("_xsrf")
     SESSION = session
 
 
@@ -132,15 +133,16 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
         init_session(f"{url}/objects")
 
     headers = {
-        "X-XSRFToken": SESSION.cookies.get("_xsrf"),
+        "X-XSRFToken": XSRF
     }   
 
     message = {
-        "_xsrf": SESSION.cookies.get("_xsrf"),
+        "_xsrf": XSRF,
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(data, default=json_default).decode("utf-8"),
     }
+    print(message, headers)
     response = SESSION.post(f"{url}/objects", data=message, headers=headers)
     return response.status_code
 
@@ -159,15 +161,16 @@ def send_measure_request(jcv_id, shape_ids):
         init_session(url)
 
     headers = {
-        "X-XSRFToken": SESSION.cookies.get("_xsrf"),
+        "X-XSRFToken": XSRF,
     }   
 
     message = {
-        "_xsrf": SESSION.cookies.get("_xsrf"),
+        "_xsrf": XSRF,
         "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
         "viewer": jcv_id,
         "data": orjson.dumps(shape_ids).decode("utf-8"),
     }
+    print(message, headers)
     response = SESSION.post(f"{url}/measure", data=message, headers=headers)
     return response.status_code, response.text
 
