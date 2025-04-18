@@ -9,7 +9,7 @@ Current version: **v4.0.2** (2025-04-17)
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
-[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab) 
+[![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab) (Note that the measurement feature currently does not work on binder)
 
 ## Table of contents
 
@@ -505,4 +505,4 @@ Not tracked for v3 => v4 due to using a new base (_OCP CAD Viewer for VS Code_)
 ## Known issues
 
 - [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
-- Measurement feature does not work on binder at the moment
+- Measurement feature does not work on binder at the moment (XSRF cookie issue)
