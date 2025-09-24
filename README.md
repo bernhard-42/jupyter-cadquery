@@ -1,6 +1,6 @@
 # Jupyter for CadQuery / build123d
 
-The Python package provides a Jupyterlab extension and a JupyterServer extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
+This Python package provides a JupyterLab extension and a Jupyter Server extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
 Current version: **v4.0.2** (2025-04-17)
 
@@ -48,10 +48,10 @@ It is now based on:
   - _OCP_ == 7.8.X (as of 2025-04)
 
 - Viewing options:
-  - Directly in the JupyterLab output cell
-  - In a central Jupyterlab sidecar
-  - In separate windows in Jupyter lab
-  - For sidecar and windows based viewers, the viewers resize with the size of the container window. You can have a fixed aspect ratio (height to width ratio) or fill the complete container window.
+  - View CAD models as JupyterLab output cells
+  - View CAD models in one JupyterLab sidecar
+  - View CAD models in separate windows in JupyterLab
+  - For sidecar and window-based viewers, the viewers resize with the size of the container window. You can have a fixed aspect ratio (height to width ratio) or fill the complete container window.
   - Auto display of _CadQuery_ and _build123d_ shapes
   - Replay mode for CadQuery objects
 
@@ -74,25 +74,25 @@ It is now based on:
 
 ### The viewer
 
-It allows to view CAD objects with or without grid, using orthographic or perspective camera and many more viewing features.
+View CAD objects with or without a grid and axes, with orthographic or perspective cameras and buttons for standard views like 'Front' and 'Top', with or without transparent faces:
 
 ![Hexapod](screenshots/hexapod.png)
 
 ### Measurement mode
 
-I allows to measure distance of objects, angle beween edges and faces and show propertis like center, are volume for objects selected
+Measure distances between objects, angles between edges and faces, and show selected object properties like center, area, and volume 
 
 ![Exploded Quadruped](screenshots/measure.gif)
 
 ### Animation System - explode assemblies
 
-The animation system allows to explode CadQuery and build123d assemblies or group of CAD objects. The epxplosion center is (0,0,0).
+The animation system allows to explode CadQuery and build123d assemblies or a group of CAD objects. The center of the CAD explosion effect is `(0,0,0)`.
 
 ![Exploded Quadruped](screenshots/explode.gif)
 
 ### Animation System - Self defined animation
 
-The animation system also allows to create custom defined animations like this animated hexapod.
+The animation system also supports creating custom defined animations like this animated hexapod:
 
   ![Animated Hexapod](screenshots/hexapod-crawling.gif)
 
@@ -222,13 +222,15 @@ The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _
 1. Activate your python environment
 2. Execute `python -m ocp_vscode [--port <port number>]`
 
-3939 is the standard port that will be used automatically by the `show` commands.
+3939/tcp is the standard port that will be used automatically by the `show` commands.
 
 ## Create and use the docker image
 
-The docker image is not uploaded to docker hub any more. To build it, clone the repo and call `make docker`
+The container image is not uploaded to Docker Hub anymore.
 
-The resulting image is called `bwalter42/jupyter_cadquery:4.0.2` and can be started with 
+To build the jupyter-cadquery container image, clone the repo and call `make docker`.
+
+The resulting image is called `bwalter42/jupyter_cadquery:4.0.2` and can be started with:
 
 ```bash
 WORKDIR=./jupyter-cadquery
@@ -260,14 +262,14 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
 ### a) Viewer locations
 
-- Have the viewer in a Jupyter Sidcar, i.e. it can be shown/hidden easily
+- Show the viewer in a jupyterlab-sidecar so that it can be shown/hidden easily:
 
   ```python
   t = Text("SideCar", 20)
   cv_s = show(t, viewer="SideCar", anchor="right")
   ```
 
-- Have the viewer in a separate Jupyter lab window placed at the right or left
+- Show the viewer in a separate JupyterLab window placed at the right or left:
 
   ```python
   t = Text("Right", 20)
@@ -277,7 +279,7 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
   cv_l = show(t, viewer="Left", anchor="split-left")
   ```
 
-- Have the viewer in a separate Jupyter lab window placed at the top or bottom, this time using `open_viewer`
+- Show the viewer in a separate JupyterLab window placed at the top or bottom, this time using `open_viewer`:
 
   ```python
   t = Text("Top", 20)
@@ -291,7 +293,7 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
   **Notes:**
 
-  - With `aspect_ratio = 0` the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window. It currently only works with `open_viewer`, not with `show`
+  - With `aspect_ratio = 0`, the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window. It currently only works with `open_viewer`, not with `show`
   - Both `show(obj, viewer="<Viewer name>", anchor="<location>")` and `open_viewer("<Viewer name>", anchor="<location>"); show(obj)` achieve the same.
 
   ![Viewer locations](./screenshots/viewer-locations.png)
@@ -415,7 +417,7 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
 ### c) Manage default values
 
-- **`set_defaults(**kwargs)`:** allows to globally set the defaults value so they do not need to be provided with every `show` call
+- **`set_defaults(**kwargs)`:** allows to globally set the default values so that they do not need to be provided with every `show` call
 
     kwargs:
 
@@ -443,7 +445,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
 - **Export as PNG:**
 
-    Display your object via
+    Display your object via:
 
     ```python
     cv = show(a1)
@@ -451,7 +453,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
     and adapt the cad view as wanted (camera location, axis, transparency, ...).
 
-    Then call
+    Then call:
 
     ```python
     cv.export_png("example.png")
@@ -459,7 +461,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
 - **Export as HTML:**
 
-    Display your object without using a sidecar (set `viewer` to `None`) via
+    Display your object without using a sidecar (set `viewer` to `None`) via:
 
     ```python
     cv = show(a1, viewer=None)
@@ -467,7 +469,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
     and adapt the cad view as wanted (camera location, axis, transparency, ...).
 
-    Then call
+    Then call:
 
     ```python
     cv.export_html()
@@ -499,22 +501,22 @@ Not tracked for v3 => v4 due to using a new base (_OCP CAD Viewer for VS Code_)
   - `show` keyword changes
     - `mate_scale` is replaced by `helper_scale`
     - `control = "orbit"` and `control = "Trackball"` are replaced by `orbit_control = True` or `orbit_control = False`
-    - `reset_camera` does not take boolean any more. Use the enum `Camera` (`from jupyter_cadquery import Camera`)
-    - `collapse` does not take strings any more. Use the enum `Collapse` (`from jupyter_cadquery import Collapse`)
+    - `reset_camera` does not take boolean anymore. Use the enum `Camera` (`from jupyter_cadquery import Camera`)
+    - `collapse` does not take strings anymore. Use the enum `Collapse` (`from jupyter_cadquery import Collapse`)
     - `default_edge_color` needs to be changed to `default_edgecolor`.
-    - `PartGroup`, `Part`, `Faces`, `Edges`, `Vertices` classes do not exist any more. Use CadQuery or build123d assemblies instead.
-    - `optimal_bb` does not exist any more. The system now determines the right bounding box itself.
-    - `js_debug` does not exist any more. Use `debug`instead.
+    - `PartGroup`, `Part`, `Faces`, `Edges`, `Vertices` classes do not exist anymore. Use CadQuery or build123d assemblies instead.
+    - `optimal_bb` does not exist anymore. The system now determines the right bounding box itself.
+    - `js_debug` does not exist anymore. Use `debug`instead.
 
 - Change functions and methods
-  - The function `webcol_to_cq` does not exist any more. Use web color strings (`#80ff80`) or CadQuery / build123d Color classes.
-  - The method `select_clipping` is replaced by `viewer.tab = "clip"` (other alternatives are "tree" and "material")
-  - The method `select_tree` is replaced by `viewer.tab = "tree"` (other alternatives are "clip" and "material")
+  - The function `webcol_to_cq` does not exist anymore. Use web color strings (`#80ff80`) or CadQuery / build123d Color classes.
+  - The method `select_clipping` is replaced by `viewer.tab = "clip"` (other alternatives are `tree` and `material`)
+  - The method `select_tree` is replaced by `viewer.tab = "tree"` (other alternatives are `clip` and `material`)
 
 - Removed functionality
   - The `voila` base standalone viewer is removed. Use `python -m ocp_vscode` now, using the same `show` commands
   - The docker support is reduced to providing a Docker file
-  - Export as HTML file is not supported any more
+  - Export as HTML file is not supported anymore
 
 ## Known issues
 
