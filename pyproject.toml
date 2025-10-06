@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jupyter_cadquery"
-version = "4.0.2"
+version = "4.1.0-cac"
 description = "An extension to render cadquery objects in JupyterLab via pythreejs"
 readme = "README.md"
 authors = [{ name = "Bernhard Walter", email = "b_walter@arcor.de" }]
@@ -66,11 +66,11 @@ jupyter-cadquery = "jupyter_cadquery.app:JupyterCadqueryBackend.launch_instance"
 
 
 [tool.bumpversion]
-current_version = "4.0.2"
+current_version = "4.1.0-cac"
 commit = false
 tag = false
-parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<release>\\d*)(?P<build>\\d*)"
-serialize = ["{major}.{minor}.{patch}"]
+parse = "(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)-(?P<custom>[a-z]+)"
+serialize = ["{major}.{minor}.{patch}-{custom}"]
 allow_dirty = true
 message = "Bump version: {current_version} → {new_version}"
 search = "{current_version}"
@@ -83,6 +83,10 @@ commit_args = ""
 setup_hooks = []
 pre_commit_hooks = []
 post_commit_hooks = []
+
+[tool.bumpversion:part:custom]
+values = cac
+optional_value = cac
 
 [[tool.bumpversion.files]]
 filename = "jupyter_cadquery/_version.py"

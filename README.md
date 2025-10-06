@@ -2,7 +2,7 @@
 
 The Python package provides a Jupyterlab extension and a JupyterServer extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
-Current version: **v4.0.2** (2025-04-17)
+Current version: **v4.1.0-cac** (2025-04-17)
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
@@ -166,7 +166,7 @@ The animation system also allows to create custom defined animations like this a
         jupyter_cadquery enabled
 
         - Validating jupyter_cadquery...
-        jupyter_cadquery 4.0.2 OK
+        jupyter_cadquery 4.1.0-cac OK
 
         jupyter_server_terminals enabled
         - Validating jupyter_server_terminals...
@@ -181,7 +181,7 @@ The animation system also allows to create custom defined animations like this a
     Config dir: /usr/local/etc/jupyter
     ```
 
-    You should again see `jupyter_cadquery 4.0.2 OK`. This ensures that the **viewer frontend** is properly installed
+    You should again see `jupyter_cadquery 4.1.0-cac OK`. This ensures that the **viewer frontend** is properly installed
 
 2. Check the Jupyter server extension, the measurement backend: `jupyter server extension list`
 
@@ -196,7 +196,7 @@ The animation system also allows to create custom defined animations like this a
 
         - Validating jupyter_cadquery...
     Extension package jupyter_cadquery took 1.6050s to import
-        jupyter_cadquery 4.0.2 OK
+        jupyter_cadquery 4.1.0-cac OK
 
         jupyter_server_terminals enabled
         - Validating jupyter_server_terminals...
@@ -211,7 +211,7 @@ The animation system also allows to create custom defined animations like this a
     Config dir: /usr/local/etc/jupyter
     ```
 
-    You should see `jupyter_cadquery 4.0.2 OK`. This ensures that the **measurement backend** is properly installed.
+    You should see `jupyter_cadquery 4.1.0-cac OK`. This ensures that the **measurement backend** is properly installed.
 
     If you see "Extension package jupyter_cadquery took ...", this is basically OCP and VTK loading time (this test import OCP and with that VTK).
 
@@ -228,11 +228,11 @@ The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _
 
 The docker image is not uploaded to docker hub any more. To build it, clone the repo and call `make docker`
 
-The resulting image is called `bwalter42/jupyter_cadquery:4.0.2` and can be started with 
+The resulting image is called `bwalter42/jupyter_cadquery:4.1.0-cac` and can be started with 
 
 ```bash
 WORKDIR=./jupyter-cadquery
-docker run -it --rm -v $WORKDIR:/home/workdir -p 8888:8888 bwalter42/jupyter_cadquery:4.0.2
+docker run -it --rm -v $WORKDIR:/home/workdir -p 8888:8888 bwalter42/jupyter_cadquery:4.1.0-cac
 ```
 
 Everything stored in `/home/workdir` in the container will be actually stored on the local machine in `$WORKDIR`. The examples are copied into the container in a read-only folder `/home/examples-read-only`
@@ -478,7 +478,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
 ## Release v4
 
-Current version: **v4.0.2** (2025-04-17)
+Current version: **v4.1.0-cac** (2025-04-17)
 
 ### Changes
 
