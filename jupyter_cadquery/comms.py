@@ -28,6 +28,8 @@ from ocp_vscode.comms import default as json_default
 
 from .config import get_user_defaults
 
+URL = os.environ.get("JUPYTER_CADQUERY_URL", 'localhost')
+
 __all__ = [
     "set_jupyter_port",
     "get_jupyter_port",
@@ -125,7 +127,7 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     Called by ocp_vscode.show.show() to send model to backend
     """
     port = os.environ.get("JUPYTER_PORT", "8888")
-    url = f"http://localhost:{port}"
+    url = f"http://{URL}:{port}"
 
     if SESSION is None:
         init_session(url)
@@ -148,7 +150,7 @@ def send_measure_request(jcv_id, shape_ids):
     cad_viewer_widget.widget.CadViewerWidget.selected_shape_ids to retrieve measurements
     """
     port = os.environ.get("JUPYTER_PORT", "8888")
-    url = f"http://localhost:{port}"
+    url = f"http://{URL}:{port}"
 
     if SESSION is None:
         init_session(url)
