@@ -55,20 +55,33 @@ def send_data(data, port=None, timeit=False):
     Called by ocp_vscode.show.show() to send model and config to viewer
     """
 
-    collapse_mapping = ["E", "1", "C", "R"]  # show needs the string
+    # Map ocp_vscode 3.x Collapse integer values to cad_viewer_widget strings
+    # Collapse.ALL=0->"C", Collapse.ROOT=1->"R", Collapse.NONE=2->"E", Collapse.LEAVES=-1->"1"
+    _collapse_mapping = {0: "C", 1: "R", 2: "E", -1: "1"}
 
-    config = data["config"]
-    type_ = data["type"]
+    type_ = data.get("type")
+
+    if type_ == "clear":
+        title = get_default_sidecar()
+        if title is not None:
+            viewer = get_sidecar(title)
+            if viewer is not None:
+                viewer.widget.shapes = None
+        return None
+
     if type_ != "data":
         raise TypeError(f"Wrong data type {type_}")
+
+    config = data["config"]
     # count = data["count"]
     data = data["data"]
 
     if config.get("collapse") is not None:
         if isinstance(config["collapse"], Enum):
-            config["collapse"] = collapse_mapping[config["collapse"].value]
-        else:
-            config["collapse"] = collapse_mapping[config["collapse"]]
+            config["collapse"] = _collapse_mapping[config["collapse"].value]
+        elif isinstance(config["collapse"], int):
+            config["collapse"] = _collapse_mapping[config["collapse"]]
+        # else: already a valid string ("R", "C", "E", "1")
 
     if config.get("reset_camera") is not None:
         if isinstance(config["reset_camera"], Enum):
@@ -96,6 +109,10 @@ def send_command(data, port=None, title=None, timeit=False):
     With data == "config" called by called by ocp_vscode.config.workspace_config()
     With data == "status" called by called by ocp_vscode.config.status()
     """
+    # Map cad_viewer_widget collapse strings to ocp_vscode 3.x COLLAPSE_REVERSE_MAPPING integers
+    # Collapse.ROOT=1<-"R", Collapse.ALL=0<-"C", Collapse.NONE=2<-"E", Collapse.LEAVES=-1<-"1"
+    _collapse_str_to_int = {"R": 1, "C": 0, "E": 2, "1": -1}
+
     if data == "config":
         config = get_user_defaults()
         viewer = None
@@ -112,7 +129,13 @@ def send_command(data, port=None, title=None, timeit=False):
 
     elif data == "status":
         viewer = get_sidecar(title)
-        return {} if viewer is None else viewer.status()
+        if viewer is None:
+            return {}
+        s = viewer.status()
+        # Convert collapse string to integer for ocp_vscode 3.x COLLAPSE_REVERSE_MAPPING
+        if s.get("collapse") is not None and isinstance(s["collapse"], str):
+            s["collapse"] = _collapse_str_to_int.get(s["collapse"], s["collapse"])
+        return s
 
     else:
         raise ValueError("Unknown data for send_data")
@@ -169,7 +192,12 @@ def send_config(config, port=None, title=None, timeit=False):
 
     Called by ocp_vscode.config.set_viewer_config() to set attributes in the viewer
     """
-    title = config["config"].get("title")
+    # Map ocp_vscode 3.x Collapse integer values to cad_viewer_widget strings
+    _collapse_mapping = {0: "C", 1: "R", 2: "E", -1: "1"}
+
+    # In ocp_vscode 3.x, title is passed as a kwarg and stored as "viewer" key in config
+    if title is None:
+        title = config["config"].get("title") or config["config"].get("viewer")
 
     if title is None:
         title = get_default_sidecar()
@@ -182,5 +210,7 @@ def send_config(config, port=None, title=None, timeit=False):
 
     for k, v in config["config"].items():
         if v is not None:
-            if not k in ["port", "title"]:
+            if not k in ["port", "title", "viewer"]:
+                if k == "collapse" and isinstance(v, int):
+                    v = _collapse_mapping[v]
                 setattr(cv, k, v)
