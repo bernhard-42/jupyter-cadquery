@@ -55,9 +55,7 @@ include = [
 jupyter-cadquery = "jupyter_cadquery.app:JupyterCadqueryBackend.launch_instance"
 
 
-# = = = = = = = = = = = = = =
 # bump version
-# = = = = = = = = = = = = = =
 
 
 [tool.bumpversion]
