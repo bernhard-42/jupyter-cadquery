@@ -1,5 +1,41 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+- Compatible with `ocp_vscode >= 3.0.0` (previously pinned to `~2.7.0`)
+
+### Fixes
+- Fixed `Collapse` enum mapping: `ocp_vscode` 3.x changed integer values (`ALL=0`, `ROOT=1`, `NONE=2`, `LEAVES=-1`); updated translation to `cad_viewer_widget` string codes
+- Fixed `show_clear()`: `ocp_vscode` 3.x sends a `{"type": "clear"}` message that was previously rejected with a `TypeError`; now clears the default viewer's shapes
+- Fixed `send_command("status")`: collapse values are now returned as integers so `ocp_vscode` 3.x `COLLAPSE_REVERSE_MAPPING` can resolve them without warnings
+- Fixed `send_config`: viewer title is now taken from the `title` kwarg (or `"viewer"` config key) rather than always looking for a `"title"` key; `"viewer"` is excluded from `setattr` and collapse integers are converted to strings before applying to the widget
+
+## Release v4.0.2 (17.04.2025)
+
+### Changes
+- Updated `cad-viewer-widget` to `~3.0.2`
+- Inject `Collapse` enum mapping into `cad_viewer_widget` so the widget can map viewer string codes back to `ocp_vscode` enum values
+
+## Release v4.0.1 (16.04.2025)
+
+### Changes
+- Added documented `show` parameters to `show.py` signatures
+- Exposed Jupyter server port via environment variable and added API key protection for `/objects` and `/measure` endpoints
+
+## Release v4.0.0 (13.04.2025)
+
+Complete rewrite bridging `ocp_vscode` with JupyterLab via `cad_viewer_widget`.
+
+### New features
+- Ported `jupyter_cadquery` to use `ocp_vscode` and `ocp_tessellate` as the tessellation and show pipeline, replacing the old standalone implementation
+- Added a Jupyter server extension (`app.py`) that handles `/objects` and `/measure` HTTP endpoints, forwarding CAD data from `ocp_vscode`'s `show()` call to the `cad_viewer_widget` widget
+- Added logo display on viewer open (splash screen via `backend_logo`)
+- Added `open_viewer()` with configurable anchor, dimensions, theme, glass mode, and pinning
+- `show()` and `show_object()` now return the viewer object
+- Support for `aspect_ratio` in `open_viewer`
+- Migration from `setup.py` to `pyproject.toml` with Hatchling build backend
+
 ## Release v3.5.2 (03.01.2023)
 
 ### Changes
