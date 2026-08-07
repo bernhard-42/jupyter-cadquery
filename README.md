@@ -2,10 +2,9 @@
 
 The Python package provides a Jupyterlab extension and a JupyterServer extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
-Current version: **v4.0.2** (2025-04-17)
+Current version: **v5.0.0** (2026-08-07)
 
 ![Overview](screenshots/jupyter-cadquery.png)
-
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
@@ -25,10 +24,9 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 - [Migration from 3.x](#migration-from-3x)
 - [Known issues](#known-issues)
 
-
 ## Overview
 
-_Jupyter-CadQuery_  release 4 is a complete rewrite of _Jupyter-CadQuery_ 3: 
+_Jupyter-CadQuery_ release 4 is a complete rewrite of _Jupyter-CadQuery_ 3:
 
 It is now based on:
 
@@ -69,7 +67,6 @@ It is now based on:
   - Double click on shapes shows bounding box info
   - Click on tree labels shows bounding box info and optionally hides or isolates the elements (use the modifier keys described in online help)
 
-
 ## Examples
 
 ### The viewer
@@ -94,61 +91,58 @@ The animation system allows to explode CadQuery and build123d assemblies or grou
 
 The animation system also allows to create custom defined animations like this animated hexapod.
 
-  ![Animated Hexapod](screenshots/hexapod-crawling.gif)
-
+![Animated Hexapod](screenshots/hexapod-crawling.gif)
 
 ## Installation
 
 ### Install Juypter-CadQuery
 
 - **CadQuery**
-
   1. Create and activate a virtual conda environment
 
-      ```bash
-      mamba create -n jcq4 python=3.12.9
-      mamba activate jcq4
-      ```
+     ```bash
+     mamba create -n jcq4 python=3.12.9
+     mamba activate jcq4
+     ```
 
   2. Install latest cadquery master
 
-      ```bash
-      mamba install -c conda-forge -c cadquery cadquery=master
-      ```
+     ```bash
+     mamba install -c conda-forge -c cadquery cadquery=master
+     ```
 
   3. Install Jupyter CadQuery
 
-      ```bash
-      pip install jupyter-cadquery
-      ```
+     ```bash
+     pip install jupyter-cadquery
+     ```
 
   4. Run Jupyter CadQuery
-  
-      ```bash
-      jupyter lab
-      ```
+
+     ```bash
+     jupyter lab
+     ```
 
 - **build123d**
-
   1. Create and activate a virtual environment (conda, pyenv-virtualenv, ...)
 
   2. Install build123d
 
-      ```bash
-      pip install build123d
-      ```
+     ```bash
+     pip install build123d
+     ```
 
   3. Install Jupyter CadQuery
 
-      ```bash
-      pip install jupyter-cadquery
-      ```
+     ```bash
+     pip install jupyter-cadquery
+     ```
 
   4. Run Jupyter CadQuery
 
-      ```bash
-      jupyter lab
-      ```
+     ```bash
+     jupyter lab
+     ```
 
 ### Verfiy the installation
 
@@ -156,68 +150,68 @@ The animation system also allows to create custom defined animations like this a
 
 1. Check the Jupyter lab extension, the viewer frontend: `jupyter lab extension list`
 
-    ```bash
-    Config dir: /Users/<username>/.jupyter
+   ```bash
+   Config dir: /Users/<username>/.jupyter
 
-    Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
-        jupyter_lsp enabled
-        - Validating jupyter_lsp...
-        jupyter_lsp 2.2.5 OK
-        jupyter_cadquery enabled
+   Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
+       jupyter_lsp enabled
+       - Validating jupyter_lsp...
+       jupyter_lsp 2.3.1 OK
+       jupyter_cadquery enabled
 
-        - Validating jupyter_cadquery...
-        jupyter_cadquery 4.0.2 OK
+       - Validating jupyter_cadquery...
+       jupyter_cadquery 5.0.0 OK
 
-        jupyter_server_terminals enabled
-        - Validating jupyter_server_terminals...
-        jupyter_server_terminals 0.5.3 OK
-        jupyterlab enabled
-        - Validating jupyterlab...
-        jupyterlab 4.4.0 OK
-        notebook_shim enabled
-        - Validating notebook_shim...
-        notebook_shim  OK
+       jupyter_server_terminals enabled
+       - Validating jupyter_server_terminals...
+       jupyter_server_terminals 0.5.4 OK
+       jupyterlab enabled
+       - Validating jupyterlab...
+       jupyterlab 4.6.2 OK
+       notebook_shim enabled
+       - Validating notebook_shim...
+       notebook_shim  OK
 
-    Config dir: /usr/local/etc/jupyter
-    ```
+   Config dir: /usr/local/etc/jupyter
+   ```
 
-    You should again see `jupyter_cadquery 4.0.2 OK`. This ensures that the **viewer frontend** is properly installed
+   You should again see `jupyter_cadquery 5.0.0 OK`. This ensures that the **viewer frontend** is properly installed
 
 2. Check the Jupyter server extension, the measurement backend: `jupyter server extension list`
 
-    ```bash
-    Config dir: /Users/<username>/.jupyter
+   ```bash
+   Config dir: /Users/<username>/.jupyter
 
-    Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
-        jupyter_lsp enabled
-        - Validating jupyter_lsp...
-        jupyter_lsp 2.2.5 OK
-        jupyter_cadquery enabled
+   Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
+       jupyter_lsp enabled
+       - Validating jupyter_lsp...
+       jupyter_lsp 2.3.1 OK
+       jupyter_cadquery enabled
 
-        - Validating jupyter_cadquery...
-    Extension package jupyter_cadquery took 1.6050s to import
-        jupyter_cadquery 4.0.2 OK
+       - Validating jupyter_cadquery...
+   Extension package jupyter_cadquery took 1.6050s to import
+       jupyter_cadquery 5.0.0 OK
 
-        jupyter_server_terminals enabled
-        - Validating jupyter_server_terminals...
-        jupyter_server_terminals 0.5.3 OK
-        jupyterlab enabled
-        - Validating jupyterlab...
-        jupyterlab 4.4.0 OK
-        notebook_shim enabled
-        - Validating notebook_shim...
-        notebook_shim  OK
+       jupyter_server_terminals enabled
+       - Validating jupyter_server_terminals...
+       jupyter_server_terminals 0.5.4 OK
+       jupyterlab enabled
+       - Validating jupyterlab...
+       jupyterlab 4.6.2 OK
+       notebook_shim enabled
+       - Validating notebook_shim...
+       notebook_shim  OK
 
-    Config dir: /usr/local/etc/jupyter
-    ```
+   Config dir: /usr/local/etc/jupyter
+   ```
 
-    You should see `jupyter_cadquery 4.0.2 OK`. This ensures that the **measurement backend** is properly installed.
+   You should see `jupyter_cadquery 5.0.0 OK`. This ensures that the **measurement backend** is properly installed.
 
-    If you see "Extension package jupyter_cadquery took ...", this is basically OCP and VTK loading time (this test import OCP and with that VTK).
+   If you see "Extension package jupyter_cadquery took ...", this is basically OCP and VTK loading time (this test import OCP and with that VTK).
 
 ## Standalone version
 
-The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _OCP CAD Viewer for VS Code_. To start it:
+The _standalone version_ of _Jupyter CadQuery_ is now replaced with the one of _OCP CAD Viewer for VS Code_. To start it:
 
 1. Activate your python environment
 2. Execute `python -m ocp_vscode [--port <port number>]`
@@ -228,7 +222,7 @@ The *standalone version* of _Jupyter CadQuery_ is now replaced with the one of _
 
 The docker image is not uploaded to docker hub any more. To build it, clone the repo and call `make docker`
 
-The resulting image is called `bwalter42/jupyter_cadquery:4.0.2` and can be started with 
+The resulting image is called `bwalter42/jupyter_cadquery:4.0.2` and can be started with
 
 ```bash
 WORKDIR=./jupyter-cadquery
@@ -254,7 +248,6 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 - [Jansen Linkage](./examples/assemblies/3-jansen-linkage.ipynb)
 - [CadQuery's door assembly example](./examples/assemblies/5-door.ipynb)
 - [A nested Assembly](./examples/assemblies/6-nested-assemblies.ipynb)
-
 
 ## Usage
 
@@ -290,7 +283,6 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
   ```
 
   **Notes:**
-
   - With `aspect_ratio = 0` the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window. It currently only works with `open_viewer`, not with `show`
   - Both `show(obj, viewer="<Viewer name>", anchor="<location>")` and `open_viewer("<Viewer name>", anchor="<location>"); show(obj)` achieve the same.
 
@@ -306,9 +298,9 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
 - **Parameters:**
 
-    ```text
-    cad_objs:                All cad objects that should be shown as positional parameters
-    ```
+  ```text
+  cad_objs:                All cad objects that should be shown as positional parameters
+  ```
 
 - **Valid keywords for the CAD object attributes:**
 
@@ -417,8 +409,7 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 
 - **`set_defaults(**kwargs)`:** allows to globally set the defaults value so they do not need to be provided with every `show` call
 
-    kwargs:
-
+  kwargs:
   - see `show`
 
 - **`get_default(value)`:** Get the global default for a single `value`
@@ -431,8 +422,7 @@ Note, this is not supported in the standalone viewer for the time being.
 
 - **`replay(args)`**
 
-    _Argument `args`:_
-
+  _Argument `args`:_
   - `cad_obj`: cadquery object
   - `index` (`default=0`): Element in the fluent API stack to show
   - `debug` (`default=False`): Trace building the replay stack
@@ -443,80 +433,38 @@ Note, this is not supported in the standalone viewer for the time being.
 
 - **Export as PNG:**
 
-    Display your object via
+  Display your object via
 
-    ```python
-    cv = show(a1)
-    ```
+  ```python
+  cv = show(a1)
+  ```
 
-    and adapt the cad view as wanted (camera location, axis, transparency, ...).
+  and adapt the cad view as wanted (camera location, axis, transparency, ...).
 
-    Then call
+  Then call
 
-    ```python
-    cv.export_png("example.png")
-    ```
+  ```python
+  cv.export_png("example.png")
+  ```
 
 - **Export as HTML:**
 
-    Display your object without using a sidecar (set `viewer` to `None`) via
+  Display your object without using a sidecar (set `viewer` to `None`) via
 
-    ```python
-    cv = show(a1, viewer=None)
-    ```
+  ```python
+  cv = show(a1, viewer=None)
+  ```
 
-    and adapt the cad view as wanted (camera location, axis, transparency, ...).
+  and adapt the cad view as wanted (camera location, axis, transparency, ...).
 
-    Then call
+  Then call
 
-    ```python
-    cv.export_html()
-    ```
+  ```python
+  cv.export_html()
+  ```
 
-    Note: This does not work with viewers in sidecars!
-
-
-## Release v4
-
-Current version: **v4.0.2** (2025-04-17)
+  Note: This does not work with viewers in sidecars!
 
 ### Changes
 
-v4 is now based on _OCP CAD Viewer for VS Code_, but keeps the behavior very similar to v3.
-For the introduced changes, see Migration below
-
-### Fixes
-
-Not tracked for v3 => v4 due to using a new base (_OCP CAD Viewer for VS Code_)
-
-
-## Migration from 3.x
-
-**Changed behavior:**
-
-- In order to align Jupyter CadQuery with OCP Viewer for VS Code, the following changes have been implemented:
-  - After `openviewer(...)` the default viewer location is set. Force to a cell based viewer by using the keyword parameter `viewer=""` instead of `viewer=None`
-  - `show` keyword changes
-    - `mate_scale` is replaced by `helper_scale`
-    - `control = "orbit"` and `control = "Trackball"` are replaced by `orbit_control = True` or `orbit_control = False`
-    - `reset_camera` does not take boolean any more. Use the enum `Camera` (`from jupyter_cadquery import Camera`)
-    - `collapse` does not take strings any more. Use the enum `Collapse` (`from jupyter_cadquery import Collapse`)
-    - `default_edge_color` needs to be changed to `default_edgecolor`.
-    - `PartGroup`, `Part`, `Faces`, `Edges`, `Vertices` classes do not exist any more. Use CadQuery or build123d assemblies instead.
-    - `optimal_bb` does not exist any more. The system now determines the right bounding box itself.
-    - `js_debug` does not exist any more. Use `debug`instead.
-
-- Change functions and methods
-  - The function `webcol_to_cq` does not exist any more. Use web color strings (`#80ff80`) or CadQuery / build123d Color classes.
-  - The method `select_clipping` is replaced by `viewer.tab = "clip"` (other alternatives are "tree" and "material")
-  - The method `select_tree` is replaced by `viewer.tab = "tree"` (other alternatives are "clip" and "material")
-
-- Removed functionality
-  - The `voila` base standalone viewer is removed. Use `python -m ocp_vscode` now, using the same `show` commands
-  - The docker support is reduced to providing a Docker file
-  - Export as HTML file is not supported any more
-
-## Known issues
-
-- [z-fighting](https://en.wikipedia.org/wiki/Z-fighting) happens some times, especially when using multiple clip planes (cannot be solved in general)
-- Measurement feature does not work on binder at the moment (XSRF cookie issue)
+see [CHANGELOG.md](./CHANGELOG.md)

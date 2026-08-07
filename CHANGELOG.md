@@ -1,5 +1,65 @@
 # Changelog
 
+## Release v5.0.0 (07.08.2026)
+
+This release moves Jupyter CadQuery to the new viewer stack: cad-viewer-widget 4 (based on three-cad-viewer 5), ocp_vscode 4 and ocp-tessellate 3.4. It requires JupyterLab >= 4.6.2.
+
+### Changes
+
+- **Studio mode**: a new Studio tab provides physically based rendering with environment maps, shadows, ambient occlusion and tone mapping; per-object PBR materials can be assigned via the `materials`/`modes` parameters (threejs-materials); all `studio_*` options of ocp_vscode are supported in `show`, `show_object` and `set_viewer_config`
+- **Zebra analysis**: the Zebra tab and the `zebra_*` options (count, opacity, direction, color scheme, mapping mode) are supported end to end
+- New viewer capabilities from three-cad-viewer 5: GPU id-based picking with much better scaling for large models, always-on hover preselection with a status bar, an always available topology filter, and section caps that scale to large assemblies
+- `show` and `show_object` signatures are fully aligned with ocp_vscode 4 (including `grid_font_size`, `analysis_tool`, `show_locals`, `update`)
+- `analysis_tool="distance" | "properties" | "select"` starts a show with the tool already activated
+- `reset_camera` accepts the camera position presets (`Camera.ISO`, `Camera.TOP`, ...) in addition to `RESET`/`KEEP`/`CENTER`
+- The viewer is reused across `show` calls (flicker free) and renders directly into the target `tab`
+- The clip flags and zebra settings keep their last values across shows on the same viewer; studio settings reset to the ocp_vscode viewer defaults
+- `save_screenshot` is supported via the viewer's PNG export
+- The tessellated model is passed to the viewer in its raw form and decoded natively by three-cad-viewer
+
+### Fixes
+
+- `show()` without a viewer name now falls back to a cell viewer when the default sidecar has been closed, instead of reopening it
+- All HTTP requests from the kernel to the measurement backend use timeouts, so a stuck backend can no longer hang `show()`
+- The `Collapse` enum translation was adapted to the changed enum values of ocp_vscode 4
+- `replay` was adapted to the changed `_tessellate` return value of ocp_vscode 4
+
+## Release v4.0.2 (17.04.2025)
+
+### Fixes
+
+- Fixed the cad-viewer-widget dependency to 3.0.2 and the installation verification instructions
+
+## Release v4.0.1 (17.04.2025)
+
+### Changes
+
+- Restructured the installation documentation, Dockerfile and binder setup
+- Protected the measurement backend endpoints with a per-session API key and exposed the Jupyter port to the kernel
+
+### Fixes
+
+- Injected the `Collapse` enum into cad-viewer-widget so `viewer.collapse` returns the enum
+
+## Release v4.0.0 (14.04.2025)
+
+Jupyter CadQuery 4 is a complete re-architecture: it is now a thin integration layer that reuses [OCP CAD Viewer for VS Code](https://github.com/bernhard-42/vscode-ocp-cad-viewer) (`ocp_vscode`) for the show logic and configuration, [ocp-tessellate](https://github.com/bernhard-42/ocp-tessellate) for tessellation, and [cad-viewer-widget](https://github.com/bernhard-42/cad-viewer-widget) (based on three-cad-viewer) for rendering. `show` therefore behaves the same in JupyterLab and in VS Code.
+
+### Changes
+
+- `show`, `show_object`, `show_all` and the config system (`set_defaults`, `workspace_config`, ...) now mirror the ocp_vscode API, including the `Camera` and `Collapse` enums
+- **Measurement tools** (distance, properties) computed by an exact OCCT backend, implemented as a Jupyter server extension
+- Auto display of CadQuery and build123d shapes; replay mode ported to ocp-tessellate
+- Support for viewer `aspect_ratio`; `show` returns the viewer object
+- Build system migrated from setup.py to pyproject.toml with hatchling
+
+### Breaking changes (see the migration section in the README)
+
+- `mate_scale` replaced by `helper_scale`; `control` replaced by `orbit_control`; `reset_camera` and `collapse` take enums instead of booleans/strings; `default_edge_color` renamed to `default_edgecolor`
+- `PartGroup`, `Part`, `Faces`, `Edges`, `Vertices` classes removed - use CadQuery or build123d assemblies
+- `select_clipping`/`select_tree` replaced by `viewer.tab = "clip" | "tree" | "material"`
+- The voila based standalone viewer, HTML export and `webcol_to_cq` were removed; docker support reduced to a Dockerfile
+
 ## Release v3.5.2 (03.01.2023)
 
 ### Changes

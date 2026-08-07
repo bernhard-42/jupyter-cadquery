@@ -48,7 +48,7 @@ endif
 
 dist:
 	@rm -f dist/*
-	@python -m build 
+	@python -m build -n
 
 release:
 	git add .
