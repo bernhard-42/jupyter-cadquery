@@ -1,4 +1,4 @@
-notebook~=7.4.0
+notebook~=7.6.1
 matplotlib~=3.10.1
 cadquery @ git+https://github.com/cadquery/cadquery
 build123d @ git+https://github.com/gumyr/build123d

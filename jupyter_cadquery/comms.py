@@ -41,6 +41,26 @@ __all__ = [
 
 SESSION = None
 
+# Translations between ocp_vscode's Collapse enum (whose values are
+# three-cad-viewer CollapseState numbers since ocp_vscode 4) and the
+# cad-viewer-widget trait strings "1"/"R"/"C"/"E". Mapped by enum name where
+# possible, since the enum values changed between ocp_vscode versions.
+COLLAPSE_NAMES = {"NONE": "E", "LEAVES": "1", "ALL": "C", "ROOT": "R"}
+COLLAPSE_VALUES = {2: "E", -1: "1", 0: "C", 1: "R"}
+COLLAPSE_NUMBERS = {letter: number for number, letter in COLLAPSE_VALUES.items()}
+
+# Camera enum values that are position presets, not reset modes
+CAMERA_PRESET_VIEWS = ["iso", "top", "bottom", "left", "right", "front", "rear"]
+
+
+def _collapse_to_letter(collapse):
+    """Translate a Collapse enum or CollapseState number to the widget letter"""
+    if isinstance(collapse, Enum):
+        return COLLAPSE_NAMES[collapse.name]
+    if isinstance(collapse, int):
+        return COLLAPSE_VALUES[collapse]
+    return collapse  # already one of the "1"/"R"/"C"/"E" strings
+
 def init_session(url):
     global SESSION
     session = requests.Session()
@@ -55,8 +75,6 @@ def send_data(data, port=None, timeit=False):
     Called by ocp_vscode.show.show() to send model and config to viewer
     """
 
-    collapse_mapping = ["E", "1", "C", "R"]  # show needs the string
-
     config = data["config"]
     type_ = data["type"]
     if type_ != "data":
@@ -65,14 +83,18 @@ def send_data(data, port=None, timeit=False):
     data = data["data"]
 
     if config.get("collapse") is not None:
-        if isinstance(config["collapse"], Enum):
-            config["collapse"] = collapse_mapping[config["collapse"].value]
-        else:
-            config["collapse"] = collapse_mapping[config["collapse"]]
+        config["collapse"] = _collapse_to_letter(config["collapse"])
 
+    preset_view = None
     if config.get("reset_camera") is not None:
         if isinstance(config["reset_camera"], Enum):
             config["reset_camera"] = config["reset_camera"].value
+        if config["reset_camera"] in CAMERA_PRESET_VIEWS:
+            # Camera position presets (Camera.ISO, Camera.TOP, ...) are not
+            # reset modes of the widget; render with "reset" and apply the
+            # preset view afterwards, like ocp_vscode's viewer does
+            preset_view = config["reset_camera"]
+            config["reset_camera"] = "reset"
 
     if config.get("orbit_control") is not None:
         config["control"] = "orbit" if config["orbit_control"] else "trackball"
@@ -86,6 +108,11 @@ def send_data(data, port=None, timeit=False):
         **all_args,
     )
     viewer.widget.measure_callback = send_measure_request
+    if preset_view is not None:
+        viewer.set_camera(preset_view)
+    if config.get("analysis_tool") in ("distance", "properties", "select"):
+        # activate the analysis tool after rendering, like ocp_vscode's viewer
+        viewer.execute("viewer.display.setTool", [config["analysis_tool"], True])
     return viewer
 
 
@@ -95,7 +122,20 @@ def send_command(data, port=None, title=None, timeit=False):
 
     With data == "config" called by called by ocp_vscode.config.workspace_config()
     With data == "status" called by called by ocp_vscode.config.status()
+    With data == {"type": "screenshot", ...} called by ocp_vscode.show.save_screenshot()
     """
+    if isinstance(data, dict):
+        if data.get("type") == "screenshot":
+            viewer = get_sidecar(title)
+            if viewer is None:
+                print("No viewer found to take a screenshot from")
+            else:
+                viewer.export_png(data["filename"])
+            return {}
+
+        print(f"Ignoring unsupported viewer command {data.get('type')}")
+        return {}
+
     if data == "config":
         config = get_user_defaults()
         viewer = None
@@ -112,10 +152,16 @@ def send_command(data, port=None, title=None, timeit=False):
 
     elif data == "status":
         viewer = get_sidecar(title)
-        return {} if viewer is None else viewer.status()
+        if viewer is None:
+            return {}
+        status = viewer.status()
+        # ocp_vscode expects the CollapseState number, not the widget letter
+        if status.get("collapse") is not None:
+            status["collapse"] = COLLAPSE_NUMBERS[status["collapse"]]
+        return status
 
     else:
-        raise ValueError("Unknown data for send_data")
+        raise ValueError(f"Unknown data for send_command: {data}")
 
 
 def send_backend(data, port=None, jcv_id=None, timeit=False):
@@ -183,4 +229,11 @@ def send_config(config, port=None, title=None, timeit=False):
     for k, v in config["config"].items():
         if v is not None:
             if not k in ["port", "title"]:
+                if k == "collapse":
+                    # arrives as CollapseState number from set_viewer_config
+                    v = _collapse_to_letter(v)
+                elif isinstance(v, Enum):
+                    # the websocket path serializes enums to their values,
+                    # do the same before setting the widget property
+                    v = v.value
                 setattr(cv, k, v)

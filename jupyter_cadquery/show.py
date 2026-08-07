@@ -78,6 +78,9 @@ def show(
     names=None,
     colors=None,
     alphas=None,
+    materials=None,
+    modes=None,
+    show_locals=None,
     viewer=None,
     anchor=None,
     cad_width=None,
@@ -120,6 +123,24 @@ def show(
     pan_speed=None,
     rotate_speed=None,
     zoom_speed=None,
+    grid_font_size=None,
+    zebra_count=None,
+    zebra_opacity=None,
+    zebra_direction=None,
+    zebra_color_scheme=None,
+    zebra_mapping_mode=None,
+    studio_environment=None,
+    studio_env_intensity=None,
+    studio_env_rotation=None,
+    studio_background=None,
+    studio_tone_mapping=None,
+    studio_exposure=None,
+    studio_shadow_intensity=None,
+    studio_shadow_softness=None,
+    studio_ao_intensity=None,
+    studio_texture_mapping=None,
+    studio_4k_env_maps=None,
+    analysis_tool=None,
     deviation=None,
     angular_tolerance=None,
     edge_accuracy=None,
@@ -211,6 +232,26 @@ def show(
         rotate_speed:            Speed of mouse rotate (default=1)
         zoom_speed:              Speed of mouse zoom (default=1)
 
+    - Zebra / Studio (like ocp_vscode)
+        grid_font_size:          Font size of the grid labels (default=12)
+        zebra_count:             Number of zebra stripes (default=9)
+        zebra_opacity:           Opacity of the zebra stripes (default=1.0)
+        zebra_direction:         Direction (angle) of the zebra stripes (default=0)
+        zebra_color_scheme:      Color scheme of the zebra stripes: "blackwhite", "colorful" or "grayscale"
+        zebra_mapping_mode:      Mapping mode of the zebra stripes: "reflection" or "normal"
+        studio_environment:      Environment HDR map, use StudioEnvironment enum or a custom HDR URL
+        studio_env_intensity:    Intensity of the studio environment light (default=1.0)
+        studio_env_rotation:     Rotation of the studio environment in degrees (default=0)
+        studio_background:       Studio background, use StudioBackground enum (default=environment)
+        studio_tone_mapping:     Studio tone mapping, use StudioToneMapping enum (default=neutral)
+        studio_exposure:         Studio exposure (default=1.0)
+        studio_shadow_intensity: Studio shadow intensity (default=0.5)
+        studio_shadow_softness:  Studio shadow softness (default=0.2)
+        studio_ao_intensity:     Studio ambient occlusion intensity (default=0.5)
+        studio_texture_mapping:  Studio texture mapping, use StudioTextureMapping enum (default=parametric)
+        studio_4k_env_maps:      Whether to use 4k studio environment maps (default=False)
+        analysis_tool:           Start with an analysis tool activated: "distance", "properties" or "select"
+
     - Renderer
         deviation:               Shapes: Deviation from linear deflection value (default=0.1)
         angular_tolerance:       Shapes: Angular deflection in radians for tessellation (default=0.2)
@@ -251,6 +292,11 @@ def show_object(
     obj,
     name=None,
     options=None,
+    material=None,
+    mode=None,
+    update=None,
+    explode=None,
+    show_locals=None,
     viewer=None,
     anchor=None,
     cad_width=None,
@@ -294,6 +340,24 @@ def show_object(
     pan_speed=None,
     rotate_speed=None,
     zoom_speed=None,
+    grid_font_size=None,
+    zebra_count=None,
+    zebra_opacity=None,
+    zebra_direction=None,
+    zebra_color_scheme=None,
+    zebra_mapping_mode=None,
+    studio_environment=None,
+    studio_env_intensity=None,
+    studio_env_rotation=None,
+    studio_background=None,
+    studio_tone_mapping=None,
+    studio_exposure=None,
+    studio_shadow_intensity=None,
+    studio_shadow_softness=None,
+    studio_ao_intensity=None,
+    studio_texture_mapping=None,
+    studio_4k_env_maps=None,
+    analysis_tool=None,
     deviation=None,
     angular_tolerance=None,
     edge_accuracy=None,
@@ -385,6 +449,26 @@ def show_object(
         pan_speed:               Speed of mouse panning (default=1)
         rotate_speed:            Speed of mouse rotate (default=1)
         zoom_speed:              Speed of mouse zoom (default=1)
+
+    - Zebra / Studio (like ocp_vscode)
+        grid_font_size:          Font size of the grid labels (default=12)
+        zebra_count:             Number of zebra stripes (default=9)
+        zebra_opacity:           Opacity of the zebra stripes (default=1.0)
+        zebra_direction:         Direction (angle) of the zebra stripes (default=0)
+        zebra_color_scheme:      Color scheme of the zebra stripes: "blackwhite", "colorful" or "grayscale"
+        zebra_mapping_mode:      Mapping mode of the zebra stripes: "reflection" or "normal"
+        studio_environment:      Environment HDR map, use StudioEnvironment enum or a custom HDR URL
+        studio_env_intensity:    Intensity of the studio environment light (default=1.0)
+        studio_env_rotation:     Rotation of the studio environment in degrees (default=0)
+        studio_background:       Studio background, use StudioBackground enum (default=environment)
+        studio_tone_mapping:     Studio tone mapping, use StudioToneMapping enum (default=neutral)
+        studio_exposure:         Studio exposure (default=1.0)
+        studio_shadow_intensity: Studio shadow intensity (default=0.5)
+        studio_shadow_softness:  Studio shadow softness (default=0.2)
+        studio_ao_intensity:     Studio ambient occlusion intensity (default=0.5)
+        studio_texture_mapping:  Studio texture mapping, use StudioTextureMapping enum (default=parametric)
+        studio_4k_env_maps:      Whether to use 4k studio environment maps (default=False)
+        analysis_tool:           Start with an analysis tool activated: "distance", "properties" or "select"
 
     - Renderer
         deviation:               Shapes: Deviation from linear deflection value (default=0.1)

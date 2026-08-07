@@ -604,7 +604,7 @@ def replay(
 
     # save overall result
 
-    instances, shapes, _, _, _ = _tessellate(r.stack[-1][1], names=["Result"])
+    instances, shapes, *_ = _tessellate(r.stack[-1][1], names=["Result"])
     bbox = BoundingBox(shapes["bb"])
     r.bbox = (
         cq.Workplane()
