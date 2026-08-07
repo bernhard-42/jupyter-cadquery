@@ -52,6 +52,11 @@ COLLAPSE_NUMBERS = {letter: number for number, letter in COLLAPSE_VALUES.items()
 # Camera enum values that are position presets, not reset modes
 CAMERA_PRESET_VIEWS = ["iso", "top", "bottom", "left", "right", "front", "rear"]
 
+# (connect, read) timeouts for the HTTP requests to the Jupyter server so a
+# stuck server extension cannot hang the kernel indefinitely
+OBJECTS_TIMEOUT = (5, 120)
+MEASURE_TIMEOUT = (5, 60)
+
 
 def _collapse_to_letter(collapse):
     """Translate a Collapse enum or CollapseState number to the widget letter"""
@@ -64,7 +69,7 @@ def _collapse_to_letter(collapse):
 def init_session(url):
     global SESSION
     session = requests.Session()
-    session.get(url)
+    session.get(url, timeout=(5, 30))
     SESSION = session
 
 
@@ -173,16 +178,23 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     port = os.environ.get("JUPYTER_PORT", "8888")
     url = f"http://localhost:{port}"
 
-    if SESSION is None:
-        init_session(url)
+    try:
+        if SESSION is None:
+            init_session(url)
 
-    message = {
-        "_xsrf": SESSION.cookies.get("_xsrf"),
-        "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
-        "viewer": jcv_id,
-        "data": orjson.dumps(data, default=json_default).decode("utf-8"),
-    }
-    response = SESSION.post(f"{url}/objects", data=message)
+        message = {
+            "_xsrf": SESSION.cookies.get("_xsrf"),
+            "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
+            "viewer": jcv_id,
+            "data": orjson.dumps(data, default=json_default).decode("utf-8"),
+        }
+        response = SESSION.post(f"{url}/objects", data=message, timeout=OBJECTS_TIMEOUT)
+    except requests.exceptions.RequestException as ex:
+        print(
+            f"Warning: could not send the model to the measurement backend ({ex}); "
+            "measurements will not work for this viewer"
+        )
+        return None
     return response.status_code
 
 
@@ -196,16 +208,19 @@ def send_measure_request(jcv_id, shape_ids):
     port = os.environ.get("JUPYTER_PORT", "8888")
     url = f"http://localhost:{port}"
 
-    if SESSION is None:
-        init_session(url)
+    try:
+        if SESSION is None:
+            init_session(url)
 
-    message = {
-        "_xsrf": SESSION.cookies.get("_xsrf"),
-        "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
-        "viewer": jcv_id,
-        "data": orjson.dumps(shape_ids).decode("utf-8"),
-    }
-    response = SESSION.post(f"{url}/measure", data=message)
+        message = {
+            "_xsrf": SESSION.cookies.get("_xsrf"),
+            "apikey": os.environ.get("JUPYTER_CADQUERY_API_KEY"),
+            "viewer": jcv_id,
+            "data": orjson.dumps(shape_ids).decode("utf-8"),
+        }
+        response = SESSION.post(f"{url}/measure", data=message, timeout=MEASURE_TIMEOUT)
+    except requests.exceptions.RequestException as ex:
+        return 500, f"Measurement request failed: {ex}"
     return response.status_code, response.text
 
 
