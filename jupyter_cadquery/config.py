@@ -127,11 +127,15 @@ WORKSPACE_CONFIG_KEYS = (
 # geometry is the panel's. Jupyter CadQuery, where a cell asks for a widget of a
 # given size, excludes neither.
 
-# Nothing is excluded. A sidecar is opened at the size the caller asks for, so
-# `cad_width` and `height` are this host's to be told - where a panel or a
-# browser window decides its own and refuses them. The list being per host is
-# what lets one show signature serve both.
-EXCLUDE_KEYS = ()
+# The one keyword that belongs to another host. A port names a viewer to
+# address among several, which is real where viewers are servers and has no
+# meaning in a notebook - a sidecar is named, not dialled.
+#
+# Nothing else is excluded: `cad_width`, `height`, `viewer`, `anchor` and
+# `pinning` are all this host's to be told, where a panel or a browser window
+# decides its own and refuses them. That the list runs the other way here is
+# the clearest case for it being per host at all.
+EXCLUDE_KEYS = ("port",)
 
 comms = JupyterComms()
 session = Session(comms)
