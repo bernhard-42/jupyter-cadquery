@@ -2,7 +2,7 @@
 
 The Python package provides a Jupyterlab extension and a JupyterServer extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
-Current version: **v5.0.0** (2026-08-07)
+Current version: **v5.1.0** (2026-08-07)
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
@@ -160,7 +160,7 @@ The animation system also allows to create custom defined animations like this a
        jupyter_cadquery enabled
 
        - Validating jupyter_cadquery...
-       jupyter_cadquery 5.0.0 OK
+       jupyter_cadquery 5.1.0 OK
 
        jupyter_server_terminals enabled
        - Validating jupyter_server_terminals...
@@ -175,7 +175,7 @@ The animation system also allows to create custom defined animations like this a
    Config dir: /usr/local/etc/jupyter
    ```
 
-   You should again see `jupyter_cadquery 5.0.0 OK`. This ensures that the **viewer frontend** is properly installed
+   You should again see `jupyter_cadquery 5.1.0 OK`. This ensures that the **viewer frontend** is properly installed
 
 2. Check the Jupyter server extension, the measurement backend: `jupyter server extension list`
 
@@ -190,7 +190,7 @@ The animation system also allows to create custom defined animations like this a
 
        - Validating jupyter_cadquery...
    Extension package jupyter_cadquery took 1.6050s to import
-       jupyter_cadquery 5.0.0 OK
+       jupyter_cadquery 5.1.0 OK
 
        jupyter_server_terminals enabled
        - Validating jupyter_server_terminals...
@@ -205,7 +205,7 @@ The animation system also allows to create custom defined animations like this a
    Config dir: /usr/local/etc/jupyter
    ```
 
-   You should see `jupyter_cadquery 5.0.0 OK`. This ensures that the **measurement backend** is properly installed.
+   You should see `jupyter_cadquery 5.1.0 OK`. This ensures that the **measurement backend** is properly installed.
 
    If you see "Extension package jupyter_cadquery took ...", this is basically OCP and VTK loading time (this test import OCP and with that VTK).
 

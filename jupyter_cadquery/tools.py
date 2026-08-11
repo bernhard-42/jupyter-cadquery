@@ -21,7 +21,7 @@ import numpy as np
 from ocp_tessellate.convert import tessellate_group, to_assembly
 from ocp_tessellate.ocp_utils import is_build123d_assembly, is_cadquery_assembly
 from ocp_tessellate.utils import numpy_to_json
-from ocp_vscode import show
+from .show import show
 
 try:
     import cadquery as cq

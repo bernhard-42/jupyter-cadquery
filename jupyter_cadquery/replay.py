@@ -25,7 +25,9 @@ from ipywidgets import HBox, Layout, Output, SelectMultiple
 from ocp_tessellate.convert import to_ocpgroup, OcpGroup, OcpObject, OcpInstancesGroup
 from ocp_tessellate.ocp_utils import make_compound, BoundingBox
 
-from ocp_vscode.show import show, show_object, _tessellate
+from .show import show, show_object, viewer as _viewer
+
+_tessellate = _viewer._tessellate
 from cad_viewer_widget import open_viewer
 
 #

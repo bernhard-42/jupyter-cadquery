@@ -24,8 +24,8 @@ from jupyter_server.extension.handler import ExtensionHandlerMixin
 
 # ensure the Jupyter Cadquery comms routines will be loaded
 os.environ["JUPYTER_CADQUERY"] = "1"
-from ocp_vscode.backend import ViewerBackend
-from ocp_vscode.comms import MessageType
+from ocp_viewer_core.backend import ViewerBackend
+from ocp_viewer_core.comms import MessageType
 
 BACKENDS = {}
 

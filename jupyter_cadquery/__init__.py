@@ -31,8 +31,8 @@ from cad_viewer_widget import (
     get_viewers_by_id,
 )
 
-from ocp_vscode.colors import *
-from ocp_vscode.config import (
+from ocp_viewer_core.colors import *
+from .config import (
     Camera,
     Collapse,
     combined_config,
@@ -54,11 +54,11 @@ _set_collapse(
 )
 del _set_collapse
 
-from ocp_vscode.show import show_all, reset_show, show_clear
+from .show import show_all, reset_show, show_clear
 
 
 from .app import JupyterCadqueryBackend
-from .config import get_user_defaults, save_user_defaults
+from .settings import get_user_defaults, save_user_defaults
 from ._version import __version__
 from .tools import auto_show, get_pick
 from .show import *

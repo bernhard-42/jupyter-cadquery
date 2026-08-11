@@ -22,13 +22,15 @@ import os
 
 import orjson
 import requests
-from cad_viewer_widget import get_default_sidecar, get_sidecar, show
+from cad_viewer_widget import CadViewer, get_default_sidecar, get_sidecar, show
 from cad_viewer_widget.utils import display_args, viewer_args
-from ocp_vscode.comms import default as json_default
+from ocp_viewer_core.comms import Comms
+from ocp_viewer_core.websocket import default as json_default
 
-from .config import get_user_defaults
+from .settings import get_user_defaults
 
 __all__ = [
+    "JupyterComms",
     "set_jupyter_port",
     "get_jupyter_port",
     "init_session",
@@ -41,10 +43,10 @@ __all__ = [
 
 SESSION = None
 
-# Translations between ocp_vscode's Collapse enum (whose values are
-# three-cad-viewer CollapseState numbers since ocp_vscode 4) and the
-# cad-viewer-widget trait strings "1"/"R"/"C"/"E". Mapped by enum name where
-# possible, since the enum values changed between ocp_vscode versions.
+# Between the core's Collapse enum, whose values are three-cad-viewer's
+# CollapseState numbers, and the widget's trait strings "1"/"R"/"C"/"E".
+# Mapped by enum name where possible, so a change of value cannot silently
+# reinterpret one.
 COLLAPSE_NAMES = {"NONE": "E", "LEAVES": "1", "ALL": "C", "ROOT": "R"}
 COLLAPSE_VALUES = {2: "E", -1: "1", 0: "C", 1: "R"}
 COLLAPSE_NUMBERS = {letter: number for number, letter in COLLAPSE_VALUES.items()}
@@ -77,7 +79,7 @@ def send_data(data, port=None, timeit=False):
     """
     Send data to the viewer
 
-    Called by ocp_vscode.show.show() to send model and config to viewer
+    Called through `JupyterComms.send_data` to build the sidecar and draw.
     """
 
     config = data["config"]
@@ -97,7 +99,7 @@ def send_data(data, port=None, timeit=False):
         if config["reset_camera"] in CAMERA_PRESET_VIEWS:
             # Camera position presets (Camera.ISO, Camera.TOP, ...) are not
             # reset modes of the widget; render with "reset" and apply the
-            # preset view afterwards, like ocp_vscode's viewer does
+            # preset view afterwards, as the other clients' viewers do
             preset_view = config["reset_camera"]
             config["reset_camera"] = "reset"
 
@@ -116,7 +118,7 @@ def send_data(data, port=None, timeit=False):
     if preset_view is not None:
         viewer.set_camera(preset_view)
     if config.get("analysis_tool") in ("distance", "properties", "select"):
-        # activate the analysis tool after rendering, like ocp_vscode's viewer
+        # activate the analysis tool after rendering, as the others do
         viewer.execute("viewer.display.setTool", [config["analysis_tool"], True])
     return viewer
 
@@ -125,9 +127,8 @@ def send_command(data, port=None, title=None, timeit=False):
     """
     Send command to the viewer.
 
-    With data == "config" called by called by ocp_vscode.config.workspace_config()
-    With data == "status" called by called by ocp_vscode.config.status()
-    With data == {"type": "screenshot", ...} called by ocp_vscode.show.save_screenshot()
+    `"config"` answers `Config.workspace_config`, `"status"` answers
+    `Config.status`, and a screenshot command answers `save_screenshot`.
     """
     if isinstance(data, dict):
         if data.get("type") == "screenshot":
@@ -160,7 +161,7 @@ def send_command(data, port=None, title=None, timeit=False):
         if viewer is None:
             return {}
         status = viewer.status()
-        # ocp_vscode expects the CollapseState number, not the widget letter
+        # The core's Collapse is a CollapseState number, not a widget letter
         if status.get("collapse") is not None:
             status["collapse"] = COLLAPSE_NUMBERS[status["collapse"]]
         return status
@@ -173,7 +174,8 @@ def send_backend(data, port=None, jcv_id=None, timeit=False):
     """
     Send data to the viewer
 
-    Called by ocp_vscode.show.show() to send model to backend
+    Called through `JupyterComms.send_backend` to give the measurement
+    backend the model that was just drawn.
     """
     port = os.environ.get("JUPYTER_PORT", "8888")
     url = f"http://localhost:{port}"
@@ -228,7 +230,7 @@ def send_config(config, port=None, title=None, timeit=False):
     """
     Send config to the viewer
 
-    Called by ocp_vscode.config.set_viewer_config() to set attributes in the viewer
+    Called through `JupyterComms.send_config` to set attributes on the widget.
     """
     title = config["config"].get("title")
 
@@ -252,3 +254,71 @@ def send_config(config, port=None, title=None, timeit=False):
                     # do the same before setting the widget property
                     v = v.value
                 setattr(cv, k, v)
+
+
+class JupyterComms(Comms):
+    """Jupyter CadQuery's transport: a sidecar in the notebook, in this process.
+
+    The host that is least like the others, and the reason the core takes a
+    transport rather than a socket. There is no wire: `send_data` builds the
+    widget and hands it back, so `show()` returns something the user can go on
+    to call methods on. That handle is what `H` is for - `Viewer[CadViewer]`
+    gives its users the right type from the same definition that gives the
+    other hosts None.
+
+    Which sidecar a call is addressed to arrives in the keywords of the call in
+    flight, the way a port does for the hosts that have one.
+    """
+
+    def __init__(self):
+        super().__init__()
+        # The widget the last model went to. The measurement backend is
+        # addressed by viewer id, and the id is the handle `send_data` has just
+        # produced - so nothing above needs to pass one down.
+        self.last_widget = None
+
+    @property
+    def title(self):
+        """The sidecar this call is addressed to, or None for the default."""
+        return self.keywords.get("viewer")
+
+    def encode_config(self, config):
+        """No renaming: a traitlet has one name in both languages.
+
+        The widget's Python attribute and its JavaScript trait are the same
+        string, so what Python sends is what the JavaScript half reads. The
+        rule is unchanged - the sender translates to the receiver's paradigm -
+        and here the two paradigms are one.
+        """
+        return config
+
+    def send_data(self, data, timeit=False):
+        viewer = send_data(data, timeit=timeit)
+        self.last_widget = viewer
+        return viewer
+
+    def send_config(self, config, timeit=False):
+        send_config(config, title=self.title, timeit=timeit)
+
+    def send_command(self, data, timeit=False):
+        return send_command(data, title=self.title, timeit=timeit)
+
+    def send_backend(self, data, timeit=False):
+        jcv_id = None if self.last_widget is None else self.last_widget.widget.id
+        send_backend(data, jcv_id=jcv_id, timeit=timeit)
+
+    def send_response(self, data, timeit=False):
+        """Nothing to send: this host's backend answers in the same process.
+
+        `ViewerBackend.handle_properties` and `handle_distance` both return
+        their response and call this; a host with a socket puts it on the wire,
+        and here the caller reads the return value.
+        """
+
+    def is_handle(self, obj):
+        """Whether `obj` is one of this host's viewers.
+
+        `show_all` walks the user's namespace, and in a notebook that namespace
+        contains the sidecar itself - which must not be drawn into itself.
+        """
+        return isinstance(obj, CadViewer)
