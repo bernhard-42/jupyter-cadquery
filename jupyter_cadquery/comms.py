@@ -226,6 +226,16 @@ def send_measure_request(jcv_id, shape_ids):
     return response.status_code, response.text
 
 
+def _is_settable(name):
+    """Whether a viewer attribute can be changed after the sidecar is open.
+
+    Asked of the property rather than discovered by catching AttributeError,
+    so that a genuine failure inside a setter still surfaces.
+    """
+    attribute = getattr(CadViewer, name, None)
+    return not isinstance(attribute, property) or attribute.fset is not None
+
+
 def send_config(config, port=None, title=None, timeit=False):
     """
     Send config to the viewer
@@ -246,6 +256,13 @@ def send_config(config, port=None, title=None, timeit=False):
     for k, v in config["config"].items():
         if v is not None:
             if not k in ["port", "title"]:
+                if not _is_settable(k):
+                    # Chosen when the sidecar is opened rather than afterwards:
+                    # `up` and `control` have no setter, and a config that
+                    # names them - `reset_defaults` re-applies everything the
+                    # workspace config holds - would otherwise raise on one the
+                    # viewer simply cannot change now.
+                    continue
                 if k == "collapse":
                     # arrives as CollapseState number from set_viewer_config
                     v = _collapse_to_letter(v)
