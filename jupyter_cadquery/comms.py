@@ -103,9 +103,6 @@ def send_data(data, port=None, timeit=False):
             preset_view = config["reset_camera"]
             config["reset_camera"] = "reset"
 
-    if config.get("orbit_control") is not None:
-        config["control"] = "orbit" if config["orbit_control"] else "trackball"
-
     all_args = viewer_args(config)
     all_args.update(display_args(config))
     viewer = show(
