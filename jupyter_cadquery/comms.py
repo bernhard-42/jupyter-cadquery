@@ -114,9 +114,6 @@ def send_data(data, port=None, timeit=False):
     viewer.widget.measure_callback = send_measure_request
     if preset_view is not None:
         viewer.set_camera(preset_view)
-    if config.get("analysis_tool") in ("distance", "properties", "select"):
-        # activate the analysis tool after rendering, as the others do
-        viewer.execute("viewer.display.setTool", [config["analysis_tool"], True])
     return viewer
 
 
