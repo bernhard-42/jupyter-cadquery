@@ -59,74 +59,6 @@ __all__ = [
     "workspace_config",
 ]
 
-WORKSPACE_CONFIG_KEYS = (
-    "ambient_intensity",
-    "analysis_tool",
-    "angular_tolerance",
-    "axes",
-    "axes0",
-    "black_edges",
-    "center_grid",
-    "clip_intersection",
-    "clip_normal_0",
-    "clip_normal_1",
-    "clip_normal_2",
-    "clip_object_colors",
-    "clip_planes",
-    "clip_slider_0",
-    "clip_slider_1",
-    "clip_slider_2",
-    "collapse",
-    "default_color",
-    "default_edgecolor",
-    "default_facecolor",
-    "default_opacity",
-    "default_thickedgecolor",
-    "default_vertexcolor",
-    "deviation",
-    "direct_intensity",
-    "explode",
-    "glass",
-    "grid",
-    "grid_font_size",
-    "metalness",
-    "modifier_keys",
-    "orbit_control",
-    "ortho",
-    "pan_speed",
-    "rotate_speed",
-    "roughness",
-    "states",
-    "studio_4k_env_maps",
-    "studio_ao_intensity",
-    "studio_background",
-    "studio_env_intensity",
-    "studio_env_rotation",
-    "studio_environment",
-    "studio_exposure",
-    "studio_shadow_intensity",
-    "studio_shadow_softness",
-    "studio_texture_mapping",
-    "studio_tone_mapping",
-    "tab",
-    "theme",
-    "ticks",
-    "tools",
-    "transparent",
-    "tree_width",
-    "up",
-    "zebra_color_scheme",
-    "zebra_count",
-    "zebra_direction",
-    "zebra_mapping_mode",
-    "zebra_opacity",
-    "zoom_speed",
-)
-
-# What this host cannot be told, because the webview decides it: the panel's
-# geometry is the panel's. Jupyter CadQuery, where a cell asks for a widget of a
-# given size, excludes neither.
-
 # The one keyword that belongs to another host. A port names a viewer to
 # address among several, which is real where viewers are servers and has no
 # meaning in a notebook - a sidecar is named, not dialled.
@@ -139,7 +71,7 @@ EXCLUDE_KEYS = ("port",)
 
 comms = JupyterComms()
 session = Session(comms)
-config = Config(session, WORKSPACE_CONFIG_KEYS, EXCLUDE_KEYS)
+config = Config(session, EXCLUDE_KEYS)
 
 set_defaults = config.set_defaults
 set_viewer_config = config.set_viewer_config

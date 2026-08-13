@@ -37,6 +37,8 @@ __all__ = [
     "send_data",
     "send_command",
     "send_backend",
+    "status",
+    "workspace_config",
     "send_measure_request",
     "send_config",
 ]
@@ -119,10 +121,13 @@ def send_data(data, port=None, timeit=False):
 
 def send_command(data, port=None, title=None, timeit=False):
     """
-    Send command to the viewer.
+    Send a command to the viewer.
 
-    `"config"` answers `Config.workspace_config`, `"status"` answers
-    `Config.status`, and a screenshot command answers `save_screenshot`.
+    Only things done *to* a viewer arrive here - a screenshot is the one this
+    host has. The two questions a show asks are `workspace_config` and `status`
+    below: they used to be the strings `"config"` and `"status"` handled in this
+    function, which is why it once had three jobs and a `ValueError` for a
+    fourth.
     """
     if isinstance(data, dict):
         if data.get("type") == "screenshot":
@@ -136,32 +141,51 @@ def send_command(data, port=None, title=None, timeit=False):
         print(f"Ignoring unsupported viewer command {data.get('type')}")
         return {}
 
-    if data == "config":
-        config = get_user_defaults()
-        viewer = None
-        if title is None:
-            title = get_default_sidecar()
-            if title is not None:
-                viewer = get_sidecar(title)
-        else:
+    # Unchanged from when this function also answered "config" and "status":
+    # anything else is a command this host does not have, and saying so is the
+    # point - a silent empty answer is the failure mode this whole layer is
+    # careful about.
+    raise ValueError(f"Unknown data for send_command: {data}")
+
+
+def workspace_config(title=None):
+    """
+    The settings this host persists, from `~/.jcq_config`.
+
+    Read in process - there is no wire between a notebook's Python and its
+    widget - which is the whole of this host's transport for the question.
+    `_splash` comes from the sidecar rather than the file: it is not a setting
+    but the viewer saying whether what is on screen is still the logo.
+    """
+    config = get_user_defaults()
+    viewer = None
+    if title is None:
+        title = get_default_sidecar()
+        if title is not None:
             viewer = get_sidecar(title)
-
-        if viewer is not None:
-            config["_splash"] = viewer._splash
-        return config
-
-    elif data == "status":
-        viewer = get_sidecar(title)
-        if viewer is None:
-            return {}
-        status = viewer.status()
-        # The core's Collapse is a CollapseState number, not a widget letter
-        if status.get("collapse") is not None:
-            status["collapse"] = COLLAPSE_NUMBERS[status["collapse"]]
-        return status
-
     else:
-        raise ValueError(f"Unknown data for send_command: {data}")
+        viewer = get_sidecar(title)
+
+    if viewer is not None:
+        config["_splash"] = viewer._splash
+    return config
+
+
+def status(title=None):
+    """
+    The viewer's live state, asked of the widget itself.
+
+    An empty dict when the named sidecar does not exist: nothing has been
+    changed at a toolbar that is not on screen.
+    """
+    viewer = get_sidecar(title)
+    if viewer is None:
+        return {}
+    result = viewer.status()
+    # The core's Collapse is a CollapseState number, not a widget letter
+    if result.get("collapse") is not None:
+        result["collapse"] = COLLAPSE_NUMBERS[result["collapse"]]
+    return result
 
 
 def send_backend(data, port=None, jcv_id=None, timeit=False):
@@ -313,6 +337,12 @@ class JupyterComms(Comms):
 
     def send_command(self, data, timeit=False):
         return send_command(data, title=self.title, timeit=timeit)
+
+    def status(self):
+        return status(title=self.title)
+
+    def workspace_config(self):
+        return workspace_config(title=self.title)
 
     def send_backend(self, data, timeit=False):
         jcv_id = None if self.last_widget is None else self.last_widget.widget.id
