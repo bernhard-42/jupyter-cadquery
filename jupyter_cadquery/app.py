@@ -23,39 +23,13 @@ from jupyter_server.extension.application import ExtensionApp
 from jupyter_server.extension.handler import ExtensionHandlerMixin
 
 from ocp_viewer_core.backend import ViewerBackend
-from ocp_viewer_core.comms import Comms, MessageType
+from ocp_viewer_core.comms import MessageType
 
+# One backend per viewer, keyed by its id. They take no transport: a backend
+# answers by returning, and `MeasureHandler` below puts that answer in the HTTP
+# reply it already owes. This host has always worked that way - it is the
+# reference for the other three, which now do the same.
 BACKENDS = {}
-
-
-class ServerComms(Comms):
-    """The transport for a backend that never sends anything.
-
-    This backend runs inside the Jupyter server and is asked over HTTP: the
-    handler below reads what `handle_properties` and `handle_distance` return
-    and puts it in the response. So every send is a no-op, and `listen` is
-    never reached - the server is already listening.
-
-    The core asks for a transport rather than a socket precisely so that this
-    is expressible. `jupyter_cadquery.comms.JupyterComms` is the kernel's, and
-    is not imported here: that half needs the widget, and this process has no
-    notebook in it.
-    """
-
-    def send_data(self, data, timeit=False):
-        return None
-
-    def send_config(self, config, timeit=False):
-        pass
-
-    def send_command(self, data, timeit=False):
-        return {}
-
-    def send_backend(self, data, timeit=False):
-        pass
-
-    def send_response(self, data, timeit=False):
-        pass
 
 API_KEY = secrets.token_urlsafe(32)
 
@@ -108,9 +82,9 @@ class ObjectsHandler(ExtensionHandlerMixin, JupyterHandler):
             self.log.error("Missing objects")
             self.finish(orjson.dumps({"error": "Missing objects"}))
         else:
-            # One backend per viewer, keyed by its id - which is what the
-            # `jcv_id` parameter used to carry into the backend itself.
-            BACKENDS[viewer] = ViewerBackend(ServerComms())
+            # Keyed by viewer id - which is what the `jcv_id` parameter used to
+            # carry into the backend itself.
+            BACKENDS[viewer] = ViewerBackend()
             BACKENDS[viewer].load_model(data["model"])
             self.log.info(f"Objects received for viewer {viewer}")
             self.finish(

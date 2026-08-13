@@ -318,14 +318,6 @@ class JupyterComms(Comms):
         jcv_id = None if self.last_widget is None else self.last_widget.widget.id
         send_backend(data, jcv_id=jcv_id, timeit=timeit)
 
-    def send_response(self, data, timeit=False):
-        """Nothing to send: this host's backend answers in the same process.
-
-        `ViewerBackend.handle_properties` and `handle_distance` both return
-        their response and call this; a host with a socket puts it on the wire,
-        and here the caller reads the return value.
-        """
-
     def is_handle(self, obj):
         """Whether `obj` is one of this host's viewers.
 
