@@ -67,10 +67,10 @@ def workspace_defaults():
         "new_tree_behavior": True,
         "ortho": True,
         "pan_speed": 1,
-        "reset_camera": "reset",
+        "reset_camera": "KEEP",
         "rotate_speed": 1,
         "roughness": 0.65,
-        "ticks": 10,
+        "ticks": 5,
         # Stored like every other viewer setting, rather than left out. `theme`
         # became a first-class config key when `dark` was retired, and this
         # host was the only one with nowhere to keep it - so a notebook user's

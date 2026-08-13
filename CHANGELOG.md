@@ -1,5 +1,24 @@
 # Changelog
 
+## Release v5.1.0
+
+This release moves Jupyter CadQuery onto `ocp-viewer-core`, the shared half of the viewer stack, and aligns its defaults with the other viewers. Behaviour that differed between viewers for no chosen reason is a support and maintenance cost, so where this host disagreed with OCP CAD Viewer and the standalone viewer, it now follows them.
+
+### Breaking changes
+
+- **`reset_camera` now defaults to `Camera.KEEP`** instead of `"reset"`. A second `show()` of the same object keeps the camera where you left it rather than resetting the view. Pass `reset_camera=Camera.RESET` explicitly for the old behaviour.
+- **`ticks` now defaults to 5** instead of 10, so grids are labelled as they are in the other viewers.
+- **`modifier_keys` gains `alt`**, matching the four-key map the other viewers ship.
+
+**These defaults only apply to a fresh configuration.** `~/.jcq_config` is written with every setting it knows, so a file created by an earlier version still holds `reset_camera: reset`, `ticks: 10` and a three-key `modifier_keys`, and those stored values continue to win. **To pick up the new defaults, delete `~/.jcq_config`** - it is rewritten from the defaults on next use - **or edit those three entries by hand.**
+
+### Fixes
+
+- `modifier_keys` now applies at all. The widget's traitlet declared its values as pairs where a keymap holds single DOM property names, and no code path set it - so a `modifier_keys` entry in `~/.jcq_config` reached nothing. It is also accepted by `set_viewer_config` now.
+- `set_viewer_config(..., viewer="name")` configures the sidecar it names. It configured the default sidecar instead, and set a stray `viewer` attribute on the widget.
+- The pin-as-PNG button appears in cell viewers again; `pinning` was dropped before it reached the renderer.
+- `theme` and `grid_font_size` are stored settings, so a choice survives the session.
+
 ## Release v5.0.0 (07.08.2026)
 
 This release moves Jupyter CadQuery to the new viewer stack: cad-viewer-widget 4 (based on three-cad-viewer 5), ocp_vscode 4 and ocp-tessellate 3.4. It requires JupyterLab >= 4.6.2.
