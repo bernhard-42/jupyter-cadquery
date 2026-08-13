@@ -47,11 +47,22 @@ def workspace_defaults():
         "explode": False,
         "glass": True,
         "grid": [False, False, False],
+        # 12, as the standalone stores and as the core's VIEWER_DEFAULTS say.
+        # The renderer's own default is 10, so leaving this unstored did not
+        # mean "follow the renderer" - it meant this host silently disagreed
+        # with the other two about how big a grid label is.
+        "grid_font_size": 12,
         "metalness": 0.3,
         "modifier_keys": {
             "shift": "shiftKey",
             "ctrl": "ctrlKey",
             "meta": "metaKey",
+            # The other two hosts ship four keys and the standalone even
+            # patches `alt` into config files written before it existed. This
+            # host's own default was still the three-key form - moot while
+            # `modifier_keys` reached nothing here, and not moot now that it
+            # does.
+            "alt": "altKey",
         },
         "new_tree_behavior": True,
         "ortho": True,
@@ -60,6 +71,12 @@ def workspace_defaults():
         "rotate_speed": 1,
         "roughness": 0.65,
         "ticks": 10,
+        # Stored like every other viewer setting, rather than left out. `theme`
+        # became a first-class config key when `dark` was retired, and this
+        # host was the only one with nowhere to keep it - so a notebook user's
+        # choice could not survive the session. "browser" keeps the previous
+        # behaviour as the default: follow the notebook, until told otherwise.
+        "theme": "browser",
         "tools": True,
         "transparent": False,
         "tree_width": 240,
