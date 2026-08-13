@@ -260,7 +260,13 @@ def send_config(config, port=None, title=None, timeit=False):
 
     Called through `JupyterComms.send_config` to set attributes on the widget.
     """
-    title = config["config"].get("title")
+    # The caller's sidecar, if it named one. This read `config["config"].get(
+    # "title")` and so overwrote the argument it had just been passed with a key
+    # nothing produces: `set_viewer_config` puts the host keyword in as
+    # `viewer`. Configuring a named sidecar therefore configured the default
+    # one, and the named one did nothing.
+    if title is None:
+        title = config["config"].get("viewer")
 
     if title is None:
         title = get_default_sidecar()
@@ -273,7 +279,12 @@ def send_config(config, port=None, title=None, timeit=False):
 
     for k, v in config["config"].items():
         if v is not None:
-            if not k in ["port", "title"]:
+            # `viewer` names the sidecar being configured; it is not one of
+            # its attributes. Without it here `_is_settable("viewer")` answers
+            # True - the check asks whether a *property* forbids writing, and a
+            # name that is no attribute at all forbids nothing - so it was
+            # setattr'd onto the CadViewer as a junk attribute.
+            if not k in ["port", "title", "viewer"]:
                 if not _is_settable(k):
                     # Chosen when the sidecar is opened rather than afterwards:
                     # `up` and `control` have no setter, and a config that
