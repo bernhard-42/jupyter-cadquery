@@ -34,7 +34,12 @@ def workspace_defaults():
         "axes0": True,
         "black_edges": False,
         "center_grid": False,
-        "collapse": "1",
+        # The name, not the "1"/"E"/"C"/"R" shorthand. The widget still speaks
+        # letters and still gets one - `_collapse_to_letter` turns the enum the
+        # core resolves this to back into "1" - so this is the vocabulary a
+        # user's config file is written in, aligned with the other three hosts.
+        # An existing ~/.jcq_config keeps working: the mapping takes both.
+        "collapse": "leaves",
         "control": "trackball",
         "default_color": "#e8b024",
         "default_edgecolor": "#707070",
