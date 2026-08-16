@@ -247,11 +247,17 @@ def send_measure_request(jcv_id, shape_ids):
 def _is_settable(name):
     """Whether a viewer attribute can be changed after the sidecar is open.
 
+    Settable means: a `CadViewer` property with a setter. Everything the
+    viewer can change is one, so a name that is no attribute at all is not
+    settable - it used to answer True for those, and `setattr` planted it on
+    the CadViewer as a junk attribute (`reset_camera` on every
+    `reset_defaults()`, and `viewer` before the exclusion below).
+
     Asked of the property rather than discovered by catching AttributeError,
     so that a genuine failure inside a setter still surfaces.
     """
     attribute = getattr(CadViewer, name, None)
-    return not isinstance(attribute, property) or attribute.fset is not None
+    return isinstance(attribute, property) and attribute.fset is not None
 
 
 def send_config(config, port=None, title=None, timeit=False):
@@ -279,11 +285,11 @@ def send_config(config, port=None, title=None, timeit=False):
 
     for k, v in config["config"].items():
         if v is not None:
-            # `viewer` names the sidecar being configured; it is not one of
-            # its attributes. Without it here `_is_settable("viewer")` answers
-            # True - the check asks whether a *property* forbids writing, and a
-            # name that is no attribute at all forbids nothing - so it was
-            # setattr'd onto the CadViewer as a junk attribute.
+            # `port`, `title` and `viewer` are host keywords consumed above,
+            # not viewer attributes - `viewer` names the sidecar being
+            # configured. `_is_settable` refuses them too now, but they are
+            # excluded by name because skipping them is intent, not a
+            # capability the viewer happens to lack.
             if not k in ["port", "title", "viewer"]:
                 if not _is_settable(k):
                     # Chosen when the sidecar is opened rather than afterwards:
