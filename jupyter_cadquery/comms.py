@@ -345,6 +345,16 @@ class JupyterComms(Comms):
         return config
 
     def send_data(self, data, timeit=False):
+        if data.get("type") == "clear":
+            # `show_clear()`: empty the scene of the viewer this call is
+            # addressed to. A widget has no message channel into the shared
+            # page, so this calls three-cad-viewer's own clear() over the
+            # method RPC - the same call the page hosts' `clear` branch makes.
+            # No viewer, nothing to clear: the page hosts ignore it too.
+            viewer = get_sidecar(self.title)
+            if viewer is not None:
+                viewer.execute("viewer.clear")
+            return None
         viewer = send_data(data, timeit=timeit)
         self.last_widget = viewer
         return viewer
