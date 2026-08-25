@@ -30,7 +30,7 @@ dependencies = [
     "cad-viewer-widget~=4.1.0",
     "cachetools~=5.5.0",
     "orjson~=3.11.9",
-    "ocp-viewer-core>=0.1.0,<0.2.0",
+    "ocp-viewer-core>=1.0.1,<1.1.0",
 ]
 
 [project.optional-dependencies]
