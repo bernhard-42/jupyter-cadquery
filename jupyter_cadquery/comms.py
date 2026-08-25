@@ -22,7 +22,13 @@ import os
 
 import orjson
 import requests
-from cad_viewer_widget import CadViewer, get_default_sidecar, get_sidecar, show
+from cad_viewer_widget import (
+    AnimationTrack,
+    CadViewer,
+    get_default_sidecar,
+    get_sidecar,
+    show,
+)
 from cad_viewer_widget.utils import display_args, viewer_args
 from ocp_viewer_core.comms import Comms
 from ocp_viewer_core.websocket import default as json_default
@@ -136,6 +142,17 @@ def send_command(data, port=None, title=None, timeit=False):
                 print("No viewer found to take a screenshot from")
             else:
                 viewer.export_png(data["filename"])
+            return {}
+
+        if data.get("type") == "set_relative_time":
+            # The core's Animation scrubbing the timeline: three-cad-viewer's
+            # own setRelativeTime over the method RPC - the same call the page
+            # hosts' `set_relative_time` branch makes.
+            viewer = get_sidecar(title)
+            if viewer is None:
+                print("No viewer found to set the animation time on")
+            else:
+                viewer.execute("viewer.setRelativeTime", [float(data["value"])])
             return {}
 
         print(f"Ignoring unsupported viewer command {data.get('type')}")
@@ -354,6 +371,16 @@ class JupyterComms(Comms):
             viewer = get_sidecar(self.title)
             if viewer is not None:
                 viewer.execute("viewer.clear")
+            return None
+        if data.get("type") == "animation":
+            # The core's Animation: the tracks ride the widget's own traits -
+            # `add_tracks` syncs them, `animate` sets the speed trait, and the
+            # widget's JavaScript plays them through the same shared `animate`
+            # the page hosts use. No viewer, nothing to animate.
+            viewer = get_sidecar(self.title)
+            if viewer is not None:
+                viewer.add_tracks([AnimationTrack(*track) for track in data["data"]])
+                viewer.animate(data["config"]["speed"])
             return None
         viewer = send_data(data, timeit=timeit)
         self.last_widget = viewer
