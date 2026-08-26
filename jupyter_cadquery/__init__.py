@@ -31,10 +31,26 @@ from cad_viewer_widget import (
     get_viewers_by_id,
 )
 
+from ocp_tessellate.cad_objects import ImageFace
 from ocp_viewer_core.colors import *
+from ocp_viewer_core.selectors import (
+    select_edge,
+    select_edges,
+    select_face,
+    select_faces,
+    select_vertex,
+    select_vertices,
+)
 from .config import (
+    AnalysisTool,
     Camera,
     Collapse,
+    Render,
+    StudioBackground,
+    StudioEnvironment,
+    StudioTextureMapping,
+    StudioToneMapping,
+    UiTab,
     combined_config,
     get_changed_config,
     set_viewer_config,
