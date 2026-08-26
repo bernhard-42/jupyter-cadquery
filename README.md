@@ -4,6 +4,8 @@ The Python package provides a Jupyterlab extension and a JupyterServer extension
 
 Current version: **v5.1.0** (2026-08-07)
 
+The full documentation lives at [bernhard-42.github.io/ocp_viewer_docs](https://bernhard-42.github.io/ocp_viewer_docs/) — the [Jupyter CadQuery chapter](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/installation/) covers this viewer's specifics; this README gets you installed and running.
+
 ![Overview](screenshots/jupyter-cadquery.png)
 
 Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
