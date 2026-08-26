@@ -117,6 +117,11 @@ def send_data(data, port=None, timeit=False):
         data,
         title=config.get("viewer"),
         anchor=config.get("anchor"),
+        # Passed by name: `viewer_args` and `display_args` both filter it out,
+        # and cad-viewer-widget's `show` applies it as the trait with the
+        # `keymap` route - without this line, `~/.jcq_config`'s modifier keys
+        # reach nothing.
+        modifier_keys=config.get("modifier_keys"),
         **all_args,
     )
     viewer.widget.measure_callback = send_measure_request
