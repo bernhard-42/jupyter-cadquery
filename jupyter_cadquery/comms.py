@@ -30,8 +30,8 @@ from cad_viewer_widget import (
     show,
 )
 from cad_viewer_widget.utils import display_args, viewer_args
+from ocp_viewer_core.codec import default as json_default
 from ocp_viewer_core.comms import Comms
-from ocp_viewer_core.websocket import default as json_default
 
 from .settings import get_user_defaults
 
