@@ -31,7 +31,13 @@ from cad_viewer_widget import (
     get_viewers_by_id,
 )
 
-from ocp_tessellate.cad_objects import ImageFace
+from ocp_viewer_core.tessellator import (
+    ImageFace,
+    disable_native_tessellator,
+    enable_native_tessellator,
+    init_native_tessellator,
+    is_native_tessellator_enabled,
+)
 from ocp_viewer_core.colors import *
 from ocp_viewer_core.selectors import (
     select_edge,
@@ -97,6 +103,8 @@ __all__ = [
     "ColorMap",
     "combined_config",
     "cvw_version",
+    "disable_native_tessellator",
+    "enable_native_tessellator",
     "get_changed_config",
     "get_colormap",
     "get_default",
@@ -114,6 +122,8 @@ __all__ = [
     "hsv_mapper",
     "ignore_camera_warnings",
     "ImageFace",
+    "init_native_tessellator",
+    "is_native_tessellator_enabled",
     "JupyterCadqueryBackend",
     "ListedColorMap",
     "matplotlib_mapper",
@@ -157,25 +167,12 @@ __all__ = [
     "workspace_config",
 ]
 
-try:
-    from ocp_tessellate.tessellator import (
-        disable_native_tessellator,
-        enable_native_tessellator,
-        is_native_tessellator_enabled,
-    )
-
-    if os.environ.get("NATIVE_TESSELLATOR") == "0":
-        disable_native_tessellator()
-    else:
-        enable_native_tessellator()
-
+if init_native_tessellator():
     print(
         "Found and enabled native tessellator.\n"
         "To disable, call `disable_native_tessellator()`\n"
         "To enable, call `enable_native_tessellator()`\n"
     )
-except:
-    pass
 
 from cad_viewer_widget._version import __version__ as cvw_version
 from ocp_tessellate.ocp_utils import Color, occt_version
