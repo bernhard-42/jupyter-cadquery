@@ -25,11 +25,14 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "jupyterlab>=4.6.2, <4.8",
+    # Floor: the oldest that has been run. Cap: JupyterLab 5, where the
+    # plugin and federation API changes - a minor has never broken this.
+    "jupyterlab>=4.6.2, <5",
     "cad-viewer-widget>=4.1.0, <4.2",
-    "ocp-tessellate>=3.5.0, <3.6.0",
+    # No version: ocp-viewer-core owns the range through its own metadata
+    "ocp-tessellate",
     "orjson",
-    "ocp-viewer-core>=1.0.7, <1.1.0",
+    "ocp-viewer-core>=1.0.8, <1.1.0",
 ]
 
 [project.optional-dependencies]

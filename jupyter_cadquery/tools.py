@@ -15,12 +15,7 @@
 #
 
 
-import numpy as np
-
-# from ocp_tessellate.cad_objects import Edges, Faces, Part, PartGroup, Vertices
-from ocp_tessellate.convert import tessellate_group, to_assembly
-from ocp_tessellate.ocp_utils import is_build123d_assembly, is_cadquery_assembly
-from ocp_tessellate.utils import numpy_to_json
+from ocp_tessellate.ocp_utils import is_cadquery_assembly
 from .show import show
 
 try:

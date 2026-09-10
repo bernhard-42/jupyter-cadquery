@@ -22,10 +22,10 @@ import cadquery as cq
 from IPython import get_ipython
 from IPython.display import display
 from ipywidgets import HBox, Layout, Output, SelectMultiple
-from ocp_tessellate.convert import to_ocpgroup, OcpGroup, OcpObject, OcpInstancesGroup
-from ocp_tessellate.ocp_utils import make_compound, BoundingBox
+from ocp_tessellate.convert import to_ocpgroup, OcpInstancesGroup
+from ocp_tessellate.ocp_utils import BoundingBox
 
-from .show import show, show_object, viewer as _viewer
+from .show import show, viewer as _viewer
 
 _tessellate = _viewer._tessellate
 from cad_viewer_widget import open_viewer
