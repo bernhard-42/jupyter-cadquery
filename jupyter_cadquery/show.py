@@ -64,9 +64,12 @@ __all__ = [
 def open_viewer(
     title=None,
     anchor="right",
-    cad_width=800,
+    # Not 800/600: cad-viewer-widget reads "given" as a shape for a sidecar and
+    # derives the aspect ratio from it, which it cannot do if this layer has
+    # already filled the values in. Its own defaults apply when both are None.
+    cad_width=None,
     tree_width=250,
-    height=600,
+    height=None,
     aspect_ratio=None,
     theme="browser",
     glass=True,

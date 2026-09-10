@@ -229,6 +229,18 @@ def _add_context(self, name):
                             for sel in context["obj"]._selection
                         ]
                         new_obj.locs = [loc for loc in context["obj"].locs]
+                    # Tags too, or the clone is not the state it claims to be:
+                    # `rect(..., mode="c")` files construction geometry under
+                    # `_tags` and adds nothing to `_faces`, so a snapshot
+                    # without them holds nothing at all - the step drew a
+                    # rectangle and the viewer was handed an empty group.
+                    new_obj._tags = {
+                        tag: [
+                            (shape if isinstance(shape, cq.Location) else shape.copy())
+                            for shape in shapes
+                        ]
+                        for tag, shapes in context["obj"]._tags.items()
+                    }
                     context["shadow_obj"] = new_obj
 
                     # for copy, moved, located, which create a copy of the object, copy the _caller stack
@@ -483,6 +495,27 @@ class Replay(object):
             if change["name"] == "index":
                 self.select(change["new"])
 
+    def _describe_step(self, index, obj):
+        """What a step actually holds, before it is converted.
+
+        A step can be right about the code that produced it and still have
+        nothing to draw: a cadquery Sketch keeps construction geometry
+        (`mode="c"`) in `_tags` and leaves `_faces` empty, and the three sources
+        `to_ocpgroup` reads are `_faces`, `_edges` and `_selection`. Printed
+        rather than guessed at, because "the viewer shows nothing" and "the
+        viewer was sent nothing" look identical from the outside.
+        """
+        print(f"  Step {index:02d}: {type(obj).__name__}")
+        if isinstance(obj, cq.Sketch):
+            tags = {k: len(v) for k, v in obj._tags.items()}
+            selection = 0 if obj._selection is None else len(obj._selection)
+            print(
+                f"    _faces={len(list(obj._faces))} _edges={len(list(obj._edges))} "
+                f"_selection={selection} _tags={tags} locs={len(obj.locs)}"
+            )
+        elif hasattr(obj, "objects"):
+            print(f"    objects={len(obj.objects)}")
+
     def select(self, indexes):
         self.debug_output.clear_output()
         with self.debug_output:
@@ -497,9 +530,21 @@ class Replay(object):
                         hasattr(step[1], "objects") and len(step[1].objects) == 0
                     ):  # handle workplane()
                         obj = step[1].plane.origin
+                    if self.debug:
+                        self._describe_step(step[0], obj)
                     pg, instance = to_ocpgroup(
                         obj, names=["Step %02d" % step[0]], show_parent=False
                     )
+                    if self.debug:
+                        print(
+                            f"    -> {len(pg.objects)} object(s): "
+                            + str(
+                                [
+                                    (o.name, getattr(o, "kind", None))
+                                    for o in pg.objects
+                                ]
+                            )
+                        )
                     if len(pg.objects) == 1:
                         pg = pg.objects[0]
                     cad_objs.append(OcpInstancesGroup(instance, pg))
@@ -523,6 +568,10 @@ class Replay(object):
                 self.bbox, names=["Bounding box"], colors=["#808080"]
             )
             cad_objs.insert(0, OcpInstancesGroup(instance, result.objects[0]))
+
+        if self.debug:
+            with self.debug_output:
+                print(f"  sending {len(cad_objs)} object(s) to show()")
 
         with self.debug_output:
             try:
