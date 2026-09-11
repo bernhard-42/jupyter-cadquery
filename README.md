@@ -146,6 +146,18 @@ The animation system also allows to create custom defined animations like this a
      jupyter lab
      ```
 
+### Known issue: ipykernel 7
+
+ipykernel 7.x can stall a running notebook: a cell stops at `[*]` while the kernel sits idle, most often during *Run All Cells*. This is not specific to Jupyter-CadQuery — a plain notebook can trigger it.
+
+Use ipykernel 6.31.0 until the next ipykernel release, which contains [the fix](https://github.com/ipython/ipykernel/pull/1529):
+
+```bash
+pip install "ipykernel<7"
+```
+
+If it does happen, *Kernel → Reconnect to Kernel* resumes the run where it stopped — without restarting the kernel and without losing state.
+
 ### Verfiy the installation
 
 **Note**: On a Mac the first run of the below commands can take minutes until the native libraries OCP and vtk are initialized. Afterwards it takes seconds only.
