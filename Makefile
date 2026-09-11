@@ -56,11 +56,21 @@ release:
 	git diff-index --quiet HEAD || git commit -m "Latest release: $(CURRENT_VERSION)"
 	git tag -a v$(CURRENT_VERSION) -m "Latest release: $(CURRENT_VERSION)"
 	
+# Push, then a GitHub release under the tag `release` made, carrying what
+# PyPI got. Both files must exist in dist/ - `make dist` builds them - or
+# nothing is pushed. No `--target`: the tag exists and names the commit.
 create-release:
-	@github-release release -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter-cadquery-$(CURRENT_VERSION)
-	@sleep 2
-	@github-release upload  -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter_cadquery-$(CURRENT_VERSION).tar.gz -f dist/jupyter_cadquery-$(CURRENT_VERSION).tar.gz
-	@github-release upload  -u bernhard-42 -r jupyter-cadquery -t v$(CURRENT_VERSION) -n jupyter_cadquery-$(CURRENT_VERSION)-py3-none-any.whl -f dist/jupyter_cadquery-$(CURRENT_VERSION)-py3-none-any.whl
+	@for f in dist/jupyter_cadquery-$(CURRENT_VERSION)-py3-none-any.whl \
+	         dist/jupyter_cadquery-$(CURRENT_VERSION).tar.gz; do \
+	    test -f $$f || { echo "missing $$f - run make dist first"; exit 1; }; \
+	done
+	@git push
+	@git push --tags
+	@gh release create v$(CURRENT_VERSION) \
+	    "dist/jupyter_cadquery-$(CURRENT_VERSION)-py3-none-any.whl#jupyter_cadquery $(CURRENT_VERSION) - wheel (PyPI)" \
+	    "dist/jupyter_cadquery-$(CURRENT_VERSION).tar.gz#jupyter_cadquery $(CURRENT_VERSION) - source (PyPI)" \
+	    --title "jupyter_cadquery $(CURRENT_VERSION)" \
+	    --notes "jupyter_cadquery $(CURRENT_VERSION) on PyPI. See CHANGELOG.md."
 
 install: dist
 	@echo "=> Installing jupyter_cadquery"
