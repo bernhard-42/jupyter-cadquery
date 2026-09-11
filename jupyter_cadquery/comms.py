@@ -59,9 +59,6 @@ COLLAPSE_NAMES = {"NONE": "E", "LEAVES": "1", "ALL": "C", "ROOT": "R"}
 COLLAPSE_VALUES = {2: "E", -1: "1", 0: "C", 1: "R"}
 COLLAPSE_NUMBERS = {letter: number for number, letter in COLLAPSE_VALUES.items()}
 
-# Camera enum values that are position presets, not reset modes
-CAMERA_PRESET_VIEWS = ["iso", "top", "bottom", "left", "right", "front", "rear"]
-
 # (connect, read) timeouts for the HTTP requests to the Jupyter server so a
 # stuck server extension cannot hang the kernel indefinitely
 OBJECTS_TIMEOUT = (5, 120)
@@ -100,17 +97,11 @@ def send_data(data, port=None, timeit=False):
     if config.get("collapse") is not None:
         config["collapse"] = _collapse_to_letter(config["collapse"])
 
-    preset_view = None
-    if config.get("reset_camera") is not None:
-        if isinstance(config["reset_camera"], Enum):
-            config["reset_camera"] = config["reset_camera"].value
-        if config["reset_camera"] in CAMERA_PRESET_VIEWS:
-            # Camera position presets (Camera.ISO, Camera.TOP, ...) are not
-            # reset modes of the widget; render with "reset" and apply the
-            # preset view afterwards, as the other clients' viewers do
-            preset_view = config["reset_camera"]
-            config["reset_camera"] = "reset"
-
+    # `reset_camera` goes through as it is, a preset view included: the
+    # widget's trait takes every value `Camera` has, and the shared renderer
+    # lands the camera on a named view during the render, as it does for the
+    # other hosts. This used to render "reset" and move the camera to the
+    # view afterwards, a second step the widget's trait no longer forces.
     all_args = viewer_args(config)
     all_args.update(display_args(config))
     viewer = show(
@@ -125,8 +116,6 @@ def send_data(data, port=None, timeit=False):
         **all_args,
     )
     viewer.widget.measure_callback = send_measure_request
-    if preset_view is not None:
-        viewer.set_camera(preset_view)
     return viewer
 
 
