@@ -299,6 +299,7 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
   **Notes:**
   - With `aspect_ratio = 0` the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window. It currently only works with `open_viewer`, not with `show`
   - Both `show(obj, viewer="<Viewer name>", anchor="<location>")` and `open_viewer("<Viewer name>", anchor="<location>"); show(obj)` achieve the same.
+  - The config functions (`status`, `set_viewer_config`, `workspace_config`, `combined_config`, `reset_defaults`, `save_screenshot`, `export_html`, ...) address a viewer the same way: `viewer="<Viewer name>"` names a sidecar; without it the default sidecar is used, and without one of those the viewer the last `show` produced - which is how a cell viewer is reached, since it has no name.
 
   ![Viewer locations](./screenshots/viewer-locations.png)
 

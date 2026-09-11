@@ -119,7 +119,7 @@ def send_data(data, port=None, timeit=False):
     return viewer
 
 
-def send_command(data, port=None, title=None, timeit=False):
+def send_command(data, port=None, title=None, timeit=False, last=None):
     """
     Send a command to the viewer.
 
@@ -131,7 +131,7 @@ def send_command(data, port=None, title=None, timeit=False):
     """
     if isinstance(data, dict):
         if data.get("type") == "screenshot":
-            viewer = get_sidecar(title)
+            viewer = resolve_viewer(title, last)
             if viewer is None:
                 print("No viewer found to take a screenshot from")
             else:
@@ -142,7 +142,7 @@ def send_command(data, port=None, title=None, timeit=False):
             # The core's Animation scrubbing the timeline: three-cad-viewer's
             # own setRelativeTime over the method RPC - the same call the page
             # hosts' `set_relative_time` branch makes.
-            viewer = get_sidecar(title)
+            viewer = resolve_viewer(title, last)
             if viewer is None:
                 print("No viewer found to set the animation time on")
             else:
@@ -159,7 +159,27 @@ def send_command(data, port=None, title=None, timeit=False):
     raise ValueError(f"Unknown data for send_command: {data}")
 
 
-def workspace_config(title=None):
+def resolve_viewer(title=None, last=None):
+    """The viewer a call is addressed to.
+
+    A named sidecar if the call named one, else the default sidecar if one is
+    set, else the viewer the last show produced - which is the only way a
+    cell viewer, unnamed by nature, can be reached. Every function below that
+    acts on "the viewer" resolves it here, so `status()` and
+    `set_viewer_config()` in a notebook without a sidecar address the cell
+    viewer just shown instead of silently addressing nothing.
+
+    A name that matches no sidecar resolves to None rather than falling
+    through: the caller said which viewer, and a different one is wrong.
+    """
+    if title is not None:
+        return get_sidecar(title)
+    if get_default_sidecar() is not None:
+        return get_sidecar(get_default_sidecar())
+    return last
+
+
+def workspace_config(title=None, last=None):
     """
     The settings this host persists, from `~/.jcq_config`.
 
@@ -169,27 +189,20 @@ def workspace_config(title=None):
     but the viewer saying whether what is on screen is still the logo.
     """
     config = get_user_defaults()
-    viewer = None
-    if title is None:
-        title = get_default_sidecar()
-        if title is not None:
-            viewer = get_sidecar(title)
-    else:
-        viewer = get_sidecar(title)
-
+    viewer = resolve_viewer(title, last)
     if viewer is not None:
         config["_splash"] = viewer._splash
     return config
 
 
-def status(title=None):
+def status(title=None, last=None):
     """
     The viewer's live state, asked of the widget itself.
 
-    An empty dict when the named sidecar does not exist: nothing has been
-    changed at a toolbar that is not on screen.
+    An empty dict when there is no viewer: nothing has been changed at a
+    toolbar that is not on screen.
     """
-    viewer = get_sidecar(title)
+    viewer = resolve_viewer(title, last)
     if viewer is None:
         return {}
     result = viewer.status()
@@ -271,7 +284,7 @@ def _is_settable(name):
     return isinstance(attribute, property) and attribute.fset is not None
 
 
-def send_config(config, port=None, title=None, timeit=False):
+def send_config(config, port=None, title=None, timeit=False, last=None):
     """
     Send config to the viewer
 
@@ -285,12 +298,7 @@ def send_config(config, port=None, title=None, timeit=False):
     if title is None:
         title = config["config"].get("viewer")
 
-    if title is None:
-        title = get_default_sidecar()
-        if title is None:
-            return
-
-    cv = get_sidecar(title)
+    cv = resolve_viewer(title, last)
     if cv is None:
         return
 
@@ -362,7 +370,7 @@ class JupyterComms(Comms):
             # page, so this calls three-cad-viewer's own clear() over the
             # method RPC - the same call the page hosts' `clear` branch makes.
             # No viewer, nothing to clear: the page hosts ignore it too.
-            viewer = get_sidecar(self.title)
+            viewer = resolve_viewer(self.title, self.last_widget)
             if viewer is not None:
                 viewer.execute("viewer.clear")
             return None
@@ -371,7 +379,7 @@ class JupyterComms(Comms):
             # `add_tracks` syncs them, `animate` sets the speed trait, and the
             # widget's JavaScript plays them through the same shared `animate`
             # the page hosts use. No viewer, nothing to animate.
-            viewer = get_sidecar(self.title)
+            viewer = resolve_viewer(self.title, self.last_widget)
             if viewer is not None:
                 viewer.add_tracks([AnimationTrack(*track) for track in data["data"]])
                 viewer.animate(data["config"]["speed"])
@@ -381,16 +389,16 @@ class JupyterComms(Comms):
         return viewer
 
     def send_config(self, config, timeit=False):
-        send_config(config, title=self.title, timeit=timeit)
+        send_config(config, title=self.title, timeit=timeit, last=self.last_widget)
 
     def send_command(self, data, timeit=False):
-        return send_command(data, title=self.title, timeit=timeit)
+        return send_command(data, title=self.title, timeit=timeit, last=self.last_widget)
 
     def status(self):
-        return status(title=self.title)
+        return status(title=self.title, last=self.last_widget)
 
     def workspace_config(self):
-        return workspace_config(title=self.title)
+        return workspace_config(title=self.title, last=self.last_widget)
 
     def send_backend(self, data, timeit=False):
         jcv_id = None if self.last_widget is None else self.last_widget.widget.id

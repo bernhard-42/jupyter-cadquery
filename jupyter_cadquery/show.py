@@ -29,14 +29,14 @@ The same file, the same names and the same reasoning as ocp_vscode's show.py.
 #
 
 import orjson
-from cad_viewer_widget import CadViewer, get_sidecar
+from cad_viewer_widget import CadViewer
 from cad_viewer_widget import open_viewer as _open_viewer
 from cad_viewer_widget.utils import viewer_args
 from ocp_viewer_core.logo import logo as b_logo
 from ocp_viewer_core.show import Viewer as CoreViewer
 from ocp_viewer_core.show import ignore_camera_warnings, none_filter
 
-from .comms import send_backend, send_measure_request
+from .comms import resolve_viewer, send_backend, send_measure_request
 from .config import comms, config
 from .logo import logo
 
@@ -129,12 +129,10 @@ def export_html(filename="cadquery.html", title="CadQuery", viewer=None):
     loads cad-viewer-widget's JavaScript from the npm registry at the
     version installed here.
     """
-    handle = get_sidecar(viewer)
+    handle = resolve_viewer(viewer, comms.last_widget)
     if handle is None:
         if viewer is not None:
             raise ValueError(f'There is no viewer "{viewer}"')
-        handle = comms.last_widget
-    if handle is None:
         raise RuntimeError("Nothing to export: show an object first")
     handle.export_html(filename, title=title)
 
