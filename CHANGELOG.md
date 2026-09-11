@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Requires cad-viewer-widget 4.1.1: `reset_camera` presets go through the widget's trait (which takes every `Camera` value since 4.1.1), `set_viewer_config(reset_camera=...)` works, the tab survives a show, zebra and studio values reach `status()`, `timeit` takes a level, and a saved state is drawn.
 - **`export_html(filename, title=..., viewer=...)` is back** (#122), for sidecars as well as cell viewers - a sidecar is exported as a cell viewer of the same size. The page loads `cad-viewer-widget` from the npm registry at the installed version, which is why the export stopped working: no 4.x had been published there, so the page had nothing to load. Also needed cad-viewer-widget to draw a saved state at all, which its view had not done since 3.2.3.
 - **A notebook converted with `nbconvert` after an interactive run shows its viewers** (#109). The renderer decoded the widget's `shapes` in place, so the widget state JupyterLab saved held typed arrays serialised as `{"0": ...}` objects and every mesh in the converted page had zero vertices. The renderer now works on a copy; the state keeps the wire format.
 
