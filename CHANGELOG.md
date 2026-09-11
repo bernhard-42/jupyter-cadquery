@@ -1,17 +1,10 @@
 # Changelog
 
-## Unreleased
-
-- Requires ocp-viewer-core 1.0.9: `reset_defaults(viewer=...)` resets the sidecar it names, and `show(orbit_control=True)` or `show(up="Y")` no longer stick to every following show.
-- The README is installation and first run; everything else moved to the [documentation](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/overview/), with deep links from the README. New there: sidecars, windows and cells; working in the notebook (auto display, `get_pick`); replay; export; the Jupyter CadQuery API; troubleshooting.
-- **Cell viewers are addressable.** `status()`, `set_viewer_config()`, `save_screenshot()` and the rest resolve their viewer the same way everywhere: a named sidecar, else the default sidecar, else the viewer the last `show` produced. Without a sidecar they used to address nothing, silently - `set_viewer_config(tab="clip")` did nothing and `status()` was `{}`. A cell viewer's state now also carries into the next cell viewer's show, as a sidecar's does.
-- Requires cad-viewer-widget 4.1.1: `reset_camera` presets go through the widget's trait (which takes every `Camera` value since 4.1.1), `set_viewer_config(reset_camera=...)` works, the tab survives a show, zebra and studio values reach `status()`, `timeit` takes a level, and a saved state is drawn.
-- **`export_html(filename, title=..., viewer=...)` is back** (#122), for sidecars as well as cell viewers - a sidecar is exported as a cell viewer of the same size. The page loads `cad-viewer-widget` from the npm registry at the installed version, which is why the export stopped working: no 4.x had been published there, so the page had nothing to load. Also needed cad-viewer-widget to draw a saved state at all, which its view had not done since 3.2.3.
-- **A notebook converted with `nbconvert` after an interactive run shows its viewers** (#109). The renderer decoded the widget's `shapes` in place, so the widget state JupyterLab saved held typed arrays serialised as `{"0": ...}` objects and every mesh in the converted page had zero vertices. The renderer now works on a copy; the state keeps the wire format.
-
-## Release v5.1.0
+## Release v5.1.0 (11.09.2026)
 
 This release moves Jupyter CadQuery onto `ocp-viewer-core`, the shared half of the viewer stack, and aligns its defaults with the other viewers. Behaviour that differed between viewers for no chosen reason is a support and maintenance cost, so where this host disagreed with OCP CAD Viewer and the standalone viewer, it now follows them.
+
+It requires ocp-viewer-core 1.0.9 and cad-viewer-widget 4.1.1 - the first cad-viewer-widget 4 on PyPI and npm, which is what makes HTML exports load again.
 
 ### Breaking changes
 
@@ -21,8 +14,17 @@ This release moves Jupyter CadQuery onto `ocp-viewer-core`, the shared half of t
 
 **These defaults only apply to a fresh configuration.** `~/.jcq_config` is written with every setting it knows, so a file created by an earlier version still holds `reset_camera: reset`, `ticks: 10` and a three-key `modifier_keys`, and those stored values continue to win. **To pick up the new defaults, delete `~/.jcq_config`** - it is rewritten from the defaults on next use - **or edit those three entries by hand.**
 
+### Changes
+
+- **Cell viewers are addressable.** `status()`, `set_viewer_config()`, `save_screenshot()` and the rest resolve their viewer the same way everywhere: a named sidecar, else the default sidecar, else the viewer the last `show` produced. Without a sidecar they used to address nothing, silently - `set_viewer_config(tab="clip")` did nothing and `status()` was `{}`. A cell viewer's state now also carries into the next cell viewer's show, as a sidecar's does.
+- **`export_html(filename, title=..., viewer=...)` is back** (#122), for sidecars as well as cell viewers - a sidecar is exported as a cell viewer of the same size. The page loads `cad-viewer-widget` from the npm registry at the installed version, which is why the export stopped working: no 4.x had been published there, so the page had nothing to load.
+- `reset_camera` presets (`Camera.TOP`, ...) go through the widget's trait and land in the render itself, instead of a render to iso followed by a move.
+- The README is installation and first run; everything else moved to the [documentation](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/overview/), with deep links from the README. New there: sidecars, windows and cells; working in the notebook (auto display, `get_pick`); replay; export; the Jupyter CadQuery API; troubleshooting.
+
 ### Fixes
 
+- A notebook converted with `nbconvert` after an interactive run shows its viewers (#109). The renderer decoded the widget's `shapes` in place, so the widget state JupyterLab saved held typed arrays serialised as `{"0": ...}` objects and every mesh in the converted page had zero vertices. cad-viewer-widget 4.1.1 renders from a copy; the state keeps the wire format.
+- `set_viewer_config(reset_camera=...)` works, the tab a `show` lands on survives the next show, the zebra and studio values reach `status()`, and `timeit` takes a level - all cad-viewer-widget 4.1.1.
 - `modifier_keys` now applies at all. The widget's traitlet declared its values as pairs where a keymap holds single DOM property names, and no code path set it - so a `modifier_keys` entry in `~/.jcq_config` reached nothing. It is also accepted by `set_viewer_config` now.
 - `set_viewer_config(..., viewer="name")` configures the sidecar it names. It configured the default sidecar instead, and set a stray `viewer` attribute on the widget.
 - The pin-as-PNG button appears in cell viewers again; `pinning` was dropped before it reached the renderer.
