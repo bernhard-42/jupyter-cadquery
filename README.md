@@ -4,7 +4,7 @@ The Python package provides a Jupyterlab extension and a JupyterServer extension
 
 Current version: **v5.1.0** (2026-08-07)
 
-The full documentation lives at [bernhard-42.github.io/ocp_viewer_docs](https://bernhard-42.github.io/ocp_viewer_docs/) — the [Jupyter CadQuery chapter](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/installation/) covers this viewer's specifics; this README gets you installed and running.
+The full documentation lives at [bernhard-42.github.io/ocp_viewer_docs](https://bernhard-42.github.io/ocp_viewer_docs/) — the [Jupyter CadQuery chapter](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/overview/) covers this viewer's specifics; this README gets you installed and running, and links into the rest.
 
 ![Overview](screenshots/jupyter-cadquery.png)
 
@@ -12,99 +12,15 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 [![Binder: Latest development version](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bernhard-42/jupyter-cadquery/master?urlpath=lab) (**Due to security restrictions, the measurement feature does not work on binder**)
 
-## Table of contents
-
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Examples](#examples)
-- [Installation](#installation)
-- [Standalone version](#standalone-version)
-- [Create and use the docker image](#create-and-use-the-docker-image)
-- [Demo Notebooks](#demo-notebooks)
-- [Usage](#usage)
-- [Release v4](release-v4)
-- [Migration from 3.x](#migration-from-3x)
-- [Known issues](#known-issues)
-
-## Overview
-
-_Jupyter-CadQuery_ release 4 is a complete rewrite of _Jupyter-CadQuery_ 3:
-
-It is now based on:
-
-- the show logic provided by [ocp_vscode](https://github.com/bernhard-42/vscode-ocp-cad-viewer) (_OCP CAD Viewer for VS Code_),
-- the viewer is [three-cad-viewer](https://github.com/bernhard-42/three-cad-viewer)
-- the tessellation logic provided by [ocp-tessellate](https://github.com/bernhard-42/ocp-tessellate),
-- the communication between Python and Javascript provided by [cad-viewer-widget](https://github.com/bernhard-42/cad-viewer-widget), a custom [ipywidget](https://github.com/jupyter-widgets/ipywidgets),
-- and the new (!) measurement feature provided again by [ocp_vscode](https://github.com/bernhard-42/vscode-ocp-cad-viewer)
-
-**Note:** For changes see the migration section at the end of this page.
-
-## Key Features
-
-- Code CAD support
-  - _CadQuery >= 2.5_ including _master_ (as of 2025-04)
-  - _build123d_ >=0.9 including _master_ (as of 2025-04)
-  - _OCP_ == 7.8.X (as of 2025-04)
-
-- Viewing options:
-  - Directly in the JupyterLab output cell
-  - In a central Jupyterlab sidecar
-  - In separate windows in Jupyter lab
-  - For sidecar and windows based viewers, the viewers resize with the size of the container window. You can have a fixed aspect ratio (height to width ratio) or fill the complete container window.
-  - Auto display of _CadQuery_ and _build123d_ shapes
-  - Replay mode for CadQuery objects
-
-- Animations (see examples below)
-  - Support [animated CadQuery assemblies](https://github.com/bernhard-42/cadquery-massembly)
-  - Support [animated build123d assemblies](https://github.com/bernhard-42/bd_animation)
-  - Animated explode mode for _CadQuery_ and _build123d_ assemblies
-
-- Viewer features
-  - Clipping with max 3 clipping planes (of free orientation) with cap faces being properly shown
-  - Toggle visibility of shapes and edges
-  - Orthographic and perspective view
-  - Simple material editor (light intensity, metalness and roughness)
-  - Transparency mode
-  - Double click on shapes shows bounding box info
-  - Click on tree labels shows bounding box info and optionally hides or isolates the elements (use the modifier keys described in online help)
-
-## Examples
-
-### The viewer
-
-It allows to view CAD objects with or without grid, using orthographic or perspective camera and many more viewing features.
-
-![Hexapod](screenshots/hexapod.png)
-
-### Measurement mode
-
-I allows to measure distance of objects, angle beween edges and faces and show propertis like center, are volume for objects selected
-
-![Exploded Quadruped](screenshots/measure.gif)
-
-### Animation System - explode assemblies
-
-The animation system allows to explode CadQuery and build123d assemblies or group of CAD objects. The epxplosion center is (0,0,0).
-
-![Exploded Quadruped](screenshots/explode.gif)
-
-### Animation System - Self defined animation
-
-The animation system also allows to create custom defined animations like this animated hexapod.
-
-![Animated Hexapod](screenshots/hexapod-crawling.gif)
-
 ## Installation
 
-### Install Juypter-CadQuery
-
 - **CadQuery**
+
   1. Create and activate a virtual conda environment
 
      ```bash
-     mamba create -n jcq4 python=3.12.9
-     mamba activate jcq4
+     mamba create -n jcq python=3.12
+     mamba activate jcq
      ```
 
   2. Install latest cadquery master
@@ -119,14 +35,9 @@ The animation system also allows to create custom defined animations like this a
      pip install jupyter-cadquery
      ```
 
-  4. Run Jupyter CadQuery
-
-     ```bash
-     jupyter lab
-     ```
-
 - **build123d**
-  1. Create and activate a virtual environment (conda, pyenv-virtualenv, ...)
+
+  1. Create and activate a virtual environment (conda, pyenv-virtualenv, uv, ...)
 
   2. Install build123d
 
@@ -140,110 +51,83 @@ The animation system also allows to create custom defined animations like this a
      pip install jupyter-cadquery
      ```
 
-  4. Run Jupyter CadQuery
+Jupyter CadQuery requires JupyterLab 4 (`jupyterlab>=4.6.2,<5`) and installs it if it is missing. The JupyterLab extension is prebuilt and ships inside the [cad-viewer-widget](https://github.com/bernhard-42/cad-viewer-widget) dependency: no `jupyter labextension` step, no Node.js.
 
-     ```bash
-     jupyter lab
-     ```
+**Known issue:** ipykernel 7.x can stall a running notebook (a cell stays at `[*]` with an idle kernel). Until the ipykernel release that carries [the fix](https://github.com/ipython/ipykernel/pull/1529), install `pip install "ipykernel<7"` — details and the workaround in [Troubleshooting](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/troubleshooting/#a-cell-stays-at-and-the-kernel-is-idle).
 
-### Known issue: ipykernel 7
-
-ipykernel 7.x can stall a running notebook: a cell stops at `[*]` while the kernel sits idle, most often during *Run All Cells*. This is not specific to Jupyter-CadQuery — a plain notebook can trigger it.
-
-Use ipykernel 6.31.0 until the next ipykernel release, which contains [the fix](https://github.com/ipython/ipykernel/pull/1529):
+### Verify the installation
 
 ```bash
-pip install "ipykernel<7"
+jupyter lab extension list        # must list:  jupyter_cadquery 5.1.0 OK   (the viewer frontend)
+jupyter server extension list     # must list:  jupyter_cadquery 5.1.0 OK   (the measurement backend)
 ```
 
-If it does happen, *Kernel → Reconnect to Kernel* resumes the run where it stopped — without restarting the kernel and without losing state.
+A line "Extension package jupyter_cadquery took N s to import" is OCP and VTK loading, not an error. On a Mac the very first run can take minutes for the same reason.
 
-### Verfiy the installation
-
-**Note**: On a Mac the first run of the below commands can take minutes until the native libraries OCP and vtk are initialized. Afterwards it takes seconds only.
-
-1. Check the Jupyter lab extension, the viewer frontend: `jupyter lab extension list`
-
-   ```bash
-   Config dir: /Users/<username>/.jupyter
-
-   Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
-       jupyter_lsp enabled
-       - Validating jupyter_lsp...
-       jupyter_lsp 2.3.1 OK
-       jupyter_cadquery enabled
-
-       - Validating jupyter_cadquery...
-       jupyter_cadquery 5.1.0 OK
-
-       jupyter_server_terminals enabled
-       - Validating jupyter_server_terminals...
-       jupyter_server_terminals 0.5.4 OK
-       jupyterlab enabled
-       - Validating jupyterlab...
-       jupyterlab 4.6.2 OK
-       notebook_shim enabled
-       - Validating notebook_shim...
-       notebook_shim  OK
-
-   Config dir: /usr/local/etc/jupyter
-   ```
-
-   You should again see `jupyter_cadquery 5.1.0 OK`. This ensures that the **viewer frontend** is properly installed
-
-2. Check the Jupyter server extension, the measurement backend: `jupyter server extension list`
-
-   ```bash
-   Config dir: /Users/<username>/.jupyter
-
-   Config dir: /Users/<username>/.pyenv/versions/3.12.9/envs/jcq4/etc/jupyter
-       jupyter_lsp enabled
-       - Validating jupyter_lsp...
-       jupyter_lsp 2.3.1 OK
-       jupyter_cadquery enabled
-
-       - Validating jupyter_cadquery...
-   Extension package jupyter_cadquery took 1.6050s to import
-       jupyter_cadquery 5.1.0 OK
-
-       jupyter_server_terminals enabled
-       - Validating jupyter_server_terminals...
-       jupyter_server_terminals 0.5.4 OK
-       jupyterlab enabled
-       - Validating jupyterlab...
-       jupyterlab 4.6.2 OK
-       notebook_shim enabled
-       - Validating notebook_shim...
-       notebook_shim  OK
-
-   Config dir: /usr/local/etc/jupyter
-   ```
-
-   You should see `jupyter_cadquery 5.1.0 OK`. This ensures that the **measurement backend** is properly installed.
-
-   If you see "Extension package jupyter_cadquery took ...", this is basically OCP and VTK loading time (this test import OCP and with that VTK).
-
-## Standalone version
-
-The _standalone version_ of _Jupyter CadQuery_ is now replaced with the one of _OCP CAD Viewer for VS Code_. To start it:
-
-1. Activate your python environment
-2. Execute `python -m ocp_vscode [--port <port number>]`
-
-3939 is the standard port that will be used automatically by the `show` commands.
-
-## Create and use the docker image
-
-The docker image is not uploaded to docker hub any more. To build it, clone the repo and call `make docker`
-
-The resulting image is called `bwalter42/jupyter_cadquery:4.0.2` and can be started with
+## First run
 
 ```bash
-WORKDIR=./jupyter-cadquery
-docker run -it --rm -v $WORKDIR:/home/workdir -p 8888:8888 bwalter42/jupyter_cadquery:4.0.2
+jupyter lab
 ```
 
-Everything stored in `/home/workdir` in the container will be actually stored on the local machine in `$WORKDIR`. The examples are copied into the container in a read-only folder `/home/examples-read-only`
+and in a notebook:
+
+```python
+from build123d import *
+from jupyter_cadquery import *
+
+open_viewer("CAD")
+show(Box(1, 2, 3))
+```
+
+`open_viewer` puts the viewer into a sidecar panel next to the notebook; without it, `show` draws into the cell. From here on, everything is in the documentation.
+
+## Documentation
+
+The full documentation lives at [bernhard-42.github.io/ocp_viewer_docs](https://bernhard-42.github.io/ocp_viewer_docs/) — the [Jupyter CadQuery chapter](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/overview/) covers this viewer's specifics; everything below is a deep link into it.
+
+### Getting started
+
+- [Overview](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/overview/) — what it does, in pictures
+- [Installation](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/installation/)
+- [Sidecars, windows and cells](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/addressing/) — [where a viewer lives](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/addressing/#where-a-viewer-lives), [its size](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/addressing/#size), [addressing one of several](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/addressing/#addressing-a-viewer), [managing viewers](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/addressing/#managing-viewers)
+- [Best practices for configuring](https://bernhard-42.github.io/ocp_viewer_docs/config/)
+
+### Working in the notebook
+
+- [Working in the notebook](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/notebook/) — [auto display](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/notebook/#auto-display), [reading a pick back into Python](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/notebook/#reading-a-pick-back-into-python), [what the notebook remembers](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/notebook/#what-the-notebook-remembers)
+- [Replay](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/replay/) — step through the calls that built a CadQuery object
+- [Export](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/export/) — [a viewer as a standalone HTML page](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/export/#a-viewer-as-a-standalone-html-page), [a notebook as HTML](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/export/#a-notebook-as-html), [PNG](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/export/#png)
+- [Workspace Config](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/workspace_config/) — the settings in `~/.jcq_config`
+
+### Working with the viewer
+
+- [The CAD Viewer window](https://bernhard-42.github.io/ocp_viewer_docs/viewer/) and [mouse and keys](https://bernhard-42.github.io/ocp_viewer_docs/mouse_keys/)
+- [Measurement tools](https://bernhard-42.github.io/ocp_viewer_docs/measure/)
+- [Object selection tool](https://bernhard-42.github.io/ocp_viewer_docs/selector/)
+- [Physically based rendering Studio](https://bernhard-42.github.io/ocp_viewer_docs/pbr_studio/)
+- [ImageFace — use a 2-D image as a reference plane](https://bernhard-42.github.io/ocp_viewer_docs/image_face/)
+
+### Python `show*` commands
+
+- [Use the `show` command](https://bernhard-42.github.io/ocp_viewer_docs/show/)
+- [Use the `show_object` command](https://bernhard-42.github.io/ocp_viewer_docs/show_object/)
+- [Use the `push_object` and `show_objects` commands](https://bernhard-42.github.io/ocp_viewer_docs/push_object/)
+- [Use the `show_all` command](https://bernhard-42.github.io/ocp_viewer_docs/show_all/)
+- [Use the `set_viewer_config` command](https://bernhard-42.github.io/ocp_viewer_docs/set_viewer_config/)
+
+### Python API reference
+
+- [Jupyter CadQuery API](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/api/) — `open_viewer`, `close_viewer`, `export_html`, `replay`, `get_pick`, …
+- [Additional Python API](https://bernhard-42.github.io/ocp_viewer_docs/api/) (`show_clear`, `save_screenshot`, `status`, …)
+- [Animation](https://bernhard-42.github.io/ocp_viewer_docs/animation/)
+- [Color maps](https://bernhard-42.github.io/ocp_viewer_docs/colormaps/)
+- [Enums reference](https://bernhard-42.github.io/ocp_viewer_docs/enums/) (`Camera`, `Collapse`, `Render`, `AnalysisTool`, `UiTab`, `Studio*`)
+
+### Help
+
+- [Troubleshooting](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/troubleshooting/)
+- [How the pieces fit together](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/concepts/)
 
 ## Demo Notebooks
 
@@ -263,217 +147,10 @@ Animated examples (requires `pip install cadquery-massembly matplotlib`):
 - [CadQuery's door assembly example](./examples/assemblies/5-door.ipynb)
 - [A nested Assembly](./examples/assemblies/6-nested-assemblies.ipynb)
 
-## Usage
-
-### a) Viewer locations
-
-- Have the viewer in a Jupyter Sidcar, i.e. it can be shown/hidden easily
-
-  ```python
-  t = Text("SideCar", 20)
-  cv_s = show(t, viewer="SideCar", anchor="right")
-  ```
-
-- Have the viewer in a separate Jupyter lab window placed at the right or left
-
-  ```python
-  t = Text("Right", 20)
-  cv_r = show(t, viewer="Right", anchor="split-right")
-
-  t = Text("Left", 20)
-  cv_l = show(t, viewer="Left", anchor="split-left")
-  ```
-
-- Have the viewer in a separate Jupyter lab window placed at the top or bottom, this time using `open_viewer`
-
-  ```python
-  t = Text("Top", 20)
-  cv_t = open_viewer("Top", anchor="split-top", aspect_ratio=0)
-  show(t)
-
-  t = Text("Bottom", 20)
-  cv_b = open_viewer("Bottom", anchor="split-bottom", aspect_ratio=0)
-  show(t)
-  ```
-
-  **Notes:**
-  - With `aspect_ratio = 0` the viewer will occupy the complete window. Otherwise it uses the `aspect_ratio` to size the viewer to be visible in the window. It currently only works with `open_viewer`, not with `show`
-  - Both `show(obj, viewer="<Viewer name>", anchor="<location>")` and `open_viewer("<Viewer name>", anchor="<location>"); show(obj)` achieve the same.
-  - The config functions (`status`, `set_viewer_config`, `workspace_config`, `combined_config`, `reset_defaults`, `save_screenshot`, `export_html`, ...) address a viewer the same way: `viewer="<Viewer name>"` names a sidecar; without it the default sidecar is used, and without one of those the viewer the last `show` produced - which is how a cell viewer is reached, since it has no name.
-
-  ![Viewer locations](./screenshots/viewer-locations.png)
-
-### b) Show objects
-
-- **Command**
-
-  ```python
-  show(cad_objs, **kwargs)
-  ```
-
-- **Parameters:**
-
-  ```text
-  cad_objs:                All cad objects that should be shown as positional parameters
-  ```
-
-- **Valid keywords for the CAD object attributes:**
-
-  ```text
-  names:                     List of names for the cad_objs. Needs to have the same length as cad_objs
-  colors:                    List of colors for the cad_objs. Needs to have the same length as cad_objs
-  alphas:                    List of alpha values for the cad_objs. Needs to have the same length as cad_objs
-  ```
-
-- **Valid keywords for the viewer location:**
-
-  ```text
-  viewer                     The name of the viewer. If None or "", then the viewer will be opened in the cell output
-  anchor:                    The location where to open the viewer
-                             (sidecar: "right", split windows: "split-right", "split-left", "split-top", "split-bottom")
-  cad_width:                 The width of the viewer canvas for cell based viewers (viewer is None or "") (default=800)
-  height:                    The height of the viewer canvas for cell based viewers (viewer is None or "") (default=600)
-  ```
-
-- **Valid keywords to configure the viewer:**
-
-  ```text
-  - UI
-    glass:                   Use glass mode where tree is an overlay over the cad object (default=False)
-    tools:                   Show tools (default=True)
-    tree_width:              Width of the object tree (default=240)
-    theme:                   The theme of the viewer ("light" or "dark")
-    pinning:                 Whether cell based viewers (viewer is None or "") can be pinned as png
-
-  - Viewer
-    axes:                    Show axes (default=False)
-    axes0:                   Show axes at (0,0,0) (default=False)
-    grid:                    Show grid (default=False)
-    ortho:                   Use orthographic projections (default=True)
-    transparent:             Show objects transparent (default=False)
-    default_opacity:         Opacity value for transparent objects (default=0.5)
-    black_edges:             Show edges in black color (default=False)
-    orbit_control:           Mouse control use "orbit" control instead of "trackball" control (default=False)
-    collapse:                Collapse.LEAVES: collapse all single leaf nodes,
-                             Collapse.ROOT: expand root only,
-                             Collapse.ALL: collapse all nodes,
-                             Collapse.NONE: expand all nodes
-                             (default=Collapse.ROOT)
-    ticks:                   Hint for the number of ticks in both directions (default=10)
-    center_grid:             Center the grid at the origin or center of mass (default=False)
-    up:                      Use z-axis ('Z') or y-axis ('Y') as up direction for the camera (default="Z")
-    explode:                 Turn on explode mode (default=False)
-
-    zoom:                    Zoom factor of view (default=1.0)
-    position:                Camera position
-    quaternion:              Camera orientation as quaternion
-    target:                  Camera look at target
-    reset_camera:            Camera.RESET: Reset camera position, rotation, zoom and target
-                             Camera.CENTER: Keep camera position, rotation, zoom, but look at center
-                             Camera.KEEP: Keep camera position, rotation, zoom, and target
-                             (default=Camera.RESET)
-
-    clip_slider_0:           Setting of clipping slider 0 (default=None)
-    clip_slider_1:           Setting of clipping slider 1 (default=None)
-    clip_slider_2:           Setting of clipping slider 2 (default=None)
-    clip_normal_0:           Setting of clipping normal 0 (default=None)
-    clip_normal_1:           Setting of clipping normal 1 (default=None)
-    clip_normal_2:           Setting of clipping normal 2 (default=None)
-    clip_intersection:       Use clipping intersection mode (default=False)
-    clip_planes:             Show clipping plane helpers (default=False)
-    clip_object_colors:      Use object color for clipping caps (default=False)
-
-    pan_speed:               Speed of mouse panning (default=1)
-    rotate_speed:            Speed of mouse rotate (default=1)
-    zoom_speed:              Speed of mouse zoom (default=1)
-
-  - Renderer
-    deviation:               Shapes: Deviation from linear deflection value (default=0.1)
-    angular_tolerance:       Shapes: Angular deflection in radians for tessellation (default=0.2)
-    edge_accuracy:           Edges: Precision of edge discretization (default: mesh quality / 100)
-
-    default_color:           Default mesh color (default=(232, 176, 36))
-    default_edgecolor:       Default color of the edges of a mesh (default=#707070)
-    default_facecolor:       Default color of the edges of a mesh (default=#ee82ee)
-    default_thickedgecolor:  Default color of the edges of a mesh (default=#ba55d3)
-    default_vertexcolor:     Default color of the edges of a mesh (default=#ba55d3)
-    ambient_intensity:       Intensity of ambient light (default=1.00)
-    direct_intensity:        Intensity of direct light (default=1.10)
-    metalness:               Metalness property of the default material (default=0.30)
-    roughness:               Roughness property of the default material (default=0.65)
-
-    render_edges:            Render edges  (default=True)
-    render_normals:          Render normals (default=False)
-    render_mates:            Render mates for MAssemblies (default=False)
-    render_joints:           Render build123d joints (default=False)
-    show_parent:             Render parent of faces, edges or vertices as wireframe (default=False)
-    show_sketch_local:       In build123d show local sketch in addition to relocate sketch (default=True)
-    helper_scale:            Scale of rendered helpers (locations, axis, mates for MAssemblies) (default=1)
-    progress:                Show progress of tessellation with None is no progress indicator. (default="-+*c")
-                             for object: "-": is reference,
-                                         "+": gets tessellated with Python code,
-                                         "*": gets tessellated with native code,
-                                         "c": from cache
-
-  - Debug
-    debug:                   Show debug statements to the VS Code browser console (default=False)
-    timeit:                  Show timing information from level 0-3 (default=False)
-  ```
-
-### c) Manage default values
-
-- **`set_defaults(**kwargs)`:** allows to globally set the defaults value so they do not need to be provided with every `show` call
-
-  kwargs:
-  - see `show`
-
-- **`get_default(value)`:** Get the global default for a single `value`
-- **`get_defaults()`:** Get all global defaults
-- **`reset_defaults()`**: Reset all defaults back to its initial value
-
-### d) Replay objects
-
-Note, this is not supported in the standalone viewer for the time being.
-
-- **`replay(args)`**
-
-  _Argument `args`:_
-  - `cad_obj`: cadquery object
-  - `index` (`default=0`): Element in the fluent API stack to show
-  - `debug` (`default=False`): Trace building the replay stack
-  - `cad_width` (`default=600`): Width of the CAD view
-  - `height` (`default=600`): Height of the CAD view
-
-### e) Exports
-
-- **Export as PNG:**
-
-  Display your object via
-
-  ```python
-  cv = show(a1)
-  ```
-
-  and adapt the cad view as wanted (camera location, axis, transparency, ...).
-
-  Then call
-
-  ```python
-  cv.export_png("example.png")
-  ```
-
-- **Export as HTML:**
-
-  Show your object, in a sidecar or in a cell, and adapt the cad view as wanted (camera location, axis, transparency, ...). Then call
-
-  ```python
-  export_html("cadquery.html")
-  ```
-
-  `viewer="<title>"` names a sidecar; without it the default sidecar is exported, and without one of those the viewer the last `show` produced. A sidecar is exported as a cell viewer of the same size. The exported page loads the viewer's JavaScript from the npm registry (`cad-viewer-widget` at the installed version), so it needs an internet connection when opened.
-
-  A notebook converted with `jupyter nbconvert --to html` shows its viewers too, provided the widget state was saved with it: run the notebook, then in JupyterLab enable *Settings > Save Widget State Automatically* before saving, or convert with `--execute`.
-
-### Changes
+## Changes
 
 see [CHANGELOG.md](./CHANGELOG.md)
+
+## Licence
+
+Apache-2.0.
