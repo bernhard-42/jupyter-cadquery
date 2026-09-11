@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **`export_html(filename, title=..., viewer=...)` is back** (#122), for sidecars as well as cell viewers - a sidecar is exported as a cell viewer of the same size. The page loads `cad-viewer-widget` from the npm registry at the installed version, which is why the export stopped working: no 4.x had been published there, so the page had nothing to load. Also needed cad-viewer-widget to draw a saved state at all, which its view had not done since 3.2.3.
+- **A notebook converted with `nbconvert` after an interactive run shows its viewers** (#109). The renderer decoded the widget's `shapes` in place, so the widget state JupyterLab saved held typed arrays serialised as `{"0": ...}` objects and every mesh in the converted page had zero vertices. The renderer now works on a copy; the state keeps the wire format.
+
 ## Release v5.1.0
 
 This release moves Jupyter CadQuery onto `ocp-viewer-core`, the shared half of the viewer stack, and aligns its defaults with the other viewers. Behaviour that differed between viewers for no chosen reason is a support and maintenance cost, so where this host disagreed with OCP CAD Viewer and the standalone viewer, it now follows them.

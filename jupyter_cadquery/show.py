@@ -29,7 +29,7 @@ The same file, the same names and the same reasoning as ocp_vscode's show.py.
 #
 
 import orjson
-from cad_viewer_widget import CadViewer
+from cad_viewer_widget import CadViewer, get_sidecar
 from cad_viewer_widget import open_viewer as _open_viewer
 from cad_viewer_widget.utils import viewer_args
 from ocp_viewer_core.logo import logo as b_logo
@@ -37,7 +37,7 @@ from ocp_viewer_core.show import Viewer as CoreViewer
 from ocp_viewer_core.show import ignore_camera_warnings, none_filter
 
 from .comms import send_backend, send_measure_request
-from .config import config
+from .config import comms, config
 from .logo import logo
 
 __all__ = [
@@ -58,6 +58,7 @@ __all__ = [
     "show_object",
     "show_objects",
     "unset_colormap",
+    "export_html",
 ]
 
 
@@ -118,6 +119,25 @@ get_colormap = viewer.get_colormap
 set_colormap = viewer.set_colormap
 unset_colormap = viewer.unset_colormap
 get_last_paths = viewer.get_last_paths
+
+def export_html(filename="cadquery.html", title="CadQuery", viewer=None):
+    """Write the viewer's current view to a standalone HTML file.
+
+    `viewer` names a sidecar, as it does for every config function; without
+    it the default sidecar is taken, and without one of those the viewer the
+    last show produced - which is how a cell viewer is reached. The page
+    loads cad-viewer-widget's JavaScript from the npm registry at the
+    version installed here.
+    """
+    handle = get_sidecar(viewer)
+    if handle is None:
+        if viewer is not None:
+            raise ValueError(f'There is no viewer "{viewer}"')
+        handle = comms.last_widget
+    if handle is None:
+        raise RuntimeError("Nothing to export: show an object first")
+    handle.export_html(filename, title=title)
+
 
 # The core's Animation, bound like the show family: `Animation()` constructs
 # an animation over this viewer's last show.

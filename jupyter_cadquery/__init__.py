@@ -136,6 +136,7 @@ __all__ = [
     "Render",
     "reset_defaults",
     "reset_show",
+    "export_html",
     "save_screenshot",
     "save_user_defaults",
     "SeededColormap",

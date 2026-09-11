@@ -463,21 +463,15 @@ Note, this is not supported in the standalone viewer for the time being.
 
 - **Export as HTML:**
 
-  Display your object without using a sidecar (set `viewer` to `None`) via
+  Show your object, in a sidecar or in a cell, and adapt the cad view as wanted (camera location, axis, transparency, ...). Then call
 
   ```python
-  cv = show(a1, viewer=None)
+  export_html("cadquery.html")
   ```
 
-  and adapt the cad view as wanted (camera location, axis, transparency, ...).
+  `viewer="<title>"` names a sidecar; without it the default sidecar is exported, and without one of those the viewer the last `show` produced. A sidecar is exported as a cell viewer of the same size. The exported page loads the viewer's JavaScript from the npm registry (`cad-viewer-widget` at the installed version), so it needs an internet connection when opened.
 
-  Then call
-
-  ```python
-  cv.export_html()
-  ```
-
-  Note: This does not work with viewers in sidecars!
+  A notebook converted with `jupyter nbconvert --to html` shows its viewers too, provided the widget state was saved with it: run the notebook, then in JupyterLab enable *Settings > Save Widget State Automatically* before saving, or convert with `--execute`.
 
 ### Changes
 
