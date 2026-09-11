@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Requires ocp-viewer-core 1.0.9: `reset_defaults(viewer=...)` resets the sidecar it names, and `show(orbit_control=True)` or `show(up="Y")` no longer stick to every following show.
 - The README is installation and first run; everything else moved to the [documentation](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/overview/), with deep links from the README. New there: sidecars, windows and cells; working in the notebook (auto display, `get_pick`); replay; export; the Jupyter CadQuery API; troubleshooting.
 - **Cell viewers are addressable.** `status()`, `set_viewer_config()`, `save_screenshot()` and the rest resolve their viewer the same way everywhere: a named sidecar, else the default sidecar, else the viewer the last `show` produced. Without a sidecar they used to address nothing, silently - `set_viewer_config(tab="clip")` did nothing and `status()` was `{}`. A cell viewer's state now also carries into the next cell viewer's show, as a sidecar's does.
 - Requires cad-viewer-widget 4.1.1: `reset_camera` presets go through the widget's trait (which takes every `Camera` value since 4.1.1), `set_viewer_config(reset_camera=...)` works, the tab survives a show, zebra and studio values reach `status()`, `timeit` takes a level, and a saved state is drawn.
