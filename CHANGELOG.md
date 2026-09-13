@@ -4,7 +4,7 @@
 
 This release moves Jupyter CadQuery onto `ocp-viewer-core`, the shared half of the viewer stack, and aligns its defaults with the other viewers. Behaviour that differed between viewers for no chosen reason is a support and maintenance cost, so where this host disagreed with OCP CAD Viewer and the standalone viewer, it now follows them.
 
-It requires ocp-viewer-core 1.0.9 and cad-viewer-widget 4.1.1 - the first cad-viewer-widget 4 on PyPI and npm, which is what makes HTML exports load again.
+It requires ocp-viewer-core 1.0.10 and cad-viewer-widget 4.1.2 - the first cad-viewer-widget 4 on PyPI and npm, which is what makes HTML exports load again.
 
 ### Breaking changes
 
@@ -16,6 +16,8 @@ It requires ocp-viewer-core 1.0.9 and cad-viewer-widget 4.1.1 - the first cad-vi
 
 ### Changes
 
+- **Animation works under "Run All Cells".** cad-viewer-widget validated a track's path against the tree the browser reports after rendering, and under Run All that report has not arrived when the animation cell runs - every path was refused with `... is not a valid subpath of any of []`, while the same notebook run cell by cell passed. The checks are ocp-viewer-core's now (1.0.10), made before a track is sent, and the widget (4.1.2) checks nothing.
+- **Animation is the shared `Animation` class.** `animation = Animation(); animation.add_track(path, action, times, values); animation.animate(speed)`, as in every other viewer - see [Animation](https://bernhard-42.github.io/ocp_viewer_docs/animation/). The assembly example notebooks use it. The old way - `AnimationTrack(...)` handed to `cv.add_track(...)`, then `cv.animate(speed)` - still works and warns once per session that it is deprecated.
 - **Cell viewers are addressable.** `status()`, `set_viewer_config()`, `save_screenshot()` and the rest resolve their viewer the same way everywhere: a named sidecar, else the default sidecar, else the viewer the last `show` produced. Without a sidecar they used to address nothing, silently - `set_viewer_config(tab="clip")` did nothing and `status()` was `{}`. A cell viewer's state now also carries into the next cell viewer's show, as a sidecar's does.
 - **`export_html(filename, title=..., viewer=...)` is back** (#122), for sidecars as well as cell viewers - a sidecar is exported as a cell viewer of the same size. The page loads `cad-viewer-widget` from the npm registry at the installed version, which is why the export stopped working: no 4.x had been published there, so the page had nothing to load.
 - `reset_camera` presets (`Camera.TOP`, ...) go through the widget's trait and land in the render itself, instead of a render to iso followed by a move.

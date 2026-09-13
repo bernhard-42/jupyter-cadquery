@@ -19,8 +19,10 @@ import os
 
 os.environ["JUPYTER_CADQUERY"] = "1"
 
+import warnings
+
+from cad_viewer_widget import AnimationTrack as _AnimationTrack
 from cad_viewer_widget import (
-    AnimationTrack,
     close_sidecar as close_viewer,
     close_sidecars as close_viewers,
     get_sidecar as get_viewer,
@@ -67,6 +69,41 @@ from .config import (
     status,
     workspace_config,
 )
+
+class AnimationTrack(_AnimationTrack):
+    """The pre-5.1 way of animating: a track built by hand and handed to the
+    viewer with `cv.add_track(...)`, then `cv.animate(speed)`.
+
+    Deprecated in favour of the `Animation` every viewer shares:
+
+        animation = Animation()
+        animation.add_track(path, action, times, values)
+        animation.animate(speed)
+
+    It still works - the viewer methods it feeds are the transport the shared
+    Animation uses too - and the warning is on construction, because building
+    a track by hand is the one step the old way has and the new way has not.
+    The transport builds its tracks from cad_viewer_widget's class directly and
+    never sees this one.
+    """
+
+    _warned = False
+
+    def __init__(self, *args, **kwargs):
+        # Once per session, not once per track: an animation is many tracks,
+        # and the second warning says nothing the first did not.
+        if not AnimationTrack._warned:
+            AnimationTrack._warned = True
+            warnings.warn(
+                "AnimationTrack and cv.add_track(...) are deprecated: use "
+                "`animation = Animation(); animation.add_track(path, action, "
+                "times, values); animation.animate(speed)` instead - see "
+                "https://bernhard-42.github.io/ocp_viewer_docs/animation/",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        super().__init__(*args, **kwargs)
+
 
 # Inject Collapse enum. Import in cad_viewer_widget would lead to circular import
 from cad_viewer_widget.widget import _set_collapse
