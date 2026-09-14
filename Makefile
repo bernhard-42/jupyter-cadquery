@@ -46,9 +46,12 @@ endif
 
 # Dist commands
 
+# `uv build` resolves the build backend (hatchling, hatch-jupyter-builder)
+# in an isolated environment of its own, so the active env needs neither.
+# `python -m build -n` wanted them installed wherever it ran.
 dist:
 	@rm -f dist/*
-	@python -m build -n
+	@uv build
 
 release:
 	git add .
