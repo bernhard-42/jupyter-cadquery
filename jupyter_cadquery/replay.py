@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 
 import cadquery as cq
 from IPython import get_ipython
-from IPython.display import display
+from IPython.display import display, HTML
 from ipywidgets import HBox, Layout, Output, SelectMultiple
 from ocp_tessellate.convert import to_ocpgroup, OcpInstancesGroup
 from ocp_tessellate.ocp_utils import BoundingBox
@@ -675,10 +675,18 @@ def replay(
         rows=len(r.stack),
         description="",
         disabled=False,
-        layout=Layout(width="600px"),
+        # Fixed, so the debug output keeps its place beside the box; a step
+        # longer than this scrolls horizontally inside the box.
+        layout=Layout(width="600px", flex="0 0 auto"),
     )
     r.select_box.add_class("monospace")
+    r.select_box.add_class("jcq-replay-steps")
     r.select_box.observe(r.select_handler)
+    # Room for the horizontal scrollbar under the rows. The box is sized for
+    # `rows` lines; a step longer than the box gets it a scrollbar, and where
+    # a scrollbar takes space (Windows) it covered the last row - the final
+    # step, the one selected by default. The padding is where it goes instead.
+    display(HTML("<style>.jcq-replay-steps select { padding-bottom: 20px; }</style>"))
     display(HBox([r.select_box, r.debug_output]))
 
     r.select(r.indexes)

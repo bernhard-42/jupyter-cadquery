@@ -25,6 +25,7 @@ It requires ocp-viewer-core 1.0.10 and cad-viewer-widget 4.1.2 - the first cad-v
 
 ### Fixes
 
+- Replay's step box no longer hides its last row behind a horizontal scrollbar: a step longer than the box scrolls inside it, and the box keeps room under the rows for the scrollbar where one takes space (Windows).
 - A notebook converted with `nbconvert` after an interactive run shows its viewers (#109). The renderer decoded the widget's `shapes` in place, so the widget state JupyterLab saved held typed arrays serialised as `{"0": ...}` objects and every mesh in the converted page had zero vertices. cad-viewer-widget 4.1.1 renders from a copy; the state keeps the wire format.
 - `set_viewer_config(reset_camera=...)` works, the tab a `show` lands on survives the next show, the zebra and studio values reach `status()`, and `timeit` takes a level - all cad-viewer-widget 4.1.1.
 - `modifier_keys` now applies at all. The widget's traitlet declared its values as pairs where a keymap holds single DOM property names, and no code path set it - so a `modifier_keys` entry in `~/.jcq_config` reached nothing. It is also accepted by `set_viewer_config` now.
