@@ -14,6 +14,8 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 
 ## Installation
 
+**Note:** JupyterLab 4.6.3 currently does not work with tornado 6.5.9, see [here](https://github.com/jupyterlab/jupyterlab/issues/19767). Ensure to use tornado 6.5.8 for JupyterLab 4.6.3, e.g. `pip install "tornado==6.5.8"`.
+
 - **CadQuery**
   1. Create and activate a virtual conda environment
 
