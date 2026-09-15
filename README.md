@@ -15,7 +15,6 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
 ## Installation
 
 - **CadQuery**
-
   1. Create and activate a virtual conda environment
 
      ```bash
@@ -36,7 +35,6 @@ Click on the "launch binder" icon to start _Jupyter-CadQuery_ on binder:
      ```
 
 - **build123d**
-
   1. Create and activate a virtual environment (conda, pyenv-virtualenv, uv, ...)
 
   2. Install build123d
@@ -63,6 +61,18 @@ jupyter server extension list     # must list:  jupyter_cadquery 5.1.0 OK   (the
 ```
 
 A line "Extension package jupyter_cadquery took N s to import" is OCP and VTK loading, not an error. On a Mac the very first run can take minutes for the same reason.
+
+## Changed behavior from 4.x
+
+- The complete sidecar space will now be used for the viewer. For the old behaviour set `cad_width` and `height`
+- The default for `show` is `reset_camera=Camera.KEEP` now (unless set in ~/.jcq_config differently).
+  - The viewer warns if the new object is too large or too small. To disable the warnings, use `ignore_camera_warnings()`
+  - The old behavior can be achieved with `set_defaults(reset_camera=Camera.RESET)`
+- `from jupyter_cadquery import *` still works. For portable code with other viewers from the ocp viewer ecosystem use `from ocp_viewer_core.viewer import *`
+- `mate_scale` does not work any more, use `helper_scale`
+- The viewer now remembers paths in the tree that are shown/hidden and will show/hide the same paths for the newly shown CAD object
+
+For all new features and fixes see [CHANGELOG](./CHANGELOG.md)
 
 ## First run
 
