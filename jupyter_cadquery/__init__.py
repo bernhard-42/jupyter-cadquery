@@ -33,13 +33,7 @@ from cad_viewer_widget import (
     get_viewers_by_id,
 )
 
-from ocp_viewer_core.tessellator import (
-    ImageFace,
-    disable_native_tessellator,
-    enable_native_tessellator,
-    init_native_tessellator,
-    is_native_tessellator_enabled,
-)
+from ocp_viewer_core.tessellator import ImageFace
 from ocp_viewer_core.colors import *
 from ocp_viewer_core.selectors import (
     select_edge,
@@ -123,9 +117,7 @@ from .tools import auto_show, get_pick
 from .show import *
 
 # The public surface, so the star import is chosen rather than accidental -
-# `os`, the submodules and IPython's `get_ipython` stay out. The tessellator
-# toggles below are deliberately absent: their import is conditional, and a
-# name in __all__ that may not exist breaks every star import when it does not.
+# `os`, the submodules and IPython's `get_ipython` stay out.
 __all__ = [
     "AnalysisTool",
     "Animation",
@@ -140,8 +132,6 @@ __all__ = [
     "ColorMap",
     "combined_config",
     "cvw_version",
-    "disable_native_tessellator",
-    "enable_native_tessellator",
     "get_changed_config",
     "get_colormap",
     "get_default",
@@ -159,8 +149,6 @@ __all__ = [
     "hsv_mapper",
     "ignore_camera_warnings",
     "ImageFace",
-    "init_native_tessellator",
-    "is_native_tessellator_enabled",
     "JupyterCadqueryBackend",
     "ListedColorMap",
     "matplotlib_mapper",
@@ -204,13 +192,6 @@ __all__ = [
     "web_to_rgb",
     "workspace_config",
 ]
-
-if init_native_tessellator():
-    print(
-        "Found and enabled native tessellator.\n"
-        "To disable, call `disable_native_tessellator()`\n"
-        "To enable, call `enable_native_tessellator()`\n"
-    )
 
 from cad_viewer_widget._version import __version__ as cvw_version
 from ocp_tessellate.ocp_utils import Color, occt_version
