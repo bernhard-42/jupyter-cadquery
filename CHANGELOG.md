@@ -12,6 +12,7 @@
 
 ### Changes
 
+- `ocp-viewer-core >=1.1.0, <1.2.0` (was `>=1.0.10, <1.1.0`): ocp-viewer-core 1.1 runs on ocp-tessellate 3.6
 - `cad-viewer-widget >=4.2.0, <4.3` (was `>=4.1.5, <4.2`): cad-viewer-widget 4.2 bundles three-cad-viewer 5.1 and ocp-viewer-core 1.1
 
 ## Release v5.1.0 (11.09.2026)

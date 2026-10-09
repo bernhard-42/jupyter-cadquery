@@ -2,7 +2,7 @@
 
 The Python package provides a Jupyterlab extension and a JupyterServer extension to view [CadQuery](https://github.com/cadquery/cadquery), [build123d](https://github.com/gumyr/build123d), and [OCP](https://github.com/cadquery/OCP) objects in JupyterLab
 
-Current version: **v5.1.0** (2026-09-11)
+Current version: **v5.2.0** (xx.xx.xx)
 
 The full documentation lives at [bernhard-42.github.io/ocp_viewer_docs](https://bernhard-42.github.io/ocp_viewer_docs/) — the [Jupyter CadQuery chapter](https://bernhard-42.github.io/ocp_viewer_docs/viewers/jupyter_cadquery/overview/) covers this viewer's specifics; this README gets you installed and running, and links into the rest.
 
@@ -58,8 +58,8 @@ Jupyter CadQuery requires JupyterLab 4 (`jupyterlab>=4.6.2,<5`) and installs it 
 ### Verify the installation
 
 ```bash
-jupyter lab extension list        # must list:  jupyter_cadquery 5.1.0 OK   (the viewer frontend)
-jupyter server extension list     # must list:  jupyter_cadquery 5.1.0 OK   (the measurement backend)
+jupyter lab extension list        # must list:  jupyter_cadquery 5.2.0 OK   (the viewer frontend)
+jupyter server extension list     # must list:  jupyter_cadquery 5.2.0 OK   (the measurement backend)
 ```
 
 A line "Extension package jupyter_cadquery took N s to import" is OCP and VTK loading, not an error. On a Mac the very first run can take minutes for the same reason.
