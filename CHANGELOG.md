@@ -10,6 +10,10 @@
 
 - New setting `python_enumeration` (default `False`) in `~/.jcq_config`, and the keyword `python_enumeration` of `show`, `show_object`, `show_objects` and `set_defaults` (vscode-ocp-cad-viewer issue 242): `True` numbers repeated object names from 0 like Python indices - `Solid(0)`, `Solid(1)`, `Solid(2)` instead of `Solid`, `Solid(2)`, `Solid(3)`. Off by default, because the names are the tree paths that animations, states and selections use. An existing `~/.jcq_config` has no such key and gets the default
 
+### Changes
+
+- `cad-viewer-widget >=4.2.0, <4.3` (was `>=4.1.5, <4.2`): cad-viewer-widget 4.2 bundles three-cad-viewer 5.1 and ocp-viewer-core 1.1
+
 ## Release v5.1.0 (11.09.2026)
 
 Jupyter CadQuery now builds on `ocp-viewer-core`, the Python half shared by all viewers of the OCP viewer family, and follows their defaults. It requires ocp-viewer-core 1.0.10 and cad-viewer-widget 4.1.5; `ocp_vscode` is no longer a dependency ([#126](https://github.com/bernhard-42/jupyter-cadquery/issues/126)).
