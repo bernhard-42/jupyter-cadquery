@@ -106,9 +106,10 @@ def workspace_defaults():
         "ortho": True,
         "pan_speed": 1,
         # ocp-tessellate's naming of repeated objects, read by the core's show
-        # and never handed to the widget. False keeps the former names, which
-        # are the tree paths animations, states and selections address.
-        "python_enumeration": False,
+        # and never handed to the widget. True numbers them from 0 like Python
+        # indices; False restores the former names, which are the tree paths
+        # animations, states and selections address.
+        "python_enumeration": True,
         "reset_camera": "KEEP",
         "rotate_speed": 1,
         "roughness": 0.65,

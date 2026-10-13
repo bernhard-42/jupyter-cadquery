@@ -3,7 +3,7 @@
 ## Unreleased
 
 - **Features**
-    - New setting `python_enumeration` (default `False`) in `~/.jcq_config` and keyword `python_enumeration` of `show`, `show_object`, `show_objects` and `set_defaults` ([vscode-ocp-cad-viewer #242](https://github.com/bernhard-42/vscode-ocp-cad-viewer/issues/242)): `True` numbers repeated object names from 0 like Python indices - `Solid(0)`, `Solid(1)`, `Solid(2)` instead of `Solid`, `Solid(2)`, `Solid(3)`. Off by default, because the names are the tree paths that animations, states and selections use. An existing `~/.jcq_config` has no such key and gets the default
+    - New setting `python_enumeration` (default `True`) in `~/.jcq_config` and keyword `python_enumeration` of `show`, `show_object`, `show_objects` and `set_defaults` ([vscode-ocp-cad-viewer #242](https://github.com/bernhard-42/vscode-ocp-cad-viewer/issues/242)): repeated object names are numbered from 0 like Python indices - `Solid(0)`, `Solid(1)`, `Solid(2)` instead of `Solid`, `Solid(2)`, `Solid(3)`. `False` restores the former names. An existing `~/.jcq_config` has no such key and gets the default
     - Measured angles show their supplement as well, `60.000 (120.000)`: the distance tool's angle, and the properties tool's angle to XY of a face and of an edge's ends ([vscode-ocp-cad-viewer #236](https://github.com/bernhard-42/vscode-ocp-cad-viewer/issues/236)). A cone's half angle stays one number
     - `ColorMap.golden_ratio(..., hue_offset=0.0)` shifts where the golden-ratio color sequence starts, as a fraction of the colormap from 0 to 1; 0 gives the colors as before ([vscode-ocp-cad-viewer #222](https://github.com/bernhard-42/vscode-ocp-cad-viewer/issues/222))
     - `save_screenshot(..., timeout_s=2)` sets how long to wait for the file, in seconds
@@ -17,6 +17,7 @@
 - **Changes**
     - `jupyter_cadquery` depends on `ocp-viewer-core>=1.1.0, <1.2.0` (was `>=1.0.10, <1.1.0`): ocp-viewer-core 1.1 runs on ocp-tessellate 3.6
     - The native-tessellator toggles are gone: `enable_native_tessellator()`, `disable_native_tessellator()`, `is_native_tessellator_enabled()` and `init_native_tessellator()` are no longer exported, `NATIVE_TESSELLATOR` in the environment no longer means anything, and importing `jupyter_cadquery` no longer prints "Found and enabled native tessellator.". ocp-tessellate dropped its native tessellator and `ocp_addons`, and ocp-viewer-core the toggles with it
+    - Breaking: repeated object names are numbered from 0 by default (`python_enumeration`, above), so a tree path such as `/Group/Solid(2)` now names the third `Solid`, not the second. Animation tracks, saved states and selections that address such paths need the new names, or `python_enumeration=False` - as the setting, through `set_defaults` or as a show keyword - which restores the former names
     - Breaking, for scripts that import from the libraries directly: `ocp_tessellate` no longer re-exports OCCT classes (`ocp_tessellate.ocp_utils.TopoDS_Shape`, `ocp_tessellate.tessellator.gp_Pnt`, ...), import them from OCP or nanocct; `ocp_viewer_core.measure.get_center` returns `(x, y, z)` instead of a vertex
     - `cad-viewer-widget >=4.2.0, <4.3` (was `>=4.1.5, <4.2`): cad-viewer-widget 4.2 bundles three-cad-viewer 5.1.3 and ocp-viewer-core 1.1
 
