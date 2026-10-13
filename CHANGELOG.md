@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Release v5.2.0 (13.10.2026)
 
 - **Features**
     - New setting `python_enumeration` (default `True`) in `~/.jcq_config` and keyword `python_enumeration` of `show`, `show_object`, `show_objects` and `set_defaults` ([vscode-ocp-cad-viewer #242](https://github.com/bernhard-42/vscode-ocp-cad-viewer/issues/242)): repeated object names are numbered from 0 like Python indices - `Solid(0)`, `Solid(1)`, `Solid(2)` instead of `Solid`, `Solid(2)`, `Solid(3)`. `False` restores the former names. An existing `~/.jcq_config` has no such key and gets the default
