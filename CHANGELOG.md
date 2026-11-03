@@ -2,8 +2,12 @@
 
 ## unreleased
 
+- **Features**
+    - Kernel plugins: objects of CAD kernels other than OCCT are shown, and measured by the Distance and Properties tools from that kernel's own geometry. The first plugin is [ocp-viewer-smlibpy](https://github.com/bernhard-42/ocp-viewer-smlibpy) for SMLib. A plugin must also be installed where the viewer's measurement backend runs, which can be another environment than the script's. Nothing changes for OCCT objects
+    - To measure a plugin's objects in JupyterLab, install the plugin in the Jupyter server's environment, which need not be the kernel's
+
 - **Changes**
-    - `jupyter-cadquery` depends on `ocp-viewer-core>=1.1.3, <1.2.0` (was `>=1.1.0, <1.2.0`). ocp-viewer-core 1.1.3, on ocp-tessellate 3.7, brings kernel plugins: objects of CAD kernels other than OCCT are shown, and measured by the Distance and Properties tools from that kernel's own geometry. The first plugin is [ocp-viewer-smlibpy](https://github.com/bernhard-42/ocp-viewer-smlibpy) for SMLib. To measure a plugin's objects, install the plugin in the Jupyter server's environment, where the measurement backend runs, which need not be the kernel's. Nothing changes for CadQuery and build123d objects
+    - `jupyter_cadquery` depends on `ocp-viewer-core>=1.1.3, <1.2.0` (was `>=1.1.0, <1.2.0`): ocp-viewer-core 1.1.3 runs on ocp-tessellate 3.7, which brings the kernel plugins
 
 ## Release v5.2.0 (13.10.2026)
 
