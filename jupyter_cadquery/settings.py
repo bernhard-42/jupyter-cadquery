@@ -112,6 +112,8 @@ def workspace_defaults():
         "python_enumeration": True,
         "reset_camera": "KEEP",
         "rotate_speed": 1,
+        "cursor_pivot": True,
+        "zoom_to_cursor": True,
         "roughness": 0.65,
         "ticks": 5,
         # Stored like every other viewer setting, rather than left out. `theme`
