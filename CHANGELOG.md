@@ -1,6 +1,6 @@
 # Changelog
 
-## unreleased
+## Release v5.3.0 (20.11.2026)
 
 - **Viewer changes**
 
